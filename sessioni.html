@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tutte le sessioni - JetProgram Tracker</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" id="back-link" href="./index.html" aria-label="Indietro">‹</a>
+    <h1 id="titolo-pagina">Tutte le sessioni</h1>
+  </header>
+  <main>
+    <div class="card">
+      <div class="field">
+        <label for="filtro-titolo">Cerca per titolo</label>
+        <input type="text" id="filtro-titolo" placeholder="es. coordinazione" />
+      </div>
+      <div class="field-grid">
+        <div class="field">
+          <label for="filtro-da">Da</label>
+          <input type="date" id="filtro-da" />
+        </div>
+        <div class="field">
+          <label for="filtro-a">A</label>
+          <input type="date" id="filtro-a" />
+        </div>
+      </div>
+    </div>
+
+    <div id="lista-sessioni" class="list"></div>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/esercizi-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/page-elenco-sessioni.js"></script>
+</body>
+</html>

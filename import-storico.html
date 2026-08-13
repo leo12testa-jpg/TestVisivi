@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Importazione storica - JetProgram Tracker</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
+    <h1>Importazione dati storici</h1>
+  </header>
+  <main>
+    <div class="card">
+      <p>
+        Legge <code>atleti_importati.json</code> (nella cartella del progetto) e crea/aggiorna atleti e sessioni su
+        Firestore. Sicuro da rilanciare: un atleta già presente (stesso nome+cognome) non viene duplicato, e per
+        ciascuno vengono aggiunte solo le sessioni con una data non già presente.
+      </p>
+      <p class="meta">
+        Funziona solo eseguito in locale (il file JSON non viene mai pubblicato: è escluso dal repository).
+      </p>
+      <button id="btn-avvia">Avvia importazione</button>
+    </div>
+    <div id="log" class="card" style="font-family:monospace;font-size:0.8rem;white-space:pre-wrap;max-height:55vh;overflow-y:auto;"></div>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/esercizi-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/page-import-storico.js"></script>
+</body>
+</html>

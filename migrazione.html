@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Migrazione dati - JetProgram Tracker</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
+    <h1>Migrazione dati a Firebase</h1>
+  </header>
+  <main>
+    <div class="card">
+      <p>
+        Strumento una tantum: legge gli atleti/sessioni salvati localmente in questo browser (dalla vecchia versione
+        solo-IndexedDB dell'app) e li copia su Firestore, collegati al tuo account. Gli allegati foto/video restano
+        dove sono (solo su questo dispositivo) — vengono solo ricollegati al nuovo id di sessione.
+      </p>
+      <p class="meta">
+        Puoi eseguirlo più volte senza duplicare i dati: gli atleti già migrati vengono saltati automaticamente.
+      </p>
+      <button id="btn-avvia">Avvia migrazione</button>
+    </div>
+    <div id="log" class="card" style="font-family:monospace;font-size:0.8rem;white-space:pre-wrap;max-height:55vh;overflow-y:auto;"></div>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/page-migrazione.js"></script>
+</body>
+</html>

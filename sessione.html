@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Sessione - JetProgram Tracker</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" id="back-link" href="./index.html" aria-label="Indietro">‹</a>
+    <h1 id="titolo-sessione">Nuova sessione</h1>
+  </header>
+  <main>
+    <div class="card">
+      <div class="field">
+        <label for="f-data">Data sessione</label>
+        <input type="date" id="f-data" />
+      </div>
+      <div class="field">
+        <label for="f-titolo">Titolo sessione (opzionale)</label>
+        <input type="text" id="f-titolo" placeholder="es. Allenamento coordinazione" />
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="section-label">Allegati (foto e video)</p>
+      <p class="meta" style="margin:0 0 10px;">Foto e video restano salvati solo su questo dispositivo, non si sincronizzano con altri dispositivi.</p>
+      <div class="row wrap">
+        <button type="button" class="secondary" id="btn-aggiungi-foto">📷 Aggiungi foto</button>
+        <button type="button" class="secondary" id="btn-aggiungi-video">🎥 Aggiungi video</button>
+      </div>
+      <input type="file" id="input-foto" accept="image/*" multiple capture="environment" hidden />
+      <input type="file" id="input-video" accept="video/*" multiple capture="environment" hidden />
+      <div id="galleria-allegati" class="allegati-grid"></div>
+    </div>
+
+    <div id="esercizi-container"></div>
+
+    <div class="row" style="margin-top:8px;">
+      <button id="btn-salva">Salva sessione</button>
+      <button class="secondary" id="btn-annulla">Annulla</button>
+    </div>
+  </main>
+
+  <div id="lightbox" class="lightbox" hidden>
+    <img id="lightbox-img" alt="Foto allegata" />
+  </div>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/esercizi-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/page-sessione.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Profilo atleta - JetProgram Tracker</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
+    <h1 id="titolo-atleta">Atleta</h1>
+  </header>
+  <main>
+    <div class="subnav">
+      <a class="btn secondary" id="link-grafici" href="#" style="text-decoration:none;">📈 Grafici</a>
+      <button class="secondary" id="btn-export-pdf">⬇ Esporta PDF</button>
+      <button class="danger" id="btn-elimina-atleta">Elimina atleta</button>
+    </div>
+
+    <form id="form-clinici">
+      <h2>Dati anagrafici</h2>
+      <div class="card">
+        <div class="field-grid">
+          <div class="field"><label for="a-altezza">Altezza (cm)</label><input type="number" step="any" id="a-altezza" /></div>
+          <div class="field"><label for="a-data-nascita">Data di nascita</label><input type="date" id="a-data-nascita" /></div>
+          <div class="field"><label for="a-telefono">Telefono</label><input type="tel" id="a-telefono" /></div>
+          <div class="field"><label for="a-email">Email</label><input type="email" id="a-email" /></div>
+        </div>
+      </div>
+
+      <h2>Dati clinici</h2>
+      <div class="card">
+        <p class="section-label">Acuità visiva naturale</p>
+        <div class="field-grid">
+          <div class="field"><label for="c-od">Od</label><input type="text" id="c-od" /></div>
+          <div class="field"><label for="c-os">Os</label><input type="text" id="c-os" /></div>
+          <div class="field"><label for="c-binoculare">Binoculare</label><input type="text" id="c-binoculare" /></div>
+        </div>
+
+        <p class="section-label">Propria correzione</p>
+        <div id="blocco-propria-correzione"></div>
+
+        <p class="section-label">Correzione</p>
+        <div id="blocco-correzione"></div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="c-piede">Piede dominante</label>
+            <select id="c-piede"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option></select>
+          </div>
+          <div class="field">
+            <label for="c-mano">Mano dominante</label>
+            <select id="c-mano"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option></select>
+          </div>
+          <div class="field">
+            <label for="c-occhio">Occhio dominante</label>
+            <select id="c-occhio"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option></select>
+          </div>
+        </div>
+
+        <p class="section-label">Schober a 3m</p>
+        <div class="field-grid">
+          <div class="field">
+            <label for="c-schober-alto-sx">Alto sinistro</label>
+            <select id="c-schober-alto-sx"><option value="">-</option><option value="orto">orto</option><option value="eso">eso</option><option value="exo">exo</option></select>
+          </div>
+          <div class="field">
+            <label for="c-schober-basso-sx">Basso sinistro</label>
+            <select id="c-schober-basso-sx"><option value="">-</option><option value="orto">orto</option><option value="eso">eso</option><option value="exo">exo</option></select>
+          </div>
+          <div class="field">
+            <label for="c-schober-centrale">Centrale</label>
+            <select id="c-schober-centrale"><option value="">-</option><option value="orto">orto</option><option value="eso">eso</option><option value="exo">exo</option></select>
+          </div>
+          <div class="field">
+            <label for="c-schober-alto-dx">Alto destro</label>
+            <select id="c-schober-alto-dx"><option value="">-</option><option value="orto">orto</option><option value="eso">eso</option><option value="exo">exo</option></select>
+          </div>
+          <div class="field">
+            <label for="c-schober-basso-dx">Basso destro</label>
+            <select id="c-schober-basso-dx"><option value="">-</option><option value="orto">orto</option><option value="eso">eso</option><option value="exo">exo</option></select>
+          </div>
+        </div>
+
+        <p class="section-label">Brock String a 3m</p>
+        <div class="field-grid">
+          <div class="field"><label for="c-brock-alto-sx">Alto sinistro</label><input type="text" id="c-brock-alto-sx" /></div>
+          <div class="field"><label for="c-brock-basso-sx">Basso sinistro</label><input type="text" id="c-brock-basso-sx" /></div>
+          <div class="field"><label for="c-brock-centrale">Centrale</label><input type="text" id="c-brock-centrale" /></div>
+          <div class="field"><label for="c-brock-alto-dx">Alto destro</label><input type="text" id="c-brock-alto-dx" /></div>
+          <div class="field"><label for="c-brock-basso-dx">Basso destro</label><input type="text" id="c-brock-basso-dx" /></div>
+        </div>
+
+        <div class="field-grid">
+          <div class="field">
+            <label for="c-fusionale">Abilità fusionale rapida (cicli fusionali/min)</label>
+            <input type="number" step="any" id="c-fusionale" />
+          </div>
+          <div class="field">
+            <label for="c-focus">Abilità di messa a fuoco rapida (cicli accomodativi/min)</label>
+            <input type="number" step="any" id="c-focus" />
+          </div>
+        </div>
+      </div>
+
+      <button type="submit">Salva profilo</button>
+    </form>
+
+    <div class="row between">
+      <h2 style="margin:0;">Sessioni</h2>
+      <div class="row">
+        <a class="btn secondary" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Tutte le sessioni</a>
+        <button id="btn-nuova-sessione">+ Nuova sessione</button>
+      </div>
+    </div>
+    <div id="lista-sessioni" class="list"></div>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/esercizi-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./vendor/chart.umd.js"></script>
+  <script src="./vendor/jspdf.umd.min.js"></script>
+  <script src="./js/charts.js"></script>
+  <script src="./js/pdf-export.js"></script>
+  <script src="./js/page-atleta.js"></script>
+</body>
+</html>
