@@ -1,6 +1,6 @@
 /* Service worker: cache-first (con aggiornamento in background) per l'app shell. */
 
-const CACHE_NAME = 'jetprogram-cache-v3';
+const CACHE_NAME = 'jetprogram-cache-v4';
 
 const PRECACHE_URLS = [
   './',
@@ -8,6 +8,8 @@ const PRECACHE_URLS = [
   './atleta.html',
   './sessione.html',
   './sessioni.html',
+  './squadre.html',
+  './squadra.html',
   './grafici.html',
   './confronto.html',
   './login.html',
@@ -20,10 +22,12 @@ const PRECACHE_URLS = [
   './js/esercizi-config.js',
   './js/charts.js',
   './js/pdf-export.js',
-  './js/page-atleti.js',
+  './js/page-home.js',
   './js/page-atleta.js',
   './js/page-sessione.js',
   './js/page-elenco-sessioni.js',
+  './js/page-squadre.js',
+  './js/page-squadra.js',
   './js/page-grafici.js',
   './js/page-confronto.js',
   './js/page-login.js',

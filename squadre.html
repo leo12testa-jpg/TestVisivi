@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>JetProgram Tracker</title>
+  <title>Gestisci squadre - JetProgram Tracker</title>
   <meta name="theme-color" content="#153e69" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
@@ -12,18 +12,19 @@
 </head>
 <body>
   <header class="app-header">
-    <h1>JetProgram Tracker</h1>
+    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
+    <h1>Gestisci squadre</h1>
   </header>
   <main>
-    <div class="row wrap fab-row">
-      <a class="btn secondary" href="./confronto.html" style="text-decoration:none;">Confronto atleti</a>
+    <div class="card">
+      <div class="field">
+        <label for="nuovo-nome-squadra">Nome squadra</label>
+        <input type="text" id="nuovo-nome-squadra" autocomplete="off" />
+      </div>
+      <button id="btn-crea-squadra">Crea squadra</button>
     </div>
 
-    <h2>Squadre</h2>
     <div id="lista-squadre" class="list"></div>
-
-    <h2>Altro</h2>
-    <div id="lista-altro" class="list"></div>
   </main>
 
   <script src="./vendor/firebase/firebase-app-compat.js"></script>
@@ -33,6 +34,6 @@
   <script src="./js/utils.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/db.js"></script>
-  <script src="./js/page-home.js"></script>
+  <script src="./js/page-squadre.js"></script>
 </body>
 </html>

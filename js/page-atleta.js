@@ -88,6 +88,15 @@ function leggiPosizioni5(prefix) {
   };
 }
 
+async function popolaSelectSquadra(squadraIdCorrente) {
+  const squadre = await dbGetSquadre();
+  const select = qs('#a-squadra');
+  select.innerHTML = '';
+  select.appendChild(el('option', { value: '', text: 'Nessuna squadra' }));
+  squadre.forEach((s) => select.appendChild(el('option', { value: s.id, text: s.nome })));
+  select.value = squadraIdCorrente || '';
+}
+
 function popolaAnagrafica(atleta) {
   qs('#a-altezza').value = atleta.altezza ?? '';
   qs('#a-data-nascita').value = atleta.dataNascita || '';
@@ -101,6 +110,7 @@ function leggiAnagrafica() {
     dataNascita: qs('#a-data-nascita').value,
     telefono: qs('#a-telefono').value.trim(),
     email: qs('#a-email').value.trim(),
+    squadraId: qs('#a-squadra').value,
   };
 }
 
@@ -191,6 +201,7 @@ async function init() {
   qs('#link-grafici').href = `./grafici.html?id=${atletaId}`;
   qs('#link-tutte-sessioni').href = `./sessioni.html?atletaId=${atletaId}`;
   costruisciSelectCorrezione();
+  await popolaSelectSquadra(_atleta.squadraId);
   popolaAnagrafica(_atleta);
   popolaFormClinici(_atleta.datiClinici);
   await caricaSessioni();

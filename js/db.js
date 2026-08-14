@@ -10,6 +10,13 @@
  *    o per data) resta fatto in JS dopo il fetch, come già accadeva con
  *    IndexedDB.
  *
+ *  - le squadre vivono su Firestore sotto users/{uid}/squadre/{squadraId}
+ *    (solo campo "nome"). Un atleta appartiene a una squadra tramite il
+ *    campo atleta.squadraId (stringa vuota o assente = nessuna squadra:
+ *    trattare sempre con un controllo "falsy", mai con IDBKeyRange/where,
+ *    per includere correttamente anche gli atleti creati prima che questo
+ *    campo esistesse).
+ *
  *  - allegati_foto e allegati_video restano SOLO nella IndexedDB locale
  *    del dispositivo (jetprogram-db), esattamente come prima: Firebase
  *    Storage non è usato in questo progetto (piano gratuito Spark, niente
@@ -113,6 +120,10 @@ function _sessioniCol() {
   return _userDoc().collection('sessioni');
 }
 
+function _squadreCol() {
+  return _userDoc().collection('squadre');
+}
+
 function _snapToObj(doc) {
   return { id: doc.id, ...doc.data() };
 }
@@ -132,11 +143,12 @@ async function dbGetAtleta(id) {
   return doc.exists ? _snapToObj(doc) : undefined;
 }
 
-async function dbAddAtleta({ nome, cognome }) {
+async function dbAddAtleta({ nome, cognome, squadraId }) {
   const now = new Date().toISOString();
   const atleta = {
     nome,
     cognome,
+    squadraId: squadraId || '',
     altezza: '',
     dataNascita: '',
     telefono: '',
@@ -196,6 +208,35 @@ async function dbDeleteSessione(id) {
   const video = await dbGetAllegatiVideoBySessione(id);
   for (const v of video) await dbDeleteAllegatoVideo(v.id);
   await _sessioniCol().doc(id).delete();
+}
+
+/* --- Firestore: squadre --- */
+
+async function dbGetSquadre() {
+  const snap = await _squadreCol().get();
+  const squadre = snap.docs.map(_snapToObj);
+  return squadre.sort((a, b) => a.nome.toLowerCase().localeCompare(b.nome.toLowerCase()));
+}
+
+async function dbGetSquadra(id) {
+  const doc = await _squadreCol().doc(id).get();
+  return doc.exists ? _snapToObj(doc) : undefined;
+}
+
+async function dbAddSquadra({ nome }) {
+  const ref = await _squadreCol().add({ nome });
+  return ref.id;
+}
+
+/** Elimina la squadra; gli atleti assegnati NON vengono eliminati, restano senza squadra. */
+async function dbDeleteSquadra(id) {
+  const atleti = await dbGetAtleti();
+  const assegnati = atleti.filter((a) => a.squadraId === id);
+  for (const a of assegnati) {
+    a.squadraId = '';
+    await dbUpdateAtleta(a);
+  }
+  await _squadreCol().doc(id).delete();
 }
 
 /* --- IndexedDB locale: allegati foto/video (invariati, non sincronizzati) --- */
