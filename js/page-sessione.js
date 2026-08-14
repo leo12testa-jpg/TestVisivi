@@ -308,6 +308,7 @@ async function init() {
       ESERCIZI_CONFIG.forEach((esercizio) => popolaEsercizio(esercizio, sessione.esercizi && sessione.esercizi[esercizio.key]));
       _fotoEsistenti = await dbGetAllegatiFotoBySessione(sessioneId);
       _videoEsistenti = await dbGetAllegatiVideoBySessione(sessioneId);
+      qs('#btn-elimina-sessione').hidden = false;
     }
   } else {
     qs('#titolo-sessione').textContent = `Nuova sessione - ${nomeCompleto(atleta)}`;
@@ -317,6 +318,14 @@ async function init() {
 }
 
 qs('#btn-annulla').addEventListener('click', () => {
+  window.location.href = `./atleta.html?id=${atletaId}`;
+});
+
+qs('#btn-elimina-sessione').addEventListener('click', async () => {
+  if (!sessioneId) return;
+  const data = qs('#f-data').value;
+  if (!confirm(`Eliminare la sessione del ${formatDataIt(data)}?`)) return;
+  await dbDeleteSessione(sessioneId);
   window.location.href = `./atleta.html?id=${atletaId}`;
 });
 

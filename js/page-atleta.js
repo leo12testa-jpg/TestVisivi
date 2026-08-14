@@ -148,38 +148,9 @@ function leggiFormClinici() {
   };
 }
 
-function renderSessioni() {
-  const container = qs('#lista-sessioni');
-  container.innerHTML = '';
-  if (_sessioni.length === 0) {
-    container.appendChild(el('div', { class: 'empty-state', text: 'Nessuna sessione registrata. Crea la prima con "Nuova sessione".' }));
-    return;
-  }
-  [..._sessioni].reverse().forEach((s) => {
-    const nEsercizi = contaEserciziCompilati(s);
-    const etichettaData = s.titolo ? `${formatDataIt(s.data)} · ${s.titolo}` : formatDataIt(s.data);
-    const item = el('div', { class: 'list-item' }, [
-      el('a', { href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`, style: 'text-decoration:none;color:inherit;flex:1;' }, [
-        el('div', { text: etichettaData }),
-        el('div', { class: 'meta', text: `${nEsercizi} esercizi${nEsercizi === 1 ? 'o' : ''} compilat${nEsercizi === 1 ? 'o' : 'i'}` }),
-      ]),
-      el('button', {
-        class: 'danger',
-        text: 'Elimina',
-        onclick: async () => {
-          if (!confirm(`Eliminare la sessione del ${formatDataIt(s.data)}?`)) return;
-          await dbDeleteSessione(s.id);
-          await caricaSessioni();
-        },
-      }),
-    ]);
-    container.appendChild(item);
-  });
-}
-
+/** Le sessioni servono solo come dato per l'export PDF: qui non vengono più mostrate come lista. */
 async function caricaSessioni() {
   _sessioni = await dbGetSessioniByAtleta(atletaId);
-  renderSessioni();
 }
 
 function mostraToast(msg) {
@@ -215,8 +186,12 @@ qs('#form-clinici').addEventListener('submit', async (e) => {
   mostraToast('Profilo salvato');
 });
 
-qs('#btn-nuova-sessione').addEventListener('click', () => {
+qs('#btn-test').addEventListener('click', () => {
   window.location.href = `./sessione.html?atletaId=${atletaId}`;
+});
+
+qs('#btn-training').addEventListener('click', () => {
+  mostraToast('Funzionalità in arrivo');
 });
 
 qs('#btn-elimina-atleta').addEventListener('click', async () => {

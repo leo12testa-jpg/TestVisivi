@@ -18,6 +18,9 @@
   <main>
     <div class="subnav">
       <a class="btn secondary" id="link-grafici" href="#" style="text-decoration:none;">📈 Grafici</a>
+      <button id="btn-test">Test</button>
+      <a class="btn link" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Vedi sessioni passate</a>
+      <button class="secondary" id="btn-training">Training</button>
       <button class="secondary" id="btn-export-pdf">⬇ Esporta PDF</button>
       <button class="danger" id="btn-elimina-atleta">Elimina atleta</button>
     </div>
@@ -111,15 +114,6 @@
 
       <button type="submit">Salva profilo</button>
     </form>
-
-    <div class="row between">
-      <h2 style="margin:0;">Sessioni</h2>
-      <div class="row">
-        <a class="btn secondary" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Tutte le sessioni</a>
-        <button id="btn-nuova-sessione">+ Nuova sessione</button>
-      </div>
-    </div>
-    <div id="lista-sessioni" class="list"></div>
   </main>
 
   <script src="./vendor/firebase/firebase-app-compat.js"></script>
