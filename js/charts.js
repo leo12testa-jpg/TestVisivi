@@ -142,6 +142,46 @@ function buildBarChartConfig(labels, valori, unitLabel) {
   };
 }
 
+/** Radar chart 0-100: un asse per categoria, uno o due dataset (Periodo A / B). */
+function radarChartConfig(labels, datasetsRaw) {
+  const palette = chartPalette();
+  const chrome = chartChrome();
+  const datasets = datasetsRaw.map((d, i) => {
+    const colore = palette[i % palette.length];
+    return {
+      label: d.label,
+      data: d.data,
+      borderColor: colore,
+      backgroundColor: `${colore}33`,
+      pointBackgroundColor: colore,
+      borderWidth: 2,
+      pointRadius: 4,
+    };
+  });
+  return {
+    type: 'radar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: datasets.length > 1, labels: { color: chrome.text, usePointStyle: true } },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        r: {
+          min: 0,
+          max: 100,
+          angleLines: { color: chrome.grid },
+          grid: { color: chrome.grid },
+          pointLabels: { color: chrome.text, font: { size: 11 } },
+          ticks: { color: chrome.muted, backdropColor: 'transparent', stepSize: 25 },
+        },
+      },
+    },
+  };
+}
+
 const _chartInstances = new WeakMap();
 
 function renderChart(canvas, config) {

@@ -60,7 +60,7 @@ async function init() {
 
   qs('#back-link').href = `./atleta.html?id=${atletaId}`;
   qs('#titolo-pagina').textContent = `Tutte le sessioni — ${nomeCompleto(atleta)}`;
-  document.title = `Tutte le sessioni ${nomeCompleto(atleta)} - JetProgram Tracker`;
+  document.title = `Tutte le sessioni ${nomeCompleto(atleta)} - Test Visivi`;
 
   _sessioni = await dbGetSessioniByAtleta(atletaId);
   renderLista();

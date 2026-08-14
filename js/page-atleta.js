@@ -159,23 +159,38 @@ function mostraToast(msg) {
   setTimeout(() => t.remove(), 2000);
 }
 
+function mostraErroreInit(err) {
+  console.error('Errore inizializzazione profilo atleta:', err);
+  const main = document.querySelector('main');
+  const banner = el('div', { class: 'card', style: 'border-color:var(--danger);' }, [
+    el('p', { style: 'color:var(--danger);font-weight:600;margin:0 0 4px;', text: 'Errore nel caricamento del profilo' }),
+    el('p', { class: 'meta', style: 'margin:0;', text: err && err.message ? err.message : String(err) }),
+  ]);
+  main.prepend(banner);
+}
+
 async function init() {
   const user = await richiedeLogin();
   if (!user) return;
-  _atleta = await dbGetAtleta(atletaId);
-  if (!_atleta) {
-    window.location.href = './index.html';
-    return;
+  try {
+    _atleta = await dbGetAtleta(atletaId);
+    if (!_atleta) {
+      window.location.href = './index.html';
+      return;
+    }
+    qs('#titolo-atleta').textContent = nomeCompleto(_atleta);
+    document.title = `${nomeCompleto(_atleta)} - Test Visivi`;
+    qs('#link-grafici').href = `./grafici.html?id=${atletaId}`;
+    qs('#link-radar').href = `./radar.html?id=${atletaId}`;
+    qs('#link-tutte-sessioni').href = `./sessioni.html?atletaId=${atletaId}`;
+    costruisciSelectCorrezione();
+    await popolaSelectSquadra(_atleta.squadraId);
+    popolaAnagrafica(_atleta);
+    popolaFormClinici(_atleta.datiClinici);
+    await caricaSessioni();
+  } catch (err) {
+    mostraErroreInit(err);
   }
-  qs('#titolo-atleta').textContent = nomeCompleto(_atleta);
-  document.title = `${nomeCompleto(_atleta)} - JetProgram Tracker`;
-  qs('#link-grafici').href = `./grafici.html?id=${atletaId}`;
-  qs('#link-tutte-sessioni').href = `./sessioni.html?atletaId=${atletaId}`;
-  costruisciSelectCorrezione();
-  await popolaSelectSquadra(_atleta.squadraId);
-  popolaAnagrafica(_atleta);
-  popolaFormClinici(_atleta.datiClinici);
-  await caricaSessioni();
 }
 
 qs('#form-clinici').addEventListener('submit', async (e) => {

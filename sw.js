@@ -1,6 +1,6 @@
 /* Service worker: cache-first (con aggiornamento in background) per l'app shell. */
 
-const CACHE_NAME = 'jetprogram-cache-v8';
+const CACHE_NAME = 'jetprogram-cache-v11';
 
 const PRECACHE_URLS = [
   './',
@@ -10,6 +10,7 @@ const PRECACHE_URLS = [
   './sessioni.html',
   './squadre.html',
   './grafici.html',
+  './radar.html',
   './confronto.html',
   './login.html',
   './manifest.webmanifest',
@@ -19,6 +20,7 @@ const PRECACHE_URLS = [
   './js/firebase-config.js',
   './js/db.js',
   './js/esercizi-config.js',
+  './js/radar-config.js',
   './js/charts.js',
   './js/pdf-export.js',
   './js/page-home.js',
@@ -27,6 +29,7 @@ const PRECACHE_URLS = [
   './js/page-elenco-sessioni.js',
   './js/page-squadre.js',
   './js/page-grafici.js',
+  './js/page-radar.js',
   './js/page-confronto.js',
   './js/page-login.js',
   './vendor/chart.umd.js',

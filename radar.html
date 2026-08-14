@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Confronto atleti - Test Visivi</title>
+  <title>Radar - Test Visivi</title>
   <meta name="theme-color" content="#153e69" />
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="icon" href="./icons/icon-192.png" />
@@ -12,31 +12,25 @@
 </head>
 <body>
   <header class="app-header">
-    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
-    <h1>Confronto atleti</h1>
+    <a class="back" id="back-link" href="./index.html" aria-label="Indietro">‹</a>
+    <h1 id="titolo-pagina">Radar</h1>
   </header>
   <main>
     <div class="card">
-      <div class="field">
-        <label for="sel-squadra">Squadra</label>
-        <select id="sel-squadra"></select>
+      <p class="section-label">Periodo A</p>
+      <div class="field-grid">
+        <div class="field"><label for="periodo-a-da">Da</label><input type="date" id="periodo-a-da" /></div>
+        <div class="field"><label for="periodo-a-a">A</label><input type="date" id="periodo-a-a" /></div>
       </div>
-      <div class="field">
-        <label for="sel-esercizio">Esercizio</label>
-        <select id="sel-esercizio"></select>
-      </div>
-      <div class="field">
-        <label for="sel-campo">Campo</label>
-        <select id="sel-campo"></select>
-      </div>
-      <div class="row wrap" id="modalita-row">
-        <button id="btn-ultimo-valore">Ultimo valore</button>
-        <button class="secondary" id="btn-andamento">Andamento</button>
-        <button class="secondary" id="btn-media-squadra" hidden>Media squadra</button>
+
+      <p class="section-label" style="margin-top:16px;">Periodo B (opzionale, per confronto)</p>
+      <div class="field-grid">
+        <div class="field"><label for="periodo-b-da">Da</label><input type="date" id="periodo-b-da" /></div>
+        <div class="field"><label for="periodo-b-a">A</label><input type="date" id="periodo-b-a" /></div>
       </div>
     </div>
 
-    <div id="risultato"></div>
+    <div id="contenuto-radar"></div>
   </main>
 
   <script src="./vendor/firebase/firebase-app-compat.js"></script>
@@ -44,11 +38,12 @@
   <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
   <script src="./js/firebase-config.js"></script>
   <script src="./js/esercizi-config.js"></script>
+  <script src="./js/radar-config.js"></script>
   <script src="./js/utils.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/db.js"></script>
   <script src="./vendor/chart.umd.js"></script>
   <script src="./js/charts.js"></script>
-  <script src="./js/page-confronto.js"></script>
+  <script src="./js/page-radar.js"></script>
 </body>
 </html>

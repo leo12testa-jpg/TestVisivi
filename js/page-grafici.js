@@ -62,7 +62,7 @@ async function init() {
   }
   qs('#back-link').href = `./atleta.html?id=${atletaId}`;
   qs('#titolo-grafici').textContent = `Grafici — ${nomeCompleto(atleta)}`;
-  document.title = `Grafici ${nomeCompleto(atleta)} - JetProgram Tracker`;
+  document.title = `Grafici ${nomeCompleto(atleta)} - Test Visivi`;
 
   const sessioni = await dbGetSessioniByAtleta(atletaId);
   const contenuto = qs('#contenuto');

@@ -75,6 +75,24 @@ function renderUltimoValore(risultati, unitLabel) {
   renderChart(canvas, buildBarChartConfig(labels, valori, unitLabel));
 }
 
+function renderMediaSquadra(risultati, unitLabel) {
+  const container = qs('#risultato');
+  container.innerHTML = '';
+  if (risultati.length === 0) {
+    container.appendChild(el('div', { class: 'empty-state', text: 'Nessun atleta della squadra ha ancora questo dato registrato.' }));
+    return;
+  }
+  const medieAtleta = risultati.map((r) => r.punti.reduce((somma, p) => somma + p.valore, 0) / r.punti.length);
+  const media = medieAtleta.reduce((somma, v) => somma + v, 0) / medieAtleta.length;
+
+  const block = el('div', { class: 'chart-block' }, [
+    el('h3', { text: 'Media squadra' }),
+    el('p', { style: 'font-size:2rem;font-weight:700;margin:8px 0 4px;', text: `${media.toFixed(2)}${unitLabel ? ' ' + unitLabel : ''}` }),
+    el('p', { class: 'meta', text: `Calcolata su ${risultati.length} atlet${risultati.length === 1 ? 'a' : 'i'} con almeno un dato.` }),
+  ]);
+  container.appendChild(block);
+}
+
 function renderAndamento(risultati, unitLabel) {
   const container = qs('#risultato');
   container.innerHTML = '';
@@ -110,6 +128,27 @@ function renderAndamento(risultati, unitLabel) {
   }
 }
 
+function aggiornaClassiModalita() {
+  qs('#btn-ultimo-valore').classList.toggle('secondary', _modalita !== 'ultimo');
+  qs('#btn-andamento').classList.toggle('secondary', _modalita !== 'andamento');
+  qs('#btn-media-squadra').classList.toggle('secondary', _modalita !== 'media');
+}
+
+function selezionaModalita(nuovaModalita) {
+  _modalita = nuovaModalita;
+  aggiornaClassiModalita();
+  aggiorna();
+}
+
+function aggiornaVisibilitaMediaSquadra() {
+  const squadraSelezionata = qs('#sel-squadra').value;
+  qs('#btn-media-squadra').hidden = !squadraSelezionata;
+  if (!squadraSelezionata && _modalita === 'media') {
+    _modalita = 'ultimo';
+  }
+  aggiornaClassiModalita();
+}
+
 async function aggiorna() {
   const { esercizio, scKey, campo } = campoSelezionato();
   if (!campo) return;
@@ -117,36 +156,33 @@ async function aggiorna() {
   const risultati = await raccogliDati(esercizio, scKey, campo);
   if (_modalita === 'ultimo') {
     renderUltimoValore(risultati, unitLabel);
+  } else if (_modalita === 'media') {
+    renderMediaSquadra(risultati, unitLabel);
   } else {
     renderAndamento(risultati, unitLabel);
   }
 }
 
-qs('#sel-squadra').addEventListener('change', aggiorna);
+qs('#sel-squadra').addEventListener('change', () => {
+  aggiornaVisibilitaMediaSquadra();
+  aggiorna();
+});
 qs('#sel-esercizio').addEventListener('change', () => {
   popolaSelectCampi();
   aggiorna();
 });
 qs('#sel-campo').addEventListener('change', aggiorna);
 
-qs('#btn-ultimo-valore').addEventListener('click', () => {
-  _modalita = 'ultimo';
-  qs('#btn-ultimo-valore').classList.remove('secondary');
-  qs('#btn-andamento').classList.add('secondary');
-  aggiorna();
-});
-qs('#btn-andamento').addEventListener('click', () => {
-  _modalita = 'andamento';
-  qs('#btn-andamento').classList.remove('secondary');
-  qs('#btn-ultimo-valore').classList.add('secondary');
-  aggiorna();
-});
+qs('#btn-ultimo-valore').addEventListener('click', () => selezionaModalita('ultimo'));
+qs('#btn-andamento').addEventListener('click', () => selezionaModalita('andamento'));
+qs('#btn-media-squadra').addEventListener('click', () => selezionaModalita('media'));
 
 async function init() {
   const user = await richiedeLogin();
   if (!user) return;
 
   await popolaSelectSquadre();
+  aggiornaVisibilitaMediaSquadra();
   popolaSelectEsercizi();
   popolaSelectCampi();
   await aggiorna();
