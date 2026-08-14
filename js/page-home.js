@@ -6,12 +6,19 @@ async function caricaLista() {
   const user = await richiedeLogin();
   if (!user) return;
 
-  _atleti = await dbGetAtleti();
-  const conteggi = await Promise.all(_atleti.map((a) => dbGetSessioniByAtleta(a.id)));
-  _atleti.forEach((a, i) => {
-    a._sessioni = conteggi[i];
-  });
-  renderLista(qs('#ricerca').value.trim().toLowerCase());
+  try {
+    _atleti = await dbGetAtleti();
+    const conteggi = await Promise.all(_atleti.map((a) => dbGetSessioniByAtleta(a.id)));
+    _atleti.forEach((a, i) => {
+      a._sessioni = conteggi[i];
+    });
+    renderLista(qs('#ricerca').value.trim().toLowerCase());
+  } catch (err) {
+    console.error('Errore caricamento lista atleti:', err);
+    const container = qs('#lista-atleti');
+    container.innerHTML = '';
+    container.appendChild(el('div', { class: 'empty-state', text: `Impossibile caricare gli atleti: ${err.message}` }));
+  }
 }
 
 function renderLista(filtro) {
