@@ -15,15 +15,34 @@
     <h1>JetProgram Tracker</h1>
   </header>
   <main>
-    <div class="row wrap fab-row">
-      <a class="btn secondary" href="./confronto.html" style="text-decoration:none;">Confronto atleti</a>
+    <div class="search-bar">
+      <input type="text" id="ricerca" placeholder="Cerca atleta per nome o cognome..." />
     </div>
 
-    <h2>Squadre</h2>
-    <div id="lista-squadre" class="list"></div>
+    <div class="fab-row row wrap">
+      <button id="btn-nuovo-atleta">+ Nuovo atleta</button>
+      <a class="btn secondary" href="./confronto.html" style="text-decoration:none;">Confronto atleti</a>
+      <a class="btn secondary" href="./squadre.html" style="text-decoration:none;">Gestisci squadre</a>
+    </div>
 
-    <h2>Altro</h2>
-    <div id="lista-altro" class="list"></div>
+    <div class="card" id="form-nuovo-atleta" hidden>
+      <div class="field-grid">
+        <div class="field">
+          <label for="nuovo-nome">Nome</label>
+          <input type="text" id="nuovo-nome" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="nuovo-cognome">Cognome</label>
+          <input type="text" id="nuovo-cognome" autocomplete="off" />
+        </div>
+      </div>
+      <div class="row">
+        <button id="btn-crea-atleta">Crea atleta</button>
+        <button class="secondary" id="btn-annulla-atleta">Annulla</button>
+      </div>
+    </div>
+
+    <div id="lista-atleti" class="list"></div>
   </main>
 
   <script src="./vendor/firebase/firebase-app-compat.js"></script>

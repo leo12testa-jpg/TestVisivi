@@ -1,6 +1,6 @@
 /* Service worker: cache-first (con aggiornamento in background) per l'app shell. */
 
-const CACHE_NAME = 'jetprogram-cache-v5';
+const CACHE_NAME = 'jetprogram-cache-v6';
 
 const PRECACHE_URLS = [
   './',
@@ -9,7 +9,6 @@ const PRECACHE_URLS = [
   './sessione.html',
   './sessioni.html',
   './squadre.html',
-  './squadra.html',
   './grafici.html',
   './confronto.html',
   './login.html',
@@ -27,7 +26,6 @@ const PRECACHE_URLS = [
   './js/page-sessione.js',
   './js/page-elenco-sessioni.js',
   './js/page-squadre.js',
-  './js/page-squadra.js',
   './js/page-grafici.js',
   './js/page-confronto.js',
   './js/page-login.js',

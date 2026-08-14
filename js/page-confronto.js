@@ -1,7 +1,14 @@
 registerServiceWorker();
 
-const squadraId = getQueryParam('squadraId');
 let _modalita = 'ultimo'; // 'ultimo' | 'andamento'
+
+async function popolaSelectSquadre() {
+  const squadre = await dbGetSquadre();
+  const sel = qs('#sel-squadra');
+  sel.innerHTML = '';
+  sel.appendChild(el('option', { value: '', text: 'Tutte' }));
+  squadre.forEach((s) => sel.appendChild(el('option', { value: s.id, text: s.nome })));
+}
 
 function popolaSelectEsercizi() {
   const sel = qs('#sel-esercizio');
@@ -37,7 +44,8 @@ function campoSelezionato() {
 
 async function raccogliDati(esercizio, scKey, campo) {
   let atleti = await dbGetAtleti();
-  if (squadraId) atleti = atleti.filter((a) => a.squadraId === squadraId);
+  const squadraSelezionata = qs('#sel-squadra').value;
+  if (squadraSelezionata) atleti = atleti.filter((a) => a.squadraId === squadraSelezionata);
   const risultati = [];
   for (const atleta of atleti) {
     const sessioni = await dbGetSessioniByAtleta(atleta.id);
@@ -114,6 +122,7 @@ async function aggiorna() {
   }
 }
 
+qs('#sel-squadra').addEventListener('change', aggiorna);
 qs('#sel-esercizio').addEventListener('change', () => {
   popolaSelectCampi();
   aggiorna();
@@ -137,15 +146,7 @@ async function init() {
   const user = await richiedeLogin();
   if (!user) return;
 
-  if (squadraId) {
-    const squadra = await dbGetSquadra(squadraId);
-    if (squadra) {
-      qs('#titolo-pagina').textContent = `Confronto squadra — ${squadra.nome}`;
-      document.title = `Confronto ${squadra.nome} - JetProgram Tracker`;
-      qs('#back-link').href = `./squadra.html?squadraId=${squadraId}`;
-    }
-  }
-
+  await popolaSelectSquadre();
   popolaSelectEsercizi();
   popolaSelectCampi();
   await aggiorna();
