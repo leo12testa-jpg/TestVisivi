@@ -553,3 +553,16 @@ td:first-child {
   color: var(--text-muted);
   margin: 0 0 6px;
 }
+
+/* Solo la galleria "Campo visivo periferico avanzato" in grafici.html: su desktop/tablet
+   esce dal contenitore da 720px di <main> per mostrare il polar plot più grande e leggibile.
+   Sotto i 768px resta identica (nessuna regola qui si applica). */
+@media (min-width: 768px) {
+  .galleria-campo-avanzato {
+    width: 100vw;
+    max-width: 1000px;
+    position: relative;
+    left: 50%;
+    margin-left: -50vw;
+  }
+}

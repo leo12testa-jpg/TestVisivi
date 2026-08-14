@@ -37,7 +37,7 @@ function buildTabellaAltreRisposte(esercizio, sessioni) {
 
 /** Galleria per l'esercizio "custom" campoVisivoAvanzato: immagine polar plot + tabella settori per sessione. */
 function buildGalleriaCampoVisivoAvanzato(sessioni) {
-  const wrapper = el('div', {});
+  const wrapper = el('div', { class: 'galleria-campo-avanzato' });
   sessioni.forEach((s) => {
     const dati = s.esercizi && s.esercizi.campoVisivoAvanzato;
     if (!dati) return;
