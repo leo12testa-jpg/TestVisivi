@@ -1,6 +1,6 @@
 /* Service worker: cache-first (con aggiornamento in background) per l'app shell. */
 
-const CACHE_NAME = 'jetprogram-cache-v4';
+const CACHE_NAME = 'jetprogram-cache-v5';
 
 const PRECACHE_URLS = [
   './',
