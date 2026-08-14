@@ -35,6 +35,50 @@ function buildTabellaAltreRisposte(esercizio, sessioni) {
   return el('div', { class: 'table-scroll' }, [table]);
 }
 
+/** Galleria per l'esercizio "custom" campoVisivoAvanzato: immagine polar plot + tabella settori per sessione. */
+function buildGalleriaCampoVisivoAvanzato(sessioni) {
+  const wrapper = el('div', {});
+  sessioni.forEach((s) => {
+    const dati = s.esercizi && s.esercizi.campoVisivoAvanzato;
+    if (!dati) return;
+
+    const modalitaTxt = dati.modalita ? `${dati.modalita}°` : '';
+    const durataTxt = dati.durataSecondi !== undefined && dati.durataSecondi !== null && dati.durataSecondi !== '' ? `${dati.durataSecondi}s` : '';
+    const intestazione = [formatDataIt(s.data), modalitaTxt, durataTxt].filter(Boolean).join(' · ');
+
+    const blocco = el('div', { class: 'chart-block' }, [el('h3', { text: intestazione })]);
+
+    if (dati.immaginePolarPlot) {
+      blocco.appendChild(
+        el('img', { src: dati.immaginePolarPlot, alt: 'Polar plot', style: 'max-width:100%;display:block;border-radius:8px;margin-bottom:10px;' })
+      );
+    }
+
+    if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length > 0) {
+      const table = el('table', {}, [
+        el('thead', {}, [
+          el('tr', {}, [el('th', { text: 'Settore' }), el('th', { text: 'Fascia angoli' }), el('th', { text: '% corretta' })]),
+        ]),
+        el(
+          'tbody',
+          {},
+          dati.percentualiSettori.map((r) =>
+            el('tr', {}, [
+              el('td', { text: String(r.settore) }),
+              el('td', { text: r.fasciaAngoli }),
+              el('td', { text: `${r.percentualeCorretta}%` }),
+            ])
+          )
+        ),
+      ]);
+      blocco.appendChild(el('div', { class: 'table-scroll' }, [table]));
+    }
+
+    wrapper.appendChild(blocco);
+  });
+  return wrapper;
+}
+
 function buildChartBlock(group, sessioni) {
   const canvas = el('canvas');
   const block = el('div', { class: 'chart-block' }, [
@@ -75,7 +119,9 @@ async function init() {
 
     const sezione = el('section', {}, [el('h2', { text: esercizio.label })]);
 
-    if (sessioniCompilate.length === 1) {
+    if (esercizio.custom) {
+      sezione.appendChild(buildGalleriaCampoVisivoAvanzato(sessioniCompilate));
+    } else if (sessioniCompilate.length === 1) {
       sezione.appendChild(buildTabellaSingola(esercizio, sessioniCompilate[0]));
     } else {
       getChartGroups(esercizio).forEach((group) => {

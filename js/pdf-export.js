@@ -3,6 +3,22 @@
  * I grafici vengono ridisegnati offscreen con Chart.js e inseriti come PNG.
  */
 
+function formatoImmagineDaDataUrl(dataUrl) {
+  const match = /^data:image\/(png|jpeg|jpg);base64,/i.exec(dataUrl || '');
+  if (!match) return 'PNG';
+  const tipo = match[1].toUpperCase();
+  return tipo === 'JPG' ? 'JPEG' : tipo;
+}
+
+function dimensioniImmagine(dataUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({ larghezza: img.naturalWidth, altezza: img.naturalHeight });
+    img.onerror = () => reject(new Error('immagine non leggibile'));
+    img.src = dataUrl;
+  });
+}
+
 function renderChartOffscreen(config, widthPx, heightPx) {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
@@ -176,6 +192,44 @@ async function esportaReportPdf(atleta, sessioni) {
     doc.setFont(undefined, 'normal');
   }
 
+  async function disegnaCampoVisivoAvanzato(sessioniCompilate) {
+    for (const s of sessioniCompilate) {
+      const dati = s.esercizi && s.esercizi.campoVisivoAvanzato;
+      if (!dati) continue;
+
+      const modalitaTxt = dati.modalita ? `${dati.modalita}°` : '-';
+      const durataTxt = dati.durataSecondi !== undefined && dati.durataSecondi !== null && dati.durataSecondi !== '' ? `${dati.durataSecondi}s` : '-';
+
+      nuovaPaginaSeNecessario(14);
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'bold');
+      doc.text(`${formatDataIt(s.data)} — Modalità ${modalitaTxt}, Durata ${durataTxt}`, marginX, y);
+      y += 6;
+      doc.setFont(undefined, 'normal');
+
+      if (dati.immaginePolarPlot) {
+        try {
+          const { larghezza, altezza } = await dimensioniImmagine(dati.immaginePolarPlot);
+          const larghezzaMm = Math.min(usableWidth, 100);
+          const altezzaMm = larghezzaMm * (altezza / larghezza);
+          nuovaPaginaSeNecessario(altezzaMm + 10);
+          doc.addImage(dati.immaginePolarPlot, formatoImmagineDaDataUrl(dati.immaginePolarPlot), marginX, y, larghezzaMm, altezzaMm);
+          y += altezzaMm + 6;
+        } catch (err) {
+          doc.text('(immagine non leggibile)', marginX, y);
+          y += 8;
+        }
+      }
+
+      if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length > 0) {
+        const headers = ['Settore', 'Fascia angoli', '% corretta'];
+        const rows = dati.percentualiSettori.map((r) => [String(r.settore), r.fasciaAngoli, `${r.percentualeCorretta}%`]);
+        disegnaTabella(headers, rows);
+      }
+      y += 4;
+    }
+  }
+
   doc.setFontSize(16);
   doc.setFont(undefined, 'bold');
   doc.text(`Report JetProgram — ${nomeCompleto(atleta)}`, marginX, y);
@@ -226,6 +280,11 @@ async function esportaReportPdf(atleta, sessioni) {
     doc.text(esercizio.label, marginX, y);
     y += 6;
     doc.setFont(undefined, 'normal');
+
+    if (esercizio.custom) {
+      await disegnaCampoVisivoAvanzato(sessioniCompilate);
+      continue;
+    }
 
     const cols = colonneEsercizio(esercizio);
     const headers = ['Data', 'Titolo', ...cols.map((c) => c.header)];

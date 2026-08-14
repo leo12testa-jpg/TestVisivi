@@ -77,7 +77,8 @@ function buildEsercizioSection(esercizio) {
 
 function renderEserciziForm() {
   const container = qs('#esercizi-container');
-  ESERCIZI_CONFIG.forEach((esercizio) => container.appendChild(buildEsercizioSection(esercizio)));
+  // Gli esercizi "custom" (es. campoVisivoAvanzato) non hanno un form: sono scritti solo da script esterni.
+  ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => container.appendChild(buildEsercizioSection(esercizio)));
 }
 
 function popolaEsercizio(esercizio, valore) {
@@ -143,7 +144,7 @@ function leggiEsercizio(esercizio) {
 
 function leggiTuttiEsercizi() {
   const esercizi = {};
-  ESERCIZI_CONFIG.forEach((esercizio) => {
+  ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => {
     const valore = leggiEsercizio(esercizio);
     if (valore) esercizi[esercizio.key] = valore;
   });
@@ -305,7 +306,9 @@ async function init() {
       qs('#titolo-sessione').textContent = `Modifica sessione - ${nomeCompleto(atleta)}`;
       qs('#f-data').value = sessione.data;
       qs('#f-titolo').value = sessione.titolo || '';
-      ESERCIZI_CONFIG.forEach((esercizio) => popolaEsercizio(esercizio, sessione.esercizi && sessione.esercizi[esercizio.key]));
+      ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) =>
+        popolaEsercizio(esercizio, sessione.esercizi && sessione.esercizi[esercizio.key])
+      );
       _fotoEsistenti = await dbGetAllegatiFotoBySessione(sessioneId);
       _videoEsistenti = await dbGetAllegatiVideoBySessione(sessioneId);
       qs('#btn-elimina-sessione').hidden = false;
@@ -345,6 +348,11 @@ qs('#btn-salva').addEventListener('click', async () => {
   let idSessioneFinale = sessioneId;
   if (sessioneId) {
     const sessione = await dbGetSessione(sessioneId);
+    // Gli esercizi "custom" (es. campoVisivoAvanzato) non passano da questo form: se la sessione
+    // li aveva già (scritti da uno script esterno), li preservo invece di perderli al salvataggio.
+    ESERCIZI_CONFIG.filter((e) => e.custom).forEach((e) => {
+      if (sessione.esercizi && sessione.esercizi[e.key]) esercizi[e.key] = sessione.esercizi[e.key];
+    });
     sessione.data = data;
     sessione.titolo = titolo;
     sessione.esercizi = esercizi;

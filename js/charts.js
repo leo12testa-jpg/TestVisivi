@@ -34,6 +34,7 @@ function chartChrome() {
  * gruppi per ciascuna sottoCondizione.
  */
 function getChartGroups(esercizio) {
+  if (esercizio.custom) return [];
   const condizioni = esercizio.sottoCondizioni || [null];
   const numerici = esercizio.campi.filter((c) => c.tipo === 'number');
   const groups = [];

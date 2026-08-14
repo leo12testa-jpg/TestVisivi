@@ -143,6 +143,21 @@ const ESERCIZI_CONFIG = [
       { key: 'naturalmenteSincrono', label: 'È naturalmente sincrono', tipo: 'boolean' },
     ],
   },
+  {
+    key: 'campoVisivoAvanzato',
+    label: 'Campo visivo periferico avanzato',
+    // Rendering completamente diverso da quello standard (immagine + tabella settori,
+    // scritto solo da uno script Python esterno): niente grafico a linee, niente form
+    // di inserimento manuale. Vedi charts.js (getChartGroups), page-grafici.js,
+    // pdf-export.js e page-sessione.js (che salta/preserva questo esercizio).
+    custom: true,
+    campi: [
+      { key: 'modalita', label: 'Modalità', tipo: 'text' },
+      { key: 'durataSecondi', label: 'Durata', unit: 's', tipo: 'number' },
+      { key: 'immaginePolarPlot', label: 'Immagine polar plot', tipo: 'text' },
+      { key: 'percentualiSettori', label: 'Percentuali per settore', tipo: 'text' },
+    ],
+  },
 ];
 
 function getEsercizioConfig(key) {
