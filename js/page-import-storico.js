@@ -264,6 +264,63 @@ async function importaAtleta(datiJson) {
   return { nuovo, sessioniAggiunte, sessioniSaltate };
 }
 
+async function assegnaStoriciASquadra(nomeSquadra) {
+  log(`Cerco la squadra "${nomeSquadra}"...`);
+  const squadre = await dbGetSquadre();
+  const squadra = squadre.find((s) => s.nome.trim().toLowerCase() === nomeSquadra.trim().toLowerCase());
+  if (!squadra) {
+    log(`ERRORE: squadra "${nomeSquadra}" non trovata. Creala prima in "Gestisci squadre", poi riprova.`);
+    return;
+  }
+  log(`Squadra trovata: "${squadra.nome}".`);
+
+  const risposta = await fetch('./atleti_importati.json');
+  if (!risposta.ok) throw new Error(`File non trovato o non leggibile (HTTP ${risposta.status})`);
+  const dati = await risposta.json();
+  const chiavi = Object.keys(dati);
+
+  let assegnati = 0;
+  let saltati = 0;
+  let nonTrovati = 0;
+
+  for (const chiave of chiavi) {
+    const nomeCompletoJson = dati[chiave].nomeCompleto;
+    const { cognome, nome } = dividiNomeCompleto(nomeCompletoJson);
+    const atleta = await trovaAtletaEsistente(cognome, nome);
+    if (!atleta) {
+      log(`⚠ Non trovato: ${nomeCompletoJson} (importa prima i dati storici)`);
+      nonTrovati++;
+      continue;
+    }
+    if (atleta.squadraId) {
+      saltati++;
+      continue;
+    }
+    atleta.squadraId = squadra.id;
+    await dbUpdateAtleta(atleta);
+    log(`Assegnato: ${nomeCompletoJson}`);
+    assegnati++;
+  }
+
+  log('---');
+  log(
+    `Completato: ${assegnati} atleti assegnati, ${saltati} già avevano una squadra e sono stati saltati${nonTrovati ? `, ${nonTrovati} non trovati` : ''}.`
+  );
+}
+
+qs('#btn-assegna-bologna').addEventListener('click', async () => {
+  const btn = qs('#btn-assegna-bologna');
+  btn.disabled = true;
+  qs('#log').innerHTML = '';
+  try {
+    await assegnaStoriciASquadra('Bologna fc');
+  } catch (err) {
+    log('ERRORE GENERALE: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 async function init() {
   const user = await richiedeLogin();
   if (!user) return;
