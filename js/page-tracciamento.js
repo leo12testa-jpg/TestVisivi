@@ -24,6 +24,9 @@ const Z_MINIMO_BERSAGLIO_VISIBILE = 0.9; // il verde non scende sotto questa sog
 const Z_CENTRO = (Z_MIN + Z_MAX) / 2;
 const Z_AMPIEZZA = (Z_MAX - Z_MIN) / 2;
 
+/* --- Repulsione morbida tra palline (correzione di posizione additiva, non sostituisce il moto) --- */
+const FATTORE_REPULSIONE = 10; // frazione di sovrapposizione corretta per secondo (non un teletrasporto)
+
 const COLORE_ROSSO = '#e34948';
 const COLORE_VERDE = '#0ca30c';
 const COLORE_GIALLO = '#eda100';
@@ -153,6 +156,38 @@ function aggiornaFisica(dt, now) {
     p.z = Z_CENTRO + Z_AMPIEZZA * Math.sin(p.zOmega * elapsedSec + p.zFase);
     if (p.verde && faseGioco === 'target') p.z = Math.max(p.z, Z_MINIMO_BERSAGLIO_VISIBILE);
   });
+
+  applicaRepulsione(dt);
+}
+
+/**
+ * Correzione morbida di posizione, applicata DOPO il moto a tratti rettilinei di ogni
+ * pallina: se due palline si sovrappongono (distanza tra i centri < somma dei raggi
+ * attuali, già scalati per z), le spinge via lungo la normale che le separa, di una
+ * quantità proporzionale alla sovrapposizione e a dt (non un teletrasporto istantaneo —
+ * ogni frame corregge solo una frazione della sovrapposizione, quindi l'effetto è
+ * progressivo su più frame). Non tocca vx/vy: il moto/i rimbalzi restano invariati.
+ */
+function applicaRepulsione(dt) {
+  for (let i = 0; i < palline.length; i++) {
+    for (let j = i + 1; j < palline.length; j++) {
+      const a = palline[i];
+      const b = palline[j];
+      const dist = distanza(a.x, a.y, b.x, b.y) || 0.0001;
+      const minDist = RAGGIO_PX * a.z + RAGGIO_PX * b.z;
+      if (dist >= minDist) continue;
+
+      const sovrapposizione = minDist - dist;
+      const nx = (b.x - a.x) / dist;
+      const ny = (b.y - a.y) / dist;
+      const spinta = sovrapposizione * FATTORE_REPULSIONE * dt;
+
+      a.x -= (nx * spinta) / 2;
+      a.y -= (ny * spinta) / 2;
+      b.x += (nx * spinta) / 2;
+      b.y += (ny * spinta) / 2;
+    }
+  }
 }
 
 function hexToRgb(hex) {
@@ -170,11 +205,31 @@ function mescolaColore(hex, hexObiettivo, quantita) {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-/** Gradiente radiale (riflesso in alto a sx + bordo scurito) per dare un aspetto sferico 3D alla pallina. */
+/**
+ * Sfera 3D: ombra proiettata sotto, gradiente radiale principale (riflesso in alto a
+ * sx + bordo scurito) con un bagliore attorno che si intensifica quando la pallina è
+ * più "vicina" (z alto, ricavato da raggio/RAGGIO_PX), e un piccolo riflesso speculare
+ * netto sopra tutto per un aspetto più lucido. Stessa palette di colori invariata.
+ */
 function disegnaPallina(x, y, raggio, colore) {
   const evidenzia = mescolaColore(colore, '#ffffff', 0.85);
   const bordo = mescolaColore(colore, '#000000', 0.35);
   const offset = raggio * 0.3;
+
+  // Ombra proiettata: ellisse scura semi-trasparente, sotto e opposta al riflesso principale.
+  ctx.beginPath();
+  ctx.ellipse(x + offset * 0.5, y + raggio * 0.35, raggio * 0.85, raggio * 0.32, 0, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+  ctx.fill();
+
+  // Sfera principale, con bagliore attorno al bordo proporzionale a z (più vicina = più intenso).
+  const zStimata = raggio / RAGGIO_PX;
+  const intensitaGlow = Math.max(0, Math.min(1, (zStimata - Z_MIN) / (Z_MAX - Z_MIN)));
+  const { r, g, b } = hexToRgb(colore);
+
+  ctx.save();
+  ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.6)`;
+  ctx.shadowBlur = 4 + 10 * intensitaGlow;
 
   const gradiente = ctx.createRadialGradient(x - offset, y - offset, raggio * 0.05, x, y, raggio);
   gradiente.addColorStop(0, evidenzia);
@@ -184,6 +239,13 @@ function disegnaPallina(x, y, raggio, colore) {
   ctx.beginPath();
   ctx.arc(x, y, raggio, 0, Math.PI * 2);
   ctx.fillStyle = gradiente;
+  ctx.fill();
+  ctx.restore();
+
+  // Riflesso speculare piccolo e netto, sopra il gradiente, stessa zona del riflesso principale.
+  ctx.beginPath();
+  ctx.ellipse(x - offset, y - raggio * 0.4, raggio * 0.18, raggio * 0.12, -0.5, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
   ctx.fill();
 }
 
