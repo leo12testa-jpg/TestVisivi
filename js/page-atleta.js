@@ -205,6 +205,10 @@ qs('#btn-test').addEventListener('click', () => {
   window.location.href = `./sessione.html?atletaId=${atletaId}`;
 });
 
+qs('#btn-tracciamento').addEventListener('click', () => {
+  window.location.href = `./tracciamento.html?atletaId=${atletaId}`;
+});
+
 qs('#btn-training').addEventListener('click', () => {
   mostraToast('Funzionalità in arrivo');
 });

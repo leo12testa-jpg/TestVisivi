@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tracciamento visivo - Test Visivi</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" id="link-annulla" href="#" aria-label="Indietro">‹</a>
+    <h1 id="titolo-tracciamento">Tracciamento visivo</h1>
+  </header>
+  <main>
+    <p class="meta" id="testo-stato">Caricamento...</p>
+    <div class="tracciamento-canvas-wrap">
+      <canvas id="canvas-gioco"></canvas>
+      <div class="tracciamento-overlay" id="overlay-avvio" hidden>
+        <button id="btn-avvia">Pronto? Tocca per iniziare</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/page-tracciamento.js"></script>
+</body>
+</html>

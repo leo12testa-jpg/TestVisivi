@@ -274,6 +274,11 @@ async function esportaReportPdf(atleta, sessioni) {
     const sessioniCompilate = sessioni.filter((s) => esercizioCompilato(esercizio, s.esercizi && s.esercizi[esercizio.key]));
     if (sessioniCompilate.length === 0) continue;
 
+    // Solo campoVisivoAvanzato ha un render PDF dedicato. Altri esercizi custom
+    // (es. tracciamentoVisivo) non hanno una struttura dati compatibile: niente
+    // sezione per loro nel PDF, per non produrre un blocco vuoto/rotto.
+    if (esercizio.custom && esercizio.key !== 'campoVisivoAvanzato') continue;
+
     nuovaPaginaSeNecessario(14);
     doc.setFontSize(12);
     doc.setFont(undefined, 'bold');

@@ -158,6 +158,20 @@ const ESERCIZI_CONFIG = [
       { key: 'percentualiSettori', label: 'Percentuali per settore', tipo: 'text' },
     ],
   },
+  {
+    key: 'tracciamentoVisivo',
+    label: 'Tracciamento visivo (Multi Object Tracking)',
+    // Dati generati giocando in tracciamento.html/page-tracciamento.js, mai da un form
+    // manuale: niente grafico automatico a linee. Vedi charts.js (getChartGroups),
+    // page-grafici.js e page-sessione.js (che salta/preserva questo esercizio).
+    // Escluso di proposito da pdf-export.js (nessun render dedicato richiesto).
+    custom: true,
+    campi: [
+      { key: 'corretto', label: 'Corretto', tipo: 'boolean' },
+      { key: 'tempoRispostaMs', label: 'Tempo di risposta', unit: 'ms', tipo: 'number' },
+      { key: 'numPalline', label: 'N. palline', tipo: 'number' },
+    ],
+  },
 ];
 
 function getEsercizioConfig(key) {
