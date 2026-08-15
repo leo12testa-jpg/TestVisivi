@@ -14,6 +14,16 @@ const INTERVALLO_CAMBIO_DIREZIONE_MIN_MS = 800;
 const INTERVALLO_CAMBIO_DIREZIONE_MAX_MS = 2000;
 const DURATA_FEEDBACK_MS = 1800;
 
+/* --- Effetto pseudo-3D (zoom): z=1 distanza base, z<1 più lontana/piccola, z>1 più vicina/grande --- */
+const Z_MIN = 0.6;
+const Z_MAX = 1.6;
+const ZOOM_PERIODO_MIN_MS = 4000;
+const ZOOM_PERIODO_MAX_MS = 8000;
+const Z_MINIMO_BERSAGLIO_VISIBILE = 0.9; // il verde non scende sotto questa soglia nei primi 5s
+
+const Z_CENTRO = (Z_MIN + Z_MAX) / 2;
+const Z_AMPIEZZA = (Z_MAX - Z_MIN) / 2;
+
 const COLORE_ROSSO = '#e34948';
 const COLORE_VERDE = '#0ca30c';
 const COLORE_GIALLO = '#eda100';
@@ -57,6 +67,12 @@ function intervalloCambioDirezione() {
   return INTERVALLO_CAMBIO_DIREZIONE_MIN_MS + Math.random() * (INTERVALLO_CAMBIO_DIREZIONE_MAX_MS - INTERVALLO_CAMBIO_DIREZIONE_MIN_MS);
 }
 
+/** Velocità angolare (rad/s) casuale per l'oscillazione di profondità z di una pallina. */
+function omegaZoomCasuale() {
+  const periodoMs = ZOOM_PERIODO_MIN_MS + Math.random() * (ZOOM_PERIODO_MAX_MS - ZOOM_PERIODO_MIN_MS);
+  return (2 * Math.PI) / (periodoMs / 1000);
+}
+
 /** Fisher-Yates: n indici distinti tra 0 e totale-1 (usati per le palline bersaglio). */
 function scegliIndiciCasuali(n, totale) {
   const indici = Array.from({ length: totale }, (_, i) => i);
@@ -86,7 +102,15 @@ function piazzaPalline() {
         y: RAGGIO_PX + Math.random() * (altezza - 2 * RAGGIO_PX),
       };
     }
-    nuovePalline.push({ ...posizione, ...direzioneCasuale(), prossimoCambioDirezione: 0, verde: false });
+    nuovePalline.push({
+      ...posizione,
+      ...direzioneCasuale(),
+      prossimoCambioDirezione: 0,
+      verde: false,
+      z: 1,
+      zOmega: omegaZoomCasuale(),
+      zFase: Math.random() * Math.PI * 2,
+    });
   }
   indiciBersaglio = scegliIndiciCasuali(NUM_TARGET, NUM_PALLINE);
   nuovePalline.forEach((p, i) => {
@@ -103,6 +127,7 @@ function piazzaPalline() {
  * visivamente per un istante, non è richiesto altro dalla specifica.
  */
 function aggiornaFisica(dt, now) {
+  const elapsedSec = (now - tGameStart) / 1000;
   palline.forEach((p) => {
     if (now >= p.prossimoCambioDirezione) {
       Object.assign(p, direzioneCasuale());
@@ -124,28 +149,40 @@ function aggiornaFisica(dt, now) {
       p.y = altezza - RAGGIO_PX;
       p.vy = -Math.abs(p.vy);
     }
+
+    p.z = Z_CENTRO + Z_AMPIEZZA * Math.sin(p.zOmega * elapsedSec + p.zFase);
+    if (p.verde && faseGioco === 'target') p.z = Math.max(p.z, Z_MINIMO_BERSAGLIO_VISIBILE);
   });
 }
 
-function disegnaPallina(x, y, colore) {
+function disegnaPallina(x, y, raggio, colore) {
   ctx.beginPath();
-  ctx.arc(x, y, RAGGIO_PX, 0, Math.PI * 2);
+  ctx.arc(x, y, raggio, 0, Math.PI * 2);
   ctx.fillStyle = colore;
   ctx.fill();
 }
 
+/** Indici delle palline ordinati per z crescente: le più "lontane" disegnate per prime, le più "vicine" sopra. */
+function ordinePerProfondita() {
+  return palline.map((_, i) => i).sort((a, b) => palline[a].z - palline[b].z);
+}
+
 function disegna() {
   ctx.clearRect(0, 0, larghezza, altezza);
-  palline.forEach((p) => disegnaPallina(p.x, p.y, p.verde ? COLORE_VERDE : COLORE_ROSSO));
+  ordinePerProfondita().forEach((i) => {
+    const p = palline[i];
+    disegnaPallina(p.x, p.y, RAGGIO_PX * p.z, p.verde ? COLORE_VERDE : COLORE_ROSSO);
+  });
 }
 
 function disegnaFeedback(idCliccata) {
   ctx.clearRect(0, 0, larghezza, altezza);
-  palline.forEach((p, i) => {
+  ordinePerProfondita().forEach((i) => {
+    const p = palline[i];
     let colore = COLORE_ROSSO;
     if (indiciBersaglio.includes(i)) colore = COLORE_VERDE;
     else if (i === idCliccata) colore = COLORE_GIALLO;
-    disegnaPallina(p.x, p.y, colore);
+    disegnaPallina(p.x, p.y, RAGGIO_PX * p.z, colore);
   });
 }
 
@@ -213,7 +250,7 @@ canvas.addEventListener('click', (evento) => {
   let distanzaMinima = Infinity;
   palline.forEach((p, i) => {
     const d = distanza(p.x, p.y, clickX, clickY);
-    if (d <= RAGGIO_PX && d < distanzaMinima) {
+    if (d <= RAGGIO_PX * p.z && d < distanzaMinima) {
       distanzaMinima = d;
       idCliccata = i;
     }
