@@ -155,10 +155,35 @@ function aggiornaFisica(dt, now) {
   });
 }
 
+function hexToRgb(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/** Interpola il colore hex verso hexObiettivo (0 = colore invariato, 1 = hexObiettivo puro). */
+function mescolaColore(hex, hexObiettivo, quantita) {
+  const c1 = hexToRgb(hex);
+  const c2 = hexToRgb(hexObiettivo);
+  const r = Math.round(c1.r + (c2.r - c1.r) * quantita);
+  const g = Math.round(c1.g + (c2.g - c1.g) * quantita);
+  const b = Math.round(c1.b + (c2.b - c1.b) * quantita);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
+/** Gradiente radiale (riflesso in alto a sx + bordo scurito) per dare un aspetto sferico 3D alla pallina. */
 function disegnaPallina(x, y, raggio, colore) {
+  const evidenzia = mescolaColore(colore, '#ffffff', 0.85);
+  const bordo = mescolaColore(colore, '#000000', 0.35);
+  const offset = raggio * 0.3;
+
+  const gradiente = ctx.createRadialGradient(x - offset, y - offset, raggio * 0.05, x, y, raggio);
+  gradiente.addColorStop(0, evidenzia);
+  gradiente.addColorStop(0.5, colore);
+  gradiente.addColorStop(1, bordo);
+
   ctx.beginPath();
   ctx.arc(x, y, raggio, 0, Math.PI * 2);
-  ctx.fillStyle = colore;
+  ctx.fillStyle = gradiente;
   ctx.fill();
 }
 
