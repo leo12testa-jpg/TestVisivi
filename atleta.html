@@ -20,7 +20,6 @@
       <a class="btn secondary" id="link-grafici" href="#" style="text-decoration:none;">📈 Grafici</a>
       <a class="btn secondary" id="link-radar" href="#" style="text-decoration:none;">🎯 Radar</a>
       <button type="button" id="btn-test">Test</button>
-      <button type="button" class="secondary" id="btn-tracciamento">Tracciamento</button>
       <a class="btn link" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Vedi sessioni passate</a>
       <button type="button" class="secondary" id="btn-training">Training</button>
       <button type="button" class="secondary" id="btn-export-pdf">⬇ Esporta PDF</button>
@@ -36,6 +35,10 @@
           <div class="field"><label for="a-telefono">Telefono</label><input type="tel" id="a-telefono" /></div>
           <div class="field"><label for="a-email">Email</label><input type="email" id="a-email" /></div>
           <div class="field"><label for="a-squadra">Squadra</label><select id="a-squadra"></select></div>
+        </div>
+        <div class="field" style="margin-top:12px;">
+          <label for="a-note">Note</label>
+          <textarea id="a-note" rows="3"></textarea>
         </div>
       </div>
 
@@ -57,15 +60,15 @@
         <div class="field-grid">
           <div class="field">
             <label for="c-piede">Piede dominante</label>
-            <select id="c-piede"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option></select>
+            <select id="c-piede"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option><option value="Rx">Rx</option></select>
           </div>
           <div class="field">
             <label for="c-mano">Mano dominante</label>
-            <select id="c-mano"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option></select>
+            <select id="c-mano"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option><option value="Rx">Rx</option></select>
           </div>
           <div class="field">
             <label for="c-occhio">Occhio dominante</label>
-            <select id="c-occhio"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option></select>
+            <select id="c-occhio"><option value="">-</option><option value="Dx">Dx</option><option value="Sx">Sx</option><option value="Alternato">Alternato</option><option value="Sdx">Sdx</option></select>
           </div>
         </div>
 

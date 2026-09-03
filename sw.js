@@ -1,6 +1,6 @@
 /* Service worker: cache-first (con aggiornamento in background) per l'app shell. */
 
-const CACHE_NAME = 'jetprogram-cache-v16';
+const CACHE_NAME = 'jetprogram-cache-v18';
 
 const PRECACHE_URLS = [
   './',
@@ -12,7 +12,6 @@ const PRECACHE_URLS = [
   './grafici.html',
   './radar.html',
   './confronto.html',
-  './tracciamento.html',
   './login.html',
   './manifest.webmanifest',
   './css/style.css',
@@ -32,7 +31,6 @@ const PRECACHE_URLS = [
   './js/page-grafici.js',
   './js/page-radar.js',
   './js/page-confronto.js',
-  './js/page-tracciamento.js',
   './js/page-login.js',
   './vendor/chart.umd.js',
   './vendor/jspdf.umd.min.js',

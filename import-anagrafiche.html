@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Importazione anagrafiche - Test Visivi</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
+    <h1>Importazione anagrafiche</h1>
+  </header>
+  <main>
+    <div class="card">
+      <p>
+        Crea o aggiorna nell'utente attualmente autenticato le anagrafiche degli atleti elencati in
+        <code>js/import-anagrafiche-dati.js</code> (dati clinici: acuità visiva e dominanza).
+      </p>
+      <p class="meta">
+        Sicuro da rilanciare: un atleta già presente (stesso nome+cognome, case-insensitive) non viene duplicato.
+        In quel caso vengono aggiornati solo i campi clinici forniti dal dataset, senza cancellare altri dati già
+        presenti (squadra, sessioni, altezza, telefono, email, data di nascita, ecc.) e senza sovrascrivere con un
+        valore vuoto un dato già presente.
+      </p>
+      <button id="btn-avvia">Avvia importazione</button>
+    </div>
+
+    <div id="log" class="card" style="font-family:monospace;font-size:0.8rem;white-space:pre-wrap;max-height:60vh;overflow-y:auto;"></div>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/esercizi-config.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/import-anagrafiche-dati.js"></script>
+  <script src="./js/page-import-anagrafiche.js"></script>
+</body>
+</html>

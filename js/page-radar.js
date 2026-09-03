@@ -86,14 +86,15 @@ function costruisciContenuto() {
 
 function renderRadar(punteggiA, punteggiB) {
   const labels = CATEGORIE_RADAR.map((c) => c.nome);
+  const tooltipTestNames = CATEGORIE_RADAR.map((cat) => getTestNamesForCategoria(cat));
   const arrotonda = (v) => (v === null ? null : Math.round(v * 10) / 10);
   const datasets = [{ label: 'Periodo A', data: punteggiA.map(arrotonda) }];
   if (punteggiB) datasets.push({ label: 'Periodo B', data: punteggiB.map(arrotonda) });
-  renderChart(qs('#radar-canvas'), radarChartConfig(labels, datasets));
+  renderChart(qs('#radar-canvas'), radarChartConfig(labels, datasets, tooltipTestNames));
 }
 
 function renderTabella(punteggiA, punteggiB) {
-  const headers = ['Categoria', 'Periodo A', ...(punteggiB ? ['Periodo B'] : [])];
+  const headers = ['Categoria', 'Test associati', 'Periodo A', ...(punteggiB ? ['Periodo B'] : [])];
   const formatta = (v) => (v === null ? '—' : v.toFixed(1));
   const table = el('table', {}, [
     el('thead', {}, [el('tr', {}, headers.map((h) => el('th', { text: h })))]),
@@ -103,6 +104,13 @@ function renderTabella(punteggiA, punteggiB) {
       CATEGORIE_RADAR.map((cat, i) =>
         el('tr', {}, [
           el('td', { text: cat.nome }),
+          el('td', { class: 'radar-test-cell' }, [
+            el(
+              'ul',
+              { class: 'radar-test-list' },
+              getTestNamesForCategoria(cat).map((nome) => el('li', { text: nome }))
+            ),
+          ]),
           el('td', { text: formatta(punteggiA[i]) }),
           ...(punteggiB ? [el('td', { text: formatta(punteggiB[i]) })] : []),
         ])
@@ -151,8 +159,8 @@ async function init() {
   document.title = `Radar ${nomeCompleto(atleta)} - Test Visivi`;
 
   const [tutteSessioni, sessioniAtleta] = await Promise.all([dbGetAllSessioni(), dbGetSessioniByAtleta(atletaId)]);
-  _sessioniAtleta = sessioniAtleta;
-  _statsGlobali = calcolaStatisticheGlobali(tutteSessioni);
+  _sessioniAtleta = sessioniAtleta.filter((s) => !isSessioneTraining(s));
+  _statsGlobali = calcolaStatisticheGlobali(tutteSessioni.filter((s) => !isSessioneTraining(s)));
 
   if (_sessioniAtleta.length === 0) {
     qs('#contenuto-radar').appendChild(el('div', { class: 'empty-state', text: 'Nessuna sessione registrata per questo atleta: il radar non può essere calcolato.' }));

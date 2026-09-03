@@ -143,8 +143,12 @@ function buildBarChartConfig(labels, valori, unitLabel) {
   };
 }
 
-/** Radar chart 0-100: un asse per categoria, uno o due dataset (Periodo A / B). */
-function radarChartConfig(labels, datasetsRaw) {
+/**
+ * Radar chart 0-100: un asse per categoria, uno o due dataset (Periodo A / B).
+ * tooltipTestNames: array parallelo a labels, con l'elenco dei nomi dei test associati
+ * a ciascuna categoria (mostrato in fondo al tooltip quando si passa/clicca su un asse).
+ */
+function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
   const palette = chartPalette();
   const chrome = chartChrome();
   const datasets = datasetsRaw.map((d, i) => {
@@ -167,7 +171,18 @@ function radarChartConfig(labels, datasetsRaw) {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: datasets.length > 1, labels: { color: chrome.text, usePointStyle: true } },
-        tooltip: { mode: 'index', intersect: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: tooltipTestNames
+            ? {
+                footer: (items) => {
+                  const nomi = items.length ? tooltipTestNames[items[0].dataIndex] : null;
+                  return nomi && nomi.length ? ['Test associati:', ...nomi.map((n) => `• ${n}`)] : '';
+                },
+              }
+            : undefined,
+        },
       },
       scales: {
         r: {

@@ -161,9 +161,10 @@ const ESERCIZI_CONFIG = [
   {
     key: 'tracciamentoVisivo',
     label: 'Tracciamento visivo (Multi Object Tracking)',
-    // Dati generati giocando in tracciamento.html/page-tracciamento.js, mai da un form
-    // manuale: niente grafico automatico a linee. Vedi charts.js (getChartGroups),
-    // page-grafici.js e page-sessione.js (che salta/preserva questo esercizio).
+    // Test sperimentale rimosso dall'app (era tracciamento.html/page-tracciamento.js): la
+    // voce resta qui solo per continuare a leggere/mostrare le sessioni storiche già
+    // salvate, mai da un form manuale. Vedi charts.js (getChartGroups), page-grafici.js
+    // e page-sessione.js (che salta/preserva questo esercizio).
     // Escluso di proposito da pdf-export.js (nessun render dedicato richiesto).
     custom: true,
     campi: [
@@ -176,6 +177,38 @@ const ESERCIZI_CONFIG = [
 
 function getEsercizioConfig(key) {
   return ESERCIZI_CONFIG.find((e) => e.key === key);
+}
+
+/*
+ * Config di modalità per sessione.html: Test e Training riusano lo stesso
+ * form/stessi esercizi (ESERCIZI_CONFIG) e la stessa logica di salvataggio;
+ * qui c'è solo ciò che può differenziare le due modalità (per ora titoli).
+ * TRAINING_CONFIG parte da una copia di TEST_CONFIG: per adesso i valori
+ * sono identici, ma da qui si può differenziare il Training in futuro
+ * senza toccare il Test (es. escludere un esercizio, cambiare un default).
+ */
+const TEST_CONFIG = {
+  modalita: 'test',
+  titoloNuova: 'Nuova sessione',
+  titoloModifica: 'Modifica sessione',
+};
+
+const TRAINING_CONFIG = {
+  ...TEST_CONFIG,
+  modalita: 'training',
+  titoloNuova: 'Nuova sessione di allenamento',
+  titoloModifica: 'Modifica sessione di allenamento',
+};
+
+const SESSIONE_CONFIG_BY_MODE = { test: TEST_CONFIG, training: TRAINING_CONFIG };
+
+/** Restituisce la config della modalità richiesta (default 'test' se mode non valido/assente). */
+function getSessioneConfig(mode) {
+  return SESSIONE_CONFIG_BY_MODE[mode] || TEST_CONFIG;
+}
+
+function isSessioneTraining(sessione) {
+  return !!(sessione && sessione.modalita === 'training');
 }
 
 function getValoreCampoRaw(sessione, esercizioKey, scKey, campoKey) {

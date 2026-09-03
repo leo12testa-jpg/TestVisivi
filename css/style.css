@@ -505,6 +505,22 @@ td:first-child {
   margin: 0;
 }
 
+/* Colonna "Test associati" della tabella radar: testo lungo, quindi niente nowrap/allineamento a destra. */
+td.radar-test-cell {
+  text-align: left;
+  white-space: normal;
+  min-width: 220px;
+}
+
+.radar-test-list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.radar-test-list li {
+  margin: 2px 0;
+}
+
 .chart-block {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -565,35 +581,4 @@ td:first-child {
     left: 50%;
     margin-left: -50vw;
   }
-}
-
-/* Pagina tracciamento.html: canvas di gioco + overlay di avvio/feedback. */
-.tracciamento-canvas-wrap {
-  position: relative;
-  margin-top: 12px;
-}
-
-#canvas-gioco {
-  display: block;
-  width: 100%;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  touch-action: none;
-}
-
-.tracciamento-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 16px;
-  background: rgba(11, 11, 11, 0.55);
-  border-radius: var(--radius);
-}
-
-.tracciamento-overlay[hidden] {
-  display: none;
 }

@@ -79,3 +79,17 @@ const CATEGORIE_RADAR = [
     ],
   },
 ];
+
+/**
+ * Nomi reali dei test (label da ESERCIZI_CONFIG) che concorrono a una categoria del
+ * radar, senza duplicati anche quando la categoria usa più campi dello stesso test.
+ */
+function getTestNamesForCategoria(categoria) {
+  const nomi = [];
+  categoria.campi.forEach((c) => {
+    const esercizio = getEsercizioConfig(c.esercizio);
+    const nome = esercizio ? esercizio.label : c.esercizio;
+    if (!nomi.includes(nome)) nomi.push(nome);
+  });
+  return nomi;
+}

@@ -102,6 +102,7 @@ function popolaAnagrafica(atleta) {
   qs('#a-data-nascita').value = atleta.dataNascita || '';
   qs('#a-telefono').value = atleta.telefono || '';
   qs('#a-email').value = atleta.email || '';
+  qs('#a-note').value = atleta.note || '';
 }
 
 function leggiAnagrafica() {
@@ -111,7 +112,15 @@ function leggiAnagrafica() {
     telefono: qs('#a-telefono').value.trim(),
     email: qs('#a-email').value.trim(),
     squadraId: qs('#a-squadra').value,
+    note: qs('#a-note').value.trim(),
   };
+}
+
+/** Se il valore storico non è tra le opzioni del select (es. "alternato", "sdx", "rx"), lo aggiunge invece di azzerarlo. */
+function assicuraOpzioneSelect(select, valore) {
+  if (!valore) return;
+  const esiste = Array.from(select.options).some((o) => o.value === valore);
+  if (!esiste) select.appendChild(el('option', { value: valore, text: valore }));
 }
 
 function popolaFormClinici(dc) {
@@ -120,6 +129,9 @@ function popolaFormClinici(dc) {
   qs('#c-binoculare').value = dc.acuitaVisiva.binoculare || '';
   popolaCorrezione('cp', dc.correzionePropria);
   popolaCorrezione('cc', dc.correzione);
+  assicuraOpzioneSelect(qs('#c-piede'), dc.piedeDominante);
+  assicuraOpzioneSelect(qs('#c-mano'), dc.manoDominante);
+  assicuraOpzioneSelect(qs('#c-occhio'), dc.occhioDirettoreMotorio);
   qs('#c-piede').value = dc.piedeDominante || '';
   qs('#c-mano').value = dc.manoDominante || '';
   qs('#c-occhio').value = dc.occhioDirettoreMotorio || '';
@@ -148,9 +160,9 @@ function leggiFormClinici() {
   };
 }
 
-/** Le sessioni servono solo come dato per l'export PDF: qui non vengono più mostrate come lista. */
+/** Le sessioni servono solo come dato per l'export PDF (report ufficiale: esclude le sessioni di Training). */
 async function caricaSessioni() {
-  _sessioni = await dbGetSessioniByAtleta(atletaId);
+  _sessioni = (await dbGetSessioniByAtleta(atletaId)).filter((s) => !isSessioneTraining(s));
 }
 
 function mostraToast(msg) {
@@ -202,15 +214,11 @@ qs('#form-clinici').addEventListener('submit', async (e) => {
 });
 
 qs('#btn-test').addEventListener('click', () => {
-  window.location.href = `./sessione.html?atletaId=${atletaId}`;
-});
-
-qs('#btn-tracciamento').addEventListener('click', () => {
-  window.location.href = `./tracciamento.html?atletaId=${atletaId}`;
+  window.location.href = `./sessione.html?atletaId=${atletaId}&mode=test`;
 });
 
 qs('#btn-training').addEventListener('click', () => {
-  mostraToast('Funzionalità in arrivo');
+  window.location.href = `./sessione.html?atletaId=${atletaId}&mode=training`;
 });
 
 qs('#btn-elimina-atleta').addEventListener('click', async () => {

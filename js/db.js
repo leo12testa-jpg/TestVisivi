@@ -153,6 +153,7 @@ async function dbAddAtleta({ nome, cognome, squadraId }) {
     dataNascita: '',
     telefono: '',
     email: '',
+    note: '',
     createdAt: now,
     updatedAt: now,
     datiClinici: datiCliniciVuoti(),
