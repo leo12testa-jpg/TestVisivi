@@ -34,20 +34,41 @@ function applicaSeValorizzato(obj, campo, valore) {
   return true;
 }
 
-async function trovaAtletaEsistente(atleti, cognome, nome) {
-  const target = `${cognome} ${nome}`.trim().toLowerCase();
-  return atleti.find((a) => `${a.cognome} ${a.nome}`.trim().toLowerCase() === target);
+function normalizzaConfronto(s) {
+  return String(s || '').trim().toLowerCase();
+}
+
+/**
+ * Il dataset ha un solo termine identificativo per atleta (es. "Happonen"), senza nome
+ * noto: per riconoscere un atleta già esistente confrontiamo il termine, case-insensitive
+ * e trim, con cognome, nome e nome completo di ciascun atleta esistente. Solo uguaglianze
+ * esatte (mai match parziale/includes). Ritorna TUTTE le corrispondenze trovate: 0 = nuovo
+ * atleta, 1 = match sicuro, >1 = ambiguo (il chiamante non deve creare né aggiornare).
+ */
+function trovaAtletaEsistente(atleti, termine) {
+  const target = normalizzaConfronto(termine);
+  return atleti.filter((a) => {
+    const cognome = normalizzaConfronto(a.cognome);
+    const nome = normalizzaConfronto(a.nome);
+    const completo = normalizzaConfronto(`${a.cognome} ${a.nome}`);
+    return cognome === target || nome === target || completo === target;
+  });
 }
 
 async function importaAnagrafica(item, atletiEsistenti) {
   const cognome = item.cognome.trim();
-  const nome = '';
   const contesto = cognome;
 
-  let atleta = await trovaAtletaEsistente(atletiEsistenti, cognome, nome);
+  const corrispondenze = trovaAtletaEsistente(atletiEsistenti, cognome);
+  if (corrispondenze.length > 1) {
+    log(`⚠ Corrispondenza ambigua per ${contesto}: ${corrispondenze.length} atleti esistenti corrispondono, nessuna modifica effettuata.`);
+    return { creato: false, aggiornato: false, invariato: false, ambiguo: true };
+  }
+
+  let atleta = corrispondenze[0];
   let creato = false;
   if (!atleta) {
-    const id = await dbAddAtleta({ nome, cognome });
+    const id = await dbAddAtleta({ nome: '', cognome });
     atleta = await dbGetAtleta(id);
     atletiEsistenti.push(atleta);
     creato = true;
@@ -78,7 +99,7 @@ async function importaAnagrafica(item, atletiEsistenti) {
     log(`Invariato (nessun dato da aggiornare): ${contesto}`);
   }
 
-  return { creato, aggiornato: !creato && modificato, invariato: !creato && !modificato };
+  return { creato, aggiornato: !creato && modificato, invariato: !creato && !modificato, ambiguo: false };
 }
 
 async function init() {
@@ -94,6 +115,7 @@ qs('#btn-avvia').addEventListener('click', async () => {
   let creati = 0;
   let aggiornati = 0;
   let invariati = 0;
+  let ambigui = 0;
   const errori = [];
 
   try {
@@ -103,7 +125,8 @@ qs('#btn-avvia').addEventListener('click', async () => {
     for (const item of DATI_ANAGRAFICHE_IMPORT) {
       try {
         const risultato = await importaAnagrafica(item, atletiEsistenti);
-        if (risultato.creato) creati++;
+        if (risultato.ambiguo) ambigui++;
+        else if (risultato.creato) creati++;
         else if (risultato.aggiornato) aggiornati++;
         else invariati++;
       } catch (err) {
@@ -113,7 +136,9 @@ qs('#btn-avvia').addEventListener('click', async () => {
     }
 
     log('---');
-    log(`Completato: ${creati} creati, ${aggiornati} aggiornati, ${invariati} invariati${errori.length ? `, ${errori.length} errori` : ''}.`);
+    log(
+      `Completato: ${creati} creati, ${aggiornati} aggiornati, ${invariati} invariati, ${ambigui} ambigui (saltati)${errori.length ? `, ${errori.length} errori` : ''}.`
+    );
     if (errori.length) log(`Errori: ${errori.join(' | ')}`);
   } catch (err) {
     log('ERRORE GENERALE: ' + err.message);
