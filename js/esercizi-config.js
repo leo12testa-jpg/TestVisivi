@@ -443,6 +443,22 @@ function formattaValoreCampo(campo, value) {
   return unita ? `${numero} ${unita}` : numero;
 }
 
+function metricheEsercizioSessione(sessione, test, soloPrincipali = true) {
+  if (!test) return [];
+  const dati = sessione?.esercizi?.[test.key] || {};
+  const keys = soloPrincipali && test.campiPrincipali?.length
+    ? test.campiPrincipali
+    : (test.campiStandard?.length ? test.campiStandard : campiEsercizioVisibili(test).map((c) => c.key));
+
+  return keys.map((key) => {
+    const campo = campoEsercizio(test, key);
+    const raw = dati[key];
+    return campo && valoreCampoValido(campo, raw)
+      ? { key, label: campo.label, valore: formattaValoreCampo(campo, raw), raw }
+      : null;
+  }).filter(Boolean);
+}
+
 function metrichePrincipaliSessione(sessione) {
   const test = typeof jetTest === 'function' ? jetTest(sessione) : null;
   if (!test) return [];
