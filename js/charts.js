@@ -36,7 +36,7 @@ function chartChrome() {
 function getChartGroups(esercizio) {
   if (esercizio.custom) return [];
   const condizioni = esercizio.sottoCondizioni || [null];
-  const numerici = esercizio.campi.filter((c) => c.tipo === 'number');
+  const numerici = campiEsercizioVisibili(esercizio).filter((c) => c.tipo === 'number');
   const groups = [];
   condizioni.forEach((cond) => {
     const byUnit = new Map();
@@ -64,7 +64,8 @@ function getValoreCampoGruppo(sessione, group, campo) {
   const scope = group.sottoCondizione ? dati[group.sottoCondizione.key] : dati;
   if (!scope) return null;
   const v = scope[campo.key];
-  return v === undefined || v === null || v === '' ? null : jetNumero(v);
+  if (v === undefined || v === null || v === '' || !valoreCampoValido(campo, v)) return null;
+  return jetNumero(v);
 }
 
 /** Sessioni (gia' ordinate per data) che hanno almeno un valore per il gruppo dato. */
