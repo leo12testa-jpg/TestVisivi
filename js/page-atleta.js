@@ -168,9 +168,26 @@ async function caricaSessioni() {
   qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
   const recenti = qs('#sessioni-recenti');
   recenti.innerHTML = '';
-  [..._sessioni].reverse().slice(0, 5).forEach((s) => recenti.appendChild(el('a', {
-    class: 'list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`,
-  }, [el('div', {}, [el('span', { class: 'eyebrow', text: formatDataIt(s.data) }), el('div', { class: 'session-title', text: nomeTestSessione(s) }), el('p', { class: 'meta', text: riepilogoSessione(s) })]), el('span', { 'aria-hidden': 'true', text: '↗' })])));
+  [..._sessioni].reverse().slice(0, 5).forEach((s) => {
+    const metriche = metrichePrincipaliSessione(s).slice(0, 3);
+    const contenuto = [
+      el('span', { class: 'eyebrow', text: formatDataIt(s.data) }),
+      el('div', { class: 'session-title', text: nomeTestSessione(s) }),
+    ];
+    if (metriche.length) {
+      contenuto.push(el('div', { class: 'mini-metrics compact' }, metriche.map((m) =>
+        el('span', { class: 'mini-metric' }, [
+          el('span', { class: 'mini-metric-label', text: m.label }),
+          el('strong', { text: m.valore }),
+        ])
+      )));
+    } else {
+      contenuto.push(el('p', { class: 'meta', text: riepilogoSessione(s) }));
+    }
+    recenti.appendChild(el('a', {
+      class: 'list-item session-list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`,
+    }, [el('div', { class: 'session-list-content' }, contenuto), el('span', { class: 'session-list-arrow', 'aria-hidden': 'true', text: '›' })]));
+  });
   if (!_sessioni.length) recenti.appendChild(el('p', { class: 'empty-state', text: 'Il percorso inizia dal primo test.' }));
 }
 
