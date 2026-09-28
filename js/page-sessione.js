@@ -112,7 +112,9 @@ function aggiornaTestVisibili() {
   qsa('#esercizi-container > details').forEach((details) => {
     const testKey = details.id.slice(3);
     const esistente = _sessioneCaricata?.esercizi?.[testKey];
-    details.hidden = testKey !== key && !esistente;
+    const config = getEsercizioConfig(testKey);
+    const haValoriReali = !!config && esercizioCompilato(config, esistente);
+    details.hidden = testKey !== key && !haValoriReali;
     if (!details.hidden) details.open = true;
   });
 }
@@ -122,7 +124,7 @@ function mostraOriginali(sessione) {
   const compilati = ESERCIZI_CONFIG.filter((test) =>
     !test.custom && esercizioCompilato(test, sessione.esercizi?.[test.key])
   );
-  if (!compilati.length && !haDatiJet(sessione)) return;
+  if (!compilati.length) return;
 
   container.hidden = false;
   container.classList.add('result-overview');
@@ -149,13 +151,6 @@ function mostraOriginali(sessione) {
       )),
     ]));
   });
-
-  if (!compilati.length && haDatiJet(sessione)) {
-    container.appendChild(el('p', {
-      class: 'meta',
-      text: 'Dati Jet Program presenti, ma non ancora associati a un test standard.',
-    }));
-  }
 
   if (haDatiJet(sessione)) {
     const originale = typeof jetOriginale === 'function' ? jetOriginale(sessione) : null;
@@ -446,10 +441,6 @@ async function init() {
       qs('#test-standard').value = jetTest(sessione)?.key || sessione.testStandard || '';
       if (jetTest(sessione)) qs('#test-standard').disabled = true;
       mostraOriginali(sessione);
-      if (sessione.esercizi && Object.keys(sessione.esercizi).length) qs('#esercizi-container').after(el('details', { class: 'card' }, [
-        el('summary', { text: 'Tutti i risultati salvati, inclusi i parametri aggiuntivi' }),
-        el('pre', { class: 'raw-data', text: JSON.stringify(sessione.esercizi, null, 2) }),
-      ]));
       aggiornaTestVisibili();
       _modalitaSessione = getSessioneConfig(sessione.modalita).modalita;
       qs('#titolo-sessione').textContent = `${getSessioneConfig(_modalitaSessione).titoloModifica} - ${nomeCompleto(atleta)}`;
@@ -537,7 +528,7 @@ qs('#btn-salva').addEventListener('click', async () => {
           if (value[sc.key]) merged[key][sc.key] = { ...sessione.esercizi?.[key]?.[sc.key], ...value[sc.key] };
         });
       });
-      sessione.esercizi = merged;
+      sessione.esercizi = pulisciEserciziSessione({ ...sessione, esercizi: merged }).esercizi;
       if (testStandard) sessione.testStandard = testStandard;
       sessione.modalita = _modalitaSessione;
       await dbUpdateSessione(sessione);
