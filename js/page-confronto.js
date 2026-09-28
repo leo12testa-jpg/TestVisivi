@@ -49,6 +49,7 @@ function popolaSelectCampi() {
 
 function campoSelezionato() {
   const esercizio = getEsercizioConfig(qs('#sel-esercizio').value);
+  if (!esercizio) return { esercizio: null, scKey: null, campo: null };
   const [scKey, campoKey] = qs('#sel-campo').value.split('::');
   const campo = esercizio.campi.find((c) => c.key === campoKey);
   return { esercizio, scKey: scKey || null, campo };
