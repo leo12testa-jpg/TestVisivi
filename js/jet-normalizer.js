@@ -16,8 +16,25 @@ function jetNumero(value) {
   return Number.isFinite(n) ? n : null;
 }
 
+function jetOriginale(sessione) {
+  const embedded = sessione && sessione.esercizi && sessione.esercizi.jetProgramOriginale;
+  if (embedded && typeof embedded === 'object' && !Array.isArray(embedded)) return embedded;
+  return null;
+}
+
 function jetTest(sessione) {
-  const nomi = [sessione.testStandard, sessione.nomeTestOriginale, sessione.tipoTest];
+  if (!sessione) return null;
+  for (const key of [sessione.jetProgramStandardKey, sessione.testStandard]) {
+    if (key && TEST_STANDARD_KEYS.includes(key)) return getEsercizioConfig(key);
+  }
+  const originale = jetOriginale(sessione);
+  const nomi = [
+    sessione.nomeTestOriginale,
+    sessione.jetProgramNomeOriginale,
+    sessione.tipoTest,
+    originale && originale.nomeTestOriginale,
+    originale && originale.tipoTest,
+  ];
   const matches = new Set();
   nomi.filter(Boolean).forEach((nome) => {
     const normalized = jetNome(nome);
@@ -29,7 +46,15 @@ function jetTest(sessione) {
 }
 
 function haDatiJet(sessione) {
-  return sessione.datiOriginali !== undefined && sessione.datiOriginali !== null;
+  return !!(
+    sessione && (
+      jetOriginale(sessione) ||
+      (sessione.datiOriginali !== undefined && sessione.datiOriginali !== null) ||
+      sessione.jetProgramReportId !== undefined ||
+      sessione.jetProgramNomeOriginale ||
+      sessione.nomeTestOriginale
+    )
+  );
 }
 
 function normalizzaSessioneJet(sessione) {
@@ -77,7 +102,10 @@ function nomeTestSessione(sessione) {
   if (test) return test.label;
   const compilati = ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, sessione.esercizi?.[e.key]));
   if (compilati.length) return compilati.map((e) => e.label).join(' · ');
-  return sessione.nomeTestOriginale || sessione.tipoTest || sessione.titolo || 'Sessione';
+  const originale = jetOriginale(sessione);
+  return sessione.jetProgramNomeOriginale || sessione.nomeTestOriginale ||
+    (originale && originale.nomeTestOriginale) || sessione.tipoTest ||
+    (originale && originale.tipoTest) || sessione.titolo || 'Sessione';
 }
 
 function riepilogoSessione(sessione) {
