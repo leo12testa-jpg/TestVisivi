@@ -1,6 +1,6 @@
 /*
- * Export PDF del report atleta con jsPDF (vendorizzato in vendor/, no CDN).
- * I grafici vengono ridisegnati offscreen con Chart.js e inseriti come PNG.
+ * Report PDF atleta - layout professionale, dati sintetici e grafici.
+ * jsPDF e Chart.js sono vendorizzati: nessuna dipendenza esterna.
  */
 
 function formatoImmagineDaDataUrl(dataUrl) {
@@ -28,286 +28,452 @@ function renderChartOffscreen(config, widthPx, heightPx) {
     canvas.style.left = '-99999px';
     canvas.style.top = '0';
     document.body.appendChild(canvas);
+
     const cfg = {
       ...config,
-      options: { ...config.options, responsive: false, animation: false, devicePixelRatio: 2 },
+      options: {
+        ...config.options,
+        responsive: false,
+        animation: false,
+        devicePixelRatio: 2,
+        plugins: {
+          ...(config.options?.plugins || {}),
+          legend: { ...(config.options?.plugins?.legend || {}), labels: { boxWidth: 10, font: { size: 11 } } },
+        },
+      },
     };
+
     const chart = new Chart(canvas, cfg);
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
+        const dataUrl = canvas.toDataURL('image/png', 1);
         chart.destroy();
-        document.body.removeChild(canvas);
+        canvas.remove();
         resolve(dataUrl);
       });
     });
   });
 }
 
-async function esportaReportPdf(atleta, sessioni) {
+async function esportaReportPdf(atletaRaw, sessioniRaw) {
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const marginX = 14;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+
+  const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
+    ? normalizzaAnagraficaCalciatore(atletaRaw)
+    : atletaRaw;
+
+  const sessioni = (sessioniRaw || [])
+    .filter((s) => !isSessioneTraining(s))
+    .filter((s) => typeof sessioneHaDatiTest !== 'function' || sessioneHaDatiTest(s))
+    .sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
+
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 15;
   const usableWidth = pageWidth - marginX * 2;
+  const footerY = pageHeight - 9;
   let y = 18;
 
-  function nuovaPaginaSeNecessario(spazio) {
-    if (y + spazio > pageHeight - 14) {
-      doc.addPage();
-      y = 18;
+  const C = {
+    navy: [21, 62, 105],
+    navyDark: [12, 38, 65],
+    blueSoft: [237, 244, 250],
+    ink: [24, 31, 38],
+    muted: [99, 112, 125],
+    line: [220, 226, 232],
+    paper: [250, 251, 252],
+    white: [255, 255, 255],
+  };
+
+  function testoValido(v) {
+    return v !== undefined && v !== null && String(v).trim() !== '';
+  }
+
+  function paginaNuova() {
+    doc.addPage();
+    y = 18;
+  }
+
+  function assicuraSpazio(mm) {
+    if (y + mm > footerY - 6) paginaNuova();
+  }
+
+  function setInk() {
+    doc.setTextColor(...C.ink);
+  }
+
+  function linea(yPos = y) {
+    doc.setDrawColor(...C.line);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, yPos, marginX + usableWidth, yPos);
+  }
+
+  function titoloSezione(titolo, sottotitolo = '') {
+    assicuraSpazio(sottotitolo ? 16 : 11);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.setTextColor(...C.navyDark);
+    doc.text(titolo, marginX, y);
+    y += 5;
+    if (sottotitolo) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.muted);
+      doc.text(sottotitolo, marginX, y, { maxWidth: usableWidth });
+      y += 5;
     }
+    linea(y);
+    y += 5;
+    setInk();
   }
 
-  function formatCorrezioneOcchio(v) {
-    if (!v) return '-';
-    const parti = [v.sf, v.cyl, v.ax].map((x) => x || '-');
-    return parti.join(' / ');
+  function testoRiga(label, valore, x, yPos, maxWidth) {
+    doc.setFontSize(8);
+    doc.setTextColor(...C.muted);
+    doc.setFont('helvetica', 'normal');
+    doc.text(label, x, yPos, { maxWidth });
+    doc.setTextColor(...C.ink);
+    doc.setFont('helvetica', 'bold');
+    doc.text(String(valore), x, yPos + 4.2, { maxWidth });
   }
 
-  function disegnaAnagrafica(atleta) {
-    const righe = [
-      ['Altezza (cm)', atleta.altezza],
-      ['Data di nascita', atleta.dataNascita ? formatDataIt(atleta.dataNascita) : ''],
-      ['Telefono', atleta.telefono],
-      ['Email', atleta.email],
+  function cardKpi(x, yPos, width, label, value) {
+    doc.setFillColor(...C.paper);
+    doc.setDrawColor(...C.line);
+    doc.roundedRect(x, yPos, width, 20, 2.5, 2.5, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    doc.setTextColor(...C.muted);
+    doc.text(label, x + 4, yPos + 6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...C.navyDark);
+    doc.text(String(value), x + 4, yPos + 14);
+  }
+
+  function datiCliniciNonVuoti(dc) {
+    if (!dc) return [];
+    const righe = [];
+    const add = (label, value) => { if (testoValido(value)) righe.push([label, value]); };
+
+    add('Acuita visiva OD', dc.acuitaVisiva?.od);
+    add('Acuita visiva OS', dc.acuitaVisiva?.os);
+    add('Acuita visiva binoculare', dc.acuitaVisiva?.binoculare);
+    add('Piede dominante', dc.piedeDominante);
+    add('Mano dominante', dc.manoDominante);
+    add('Occhio dominante', dc.occhioDirettoreMotorio);
+    add('Abilita fusionale rapida', dc.abilitaFusionaleRapida);
+    add('Messa a fuoco rapida', dc.abilitaMessaFuocoRapida);
+
+    const formatoCorr = (v) => {
+      if (!v) return '';
+      const valori = [v.sf, v.cyl, v.ax].filter(testoValido);
+      return valori.length ? valori.join(' / ') : '';
+    };
+    add('Correzione propria OD (Sf/Cyl/Ax)', formatoCorr(dc.correzionePropria?.od));
+    add('Correzione propria OS (Sf/Cyl/Ax)', formatoCorr(dc.correzionePropria?.os));
+    add('Correzione OD (Sf/Cyl/Ax)', formatoCorr(dc.correzione?.od));
+    add('Correzione OS (Sf/Cyl/Ax)', formatoCorr(dc.correzione?.os));
+
+    const pos = [
+      ['Alto SX', 'altoSx'], ['Basso SX', 'bassoSx'], ['Centrale', 'centrale'],
+      ['Alto DX', 'altoDx'], ['Basso DX', 'bassoDx'],
     ];
-    nuovaPaginaSeNecessario(12);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Dati anagrafici', marginX, y);
-    y += 6;
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    const colWidth = usableWidth / 2;
-    righe.forEach(([label, valore], i) => {
-      const col = i % 2;
-      if (col === 0) nuovaPaginaSeNecessario(6);
-      const xPos = marginX + col * colWidth;
-      const testo = valore === '' || valore === undefined || valore === null ? '-' : String(valore);
-      doc.text(`${label}: ${testo}`, xPos, y, { maxWidth: colWidth - 4 });
-      if (col === 1) y += 6;
-    });
-    if (righe.length % 2 === 1) y += 6;
-    y += 6;
+    pos.forEach(([label, key]) => add('Schober 3 m - ' + label, dc.schober3m?.[key]));
+    pos.forEach(([label, key]) => add('Brock String - ' + label, dc.brockString?.[key]));
+
+    return righe;
   }
 
-  function disegnaDatiClinici(dc) {
-    const righe = [
-      ['Acuità visiva Od', dc.acuitaVisiva.od],
-      ['Acuità visiva Os', dc.acuitaVisiva.os],
-      ['Acuità visiva Binoculare', dc.acuitaVisiva.binoculare],
-      ['Propria correzione OD (Sf/Cyl/Ax)', formatCorrezioneOcchio(dc.correzionePropria && dc.correzionePropria.od)],
-      ['Propria correzione OS (Sf/Cyl/Ax)', formatCorrezioneOcchio(dc.correzionePropria && dc.correzionePropria.os)],
-      ['Correzione OD (Sf/Cyl/Ax)', formatCorrezioneOcchio(dc.correzione && dc.correzione.od)],
-      ['Correzione OS (Sf/Cyl/Ax)', formatCorrezioneOcchio(dc.correzione && dc.correzione.os)],
-      ['Piede dominante', dc.piedeDominante],
-      ['Mano dominante', dc.manoDominante],
-      ['Occhio dominante', dc.occhioDirettoreMotorio],
-      ['Schober a 3m — Alto sinistro', dc.schober3m && dc.schober3m.altoSx],
-      ['Schober a 3m — Basso sinistro', dc.schober3m && dc.schober3m.bassoSx],
-      ['Schober a 3m — Centrale', dc.schober3m && dc.schober3m.centrale],
-      ['Schober a 3m — Alto destro', dc.schober3m && dc.schober3m.altoDx],
-      ['Schober a 3m — Basso destro', dc.schober3m && dc.schober3m.bassoDx],
-      ['Brock String — Alto sinistro', dc.brockString.altoSx],
-      ['Brock String — Basso sinistro', dc.brockString.bassoSx],
-      ['Brock String — Centrale', dc.brockString.centrale],
-      ['Brock String — Alto destro', dc.brockString.altoDx],
-      ['Brock String — Basso destro', dc.brockString.bassoDx],
-      ['Abilità fusionale rapida (cicli fusionali/min)', dc.abilitaFusionaleRapida],
-      ['Abilità di messa a fuoco rapida (cicli accomodativi/min)', dc.abilitaMessaFuocoRapida],
-    ];
-    nuovaPaginaSeNecessario(12);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Dati clinici', marginX, y);
-    y += 6;
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    const colWidth = usableWidth / 2;
-    righe.forEach(([label, valore], i) => {
-      const col = i % 2;
-      if (col === 0) nuovaPaginaSeNecessario(6);
-      const xPos = marginX + col * colWidth;
-      const testo = valore === '' || valore === undefined || valore === null ? '-' : String(valore);
-      doc.text(`${label}: ${testo}`, xPos, y, { maxWidth: colWidth - 4 });
-      if (col === 1) y += 6;
-    });
-    if (righe.length % 2 === 1) y += 6;
-    y += 6;
+  function disegnaListaDueColonne(righe) {
+    if (!righe.length) return;
+    const colGap = 8;
+    const colWidth = (usableWidth - colGap) / 2;
+    for (let i = 0; i < righe.length; i += 2) {
+      assicuraSpazio(13);
+      const a = righe[i];
+      const b = righe[i + 1];
+      testoRiga(a[0], a[1], marginX, y, colWidth);
+      if (b) testoRiga(b[0], b[1], marginX + colWidth + colGap, y, colWidth);
+      y += 13;
+    }
+    y += 2;
   }
 
-  function disegnaTabella(headers, rows) {
+  function colonneConDati(esercizio, sessioniCompilate) {
+    return colonneEsercizio(esercizio).filter((col) =>
+      sessioniCompilate.some((s) => {
+        const v = col.get(s);
+        if (v === '' || v === undefined || v === null) return false;
+        return col.tipo !== 'number' || valoreCampoValido(col.campo, v);
+      })
+    );
+  }
+
+  function formattaCella(col, value) {
+    if (value === '' || value === undefined || value === null) return '-';
+    if (col?.tipo === 'number' && col.campo) return formattaValoreCampo(col.campo, value);
+    return String(value);
+  }
+
+  function disegnaTabella(headers, rows, widths) {
+    if (!rows.length) return;
     const nCols = headers.length;
-    const fontSize = nCols > 8 ? 6.5 : nCols > 5 ? 7.5 : 8.5;
-    const rowHeight = fontSize * 0.6 + 3.5;
-    const colWidth = usableWidth / nCols;
+    const colWidths = widths || Array(nCols).fill(usableWidth / nCols);
+    const fontSize = nCols > 8 ? 6.2 : nCols > 5 ? 7 : 7.7;
+    const paddingX = 1.4;
+    const lineHeight = 3.2;
 
-    function disegnaHeader() {
+    const splitCell = (text, width) => doc.splitTextToSize(String(text), Math.max(4, width - paddingX * 2));
+
+    function rowHeight(cells, bold = false) {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
       doc.setFontSize(fontSize);
-      doc.setFont(undefined, 'bold');
-      doc.setFillColor(240, 240, 238);
-      doc.rect(marginX, y, usableWidth, rowHeight, 'F');
-      headers.forEach((h, i) => {
-        doc.text(String(h), marginX + i * colWidth + 1.5, y + rowHeight - 2, { maxWidth: colWidth - 3 });
-      });
-      y += rowHeight;
-      doc.setFont(undefined, 'normal');
+      return Math.max(...cells.map((cell, i) => splitCell(cell, colWidths[i]).length)) * lineHeight + 3;
     }
 
-    nuovaPaginaSeNecessario(rowHeight * 2);
-    disegnaHeader();
-
-    rows.forEach((riga) => {
-      if (y + rowHeight > pageHeight - 14) {
-        doc.addPage();
-        y = 18;
-        disegnaHeader();
-      }
-      riga.forEach((cell, i) => {
-        doc.text(String(cell), marginX + i * colWidth + 1.5, y + rowHeight - 2, { maxWidth: colWidth - 3 });
+    function header() {
+      const h = rowHeight(headers, true);
+      assicuraSpazio(h + 5);
+      doc.setFillColor(...C.blueSoft);
+      doc.setDrawColor(...C.line);
+      doc.rect(marginX, y, usableWidth, h, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...C.navyDark);
+      let x = marginX;
+      headers.forEach((cell, i) => {
+        doc.text(splitCell(cell, colWidths[i]), x + paddingX, y + 3.5);
+        x += colWidths[i];
       });
-      doc.setDrawColor(225, 224, 217);
-      doc.line(marginX, y + rowHeight, marginX + usableWidth, y + rowHeight);
-      y += rowHeight;
+      y += h;
+      setInk();
+    }
+
+    header();
+
+    rows.forEach((row, rowIndex) => {
+      const h = rowHeight(row);
+      if (y + h > footerY - 5) {
+        paginaNuova();
+        header();
+      }
+      if (rowIndex % 2 === 1) {
+        doc.setFillColor(249, 250, 251);
+        doc.rect(marginX, y, usableWidth, h, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...C.ink);
+      let x = marginX;
+      row.forEach((cell, i) => {
+        doc.text(splitCell(cell, colWidths[i]), x + paddingX, y + 3.5);
+        x += colWidths[i];
+      });
+      doc.setDrawColor(...C.line);
+      doc.line(marginX, y + h, marginX + usableWidth, y + h);
+      y += h;
     });
-    y += 4;
+    y += 5;
   }
 
   async function disegnaGrafico(group, sessioniGruppo) {
+    if (sessioniGruppo.length < 2) return;
     const config = buildGroupChartConfig(sessioniGruppo, group);
-    const widthPx = 900;
-    const heightPx = 420;
-    const img = await renderChartOffscreen(config, widthPx, heightPx);
-    const imgWidthMm = usableWidth;
-    const imgHeightMm = imgWidthMm * (heightPx / widthPx);
-    nuovaPaginaSeNecessario(imgHeightMm + 10);
-    doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
+    const img = await renderChartOffscreen(config, 1100, 500);
+    const imgHeight = usableWidth * (500 / 1100);
+    assicuraSpazio(imgHeight + 12);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...C.navyDark);
     doc.text(titoloGruppo(group), marginX, y);
     y += 4;
-    doc.addImage(img, 'PNG', marginX, y, imgWidthMm, imgHeightMm);
-    y += imgHeightMm + 8;
-    doc.setFont(undefined, 'normal');
+    doc.addImage(img, 'PNG', marginX, y, usableWidth, imgHeight);
+    y += imgHeight + 7;
+    setInk();
   }
 
   async function disegnaCampoVisivoAvanzato(sessioniCompilate) {
     for (const s of sessioniCompilate) {
-      const dati = s.esercizi && s.esercizi.campoVisivoAvanzato;
+      const dati = s.esercizi?.campoVisivoAvanzato;
       if (!dati) continue;
-
-      const modalitaTxt = dati.modalita ? `${dati.modalita}°` : '-';
-      const durataTxt = dati.durataSecondi !== undefined && dati.durataSecondi !== null && dati.durataSecondi !== '' ? `${dati.durataSecondi}s` : '-';
-
-      nuovaPaginaSeNecessario(14);
-      doc.setFontSize(10);
-      doc.setFont(undefined, 'bold');
-      doc.text(`${formatDataIt(s.data)} — Modalità ${modalitaTxt}, Durata ${durataTxt}`, marginX, y);
-      y += 6;
-      doc.setFont(undefined, 'normal');
+      assicuraSpazio(16);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...C.navyDark);
+      doc.text(formatDataIt(s.data), marginX, y);
+      y += 5;
 
       if (dati.immaginePolarPlot) {
         try {
           const { larghezza, altezza } = await dimensioniImmagine(dati.immaginePolarPlot);
-          const larghezzaMm = Math.min(usableWidth, 100);
-          const altezzaMm = larghezzaMm * (altezza / larghezza);
-          nuovaPaginaSeNecessario(altezzaMm + 10);
-          doc.addImage(dati.immaginePolarPlot, formatoImmagineDaDataUrl(dati.immaginePolarPlot), marginX, y, larghezzaMm, altezzaMm);
-          y += altezzaMm + 6;
-        } catch (err) {
-          doc.text('(immagine non leggibile)', marginX, y);
-          y += 8;
+          const w = Math.min(usableWidth, 110);
+          const h = w * (altezza / larghezza);
+          assicuraSpazio(h + 4);
+          doc.addImage(dati.immaginePolarPlot, formatoImmagineDaDataUrl(dati.immaginePolarPlot), marginX, y, w, h);
+          y += h + 5;
+        } catch (_) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...C.muted);
+          doc.text('Grafico non disponibile', marginX, y);
+          y += 5;
         }
       }
 
-      if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length > 0) {
-        const headers = ['Settore', 'Fascia angoli', '% corretta'];
-        const rows = dati.percentualiSettori.map((r) => [String(r.settore), r.fasciaAngoli, `${r.percentualeCorretta}%`]);
-        disegnaTabella(headers, rows);
+      if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length) {
+        disegnaTabella(
+          ['Settore', 'Fascia angoli', '% corretta'],
+          dati.percentualiSettori.map((r) => [String(r.settore), String(r.fasciaAngoli || '-'), String(r.percentualeCorretta) + '%']),
+          [30, 80, usableWidth - 110]
+        );
       }
-      y += 4;
     }
   }
-
-  doc.setFontSize(16);
-  doc.setFont(undefined, 'bold');
-  doc.text(`Report JetProgram — ${nomeCompleto(atleta)}`, marginX, y);
-  y += 6;
-  doc.setFontSize(9);
-  doc.setFont(undefined, 'normal');
-  doc.setTextColor(110);
-  doc.text(`Generato il ${formatDataIt(oggiIso())}`, marginX, y);
-  doc.setTextColor(0);
-  y += 8;
 
   async function disegnaAllegati() {
     const righe = [];
     for (const s of sessioni) {
-      const foto = await dbGetAllegatiFotoBySessione(s.id);
-      const video = await dbGetAllegatiVideoBySessione(s.id);
-      if (foto.length === 0 && video.length === 0) continue;
-      righe.push(`${formatDataIt(s.data)} — ${foto.length} foto e ${video.length} video allegati, disponibili nell'app.`);
+      const [foto, video] = await Promise.all([
+        dbGetAllegatiFotoBySessione(s.id),
+        dbGetAllegatiVideoBySessione(s.id),
+      ]);
+      if (!foto.length && !video.length) continue;
+      righe.push([
+        formatDataIt(s.data),
+        nomeTestSessione(s),
+        (foto.length ? foto.length + ' foto' : '') + (foto.length && video.length ? ' - ' : '') + (video.length ? video.length + ' video' : ''),
+      ]);
     }
-    if (righe.length === 0) return;
-
-    nuovaPaginaSeNecessario(12);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text('Allegati', marginX, y);
-    y += 6;
-    doc.setFontSize(9);
-    doc.setFont(undefined, 'normal');
-    righe.forEach((riga) => {
-      nuovaPaginaSeNecessario(6);
-      doc.text(riga, marginX, y, { maxWidth: usableWidth });
-      y += 6;
-    });
-    y += 4;
+    if (!righe.length) return;
+    titoloSezione('Allegati', 'I file multimediali restano disponibili nell\'app e non vengono incorporati nel PDF.');
+    disegnaTabella(['Data', 'Test', 'Allegati'], righe, [28, 105, usableWidth - 133]);
   }
 
-  disegnaAnagrafica(atleta);
-  disegnaDatiClinici(atleta.datiClinici);
+  // Copertina / intestazione
+  doc.setFillColor(...C.navy);
+  doc.rect(0, 0, pageWidth, 42, 'F');
+  doc.setTextColor(...C.white);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('TEST VISIVI', marginX, 13);
+  doc.setFontSize(19);
+  doc.text('Report prestazioni visive', marginX, 23);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Valutazione individuale e andamento nel tempo', marginX, 30);
+  y = 51;
+
+  doc.setTextColor(...C.navyDark);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text(nomeCompleto(atleta), marginX, y);
+  y += 6;
+  doc.setTextColor(...C.muted);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.text('Report generato il ' + formatDataIt(oggiIso()), marginX, y);
+  y += 10;
+
+  const testKeys = new Set();
+  sessioni.forEach((s) => {
+    ESERCIZI_CONFIG.forEach((e) => {
+      if (esercizioCompilato(e, s.esercizi?.[e.key])) testKeys.add(e.key);
+    });
+  });
+  const ultima = sessioni.length ? sessioni[sessioni.length - 1].data : '';
+  const kGap = 4;
+  const kWidth = (usableWidth - kGap * 2) / 3;
+  cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
+  cardKpi(marginX + kWidth + kGap, y, kWidth, 'TEST CON RISULTATI', testKeys.size);
+  cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'ULTIMA VALUTAZIONE', ultima ? formatDataIt(ultima) : '-');
+  y += 27;
+
+  const anagrafica = [
+    ['Data di nascita', atleta.dataNascita ? formatDataIt(atleta.dataNascita) : ''],
+    ['Altezza', testoValido(atleta.altezza) ? atleta.altezza + ' cm' : ''],
+    ['Telefono', atleta.telefono],
+    ['Email', atleta.email],
+  ].filter(([, v]) => testoValido(v));
+
+  if (anagrafica.length) {
+    titoloSezione('Anagrafica');
+    disegnaListaDueColonne(anagrafica);
+  }
+
+  const clinici = datiCliniciNonVuoti(atleta.datiClinici);
+  if (clinici.length) {
+    titoloSezione('Dati visivi e clinici', 'Sono riportati solo i campi compilati nel profilo atleta.');
+    disegnaListaDueColonne(clinici);
+  }
+
+  if (testoValido(atleta.note)) {
+    titoloSezione('Note');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...C.ink);
+    const lines = doc.splitTextToSize(String(atleta.note), usableWidth);
+    assicuraSpazio(lines.length * 4 + 4);
+    doc.text(lines, marginX, y);
+    y += lines.length * 4 + 5;
+  }
+
   await disegnaAllegati();
 
   for (const esercizio of ESERCIZI_CONFIG) {
-    const sessioniCompilate = sessioni.filter((s) => esercizioCompilato(esercizio, s.esercizi && s.esercizi[esercizio.key]));
-    if (sessioniCompilate.length === 0) continue;
-
-    // Solo campoVisivoAvanzato ha un render PDF dedicato. Altri esercizi custom
-    // (es. tracciamentoVisivo) non hanno una struttura dati compatibile: niente
-    // sezione per loro nel PDF, per non produrre un blocco vuoto/rotto.
+    const compilate = sessioni.filter((s) => esercizioCompilato(esercizio, s.esercizi?.[esercizio.key]));
+    if (!compilate.length) continue;
     if (esercizio.custom && esercizio.key !== 'campoVisivoAvanzato') continue;
 
-    nuovaPaginaSeNecessario(14);
-    doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
-    doc.text(esercizio.label, marginX, y);
-    y += 6;
-    doc.setFont(undefined, 'normal');
+    titoloSezione(
+      esercizio.label,
+      esercizio.descrizione || (compilate.length === 1 ? '1 valutazione disponibile' : compilate.length + ' valutazioni disponibili')
+    );
 
     if (esercizio.custom) {
-      await disegnaCampoVisivoAvanzato(sessioniCompilate);
+      await disegnaCampoVisivoAvanzato(compilate);
       continue;
     }
 
-    const cols = colonneEsercizio(esercizio);
-    const headers = ['Data', 'Titolo', ...cols.map((c) => c.header)];
-    const rows = sessioniCompilate.map((s) => [
-      formatDataIt(s.data),
-      s.titolo || '-',
-      ...cols.map((c) => (c.get(s) === '' ? '-' : String(c.get(s)))),
-    ]);
-    disegnaTabella(headers, rows);
+    const cols = colonneConDati(esercizio, compilate);
+    if (cols.length) {
+      const headers = ['Data', ...cols.map((c) => c.header)];
+      const rows = compilate.map((s) => [
+        formatDataIt(s.data),
+        ...cols.map((c) => formattaCella(c, c.get(s))),
+      ]);
 
-    if (sessioniCompilate.length >= 2) {
+      const dataWidth = 24;
+      const other = (usableWidth - dataWidth) / cols.length;
+      disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
+    }
+
+    if (compilate.length >= 2) {
       for (const group of getChartGroups(esercizio)) {
-        const sessioniGruppo = sessioniConGruppo(sessioniCompilate, group);
-        await disegnaGrafico(group, sessioniGruppo);
+        const gruppo = sessioniConGruppo(compilate, group);
+        const campiConDati = group.campi.filter((campo) =>
+          gruppo.some((s) => getValoreCampoGruppo(s, group, campo) !== null)
+        );
+        if (gruppo.length >= 2 && campiConDati.length) {
+          await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
+        }
       }
     }
   }
 
-  const nomeFile = `report_${slug(atleta.cognome)}_${oggiIso()}.pdf`;
+  // Footer e numerazione pagine.
+  const totalePagine = doc.getNumberOfPages();
+  for (let page = 1; page <= totalePagine; page++) {
+    doc.setPage(page);
+    doc.setDrawColor(...C.line);
+    doc.line(marginX, pageHeight - 13, marginX + usableWidth, pageHeight - 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.muted);
+    doc.text('Test Visivi - ' + nomeCompleto(atleta), marginX, footerY);
+    doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
+  }
+
+  const nomeFile = 'report_test_visivi_' + slug(atleta.cognome) + '_' + oggiIso() + '.pdf';
   doc.save(nomeFile);
 }
