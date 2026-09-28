@@ -421,12 +421,19 @@ function campoEsercizio(esercizio, key) {
 }
 
 function valoreCampoValido(campo, value) {
-  if (value === undefined || value === null || value === '') return false;
-  if (campo?.tipo !== 'number') return true;
-  const n = Number(value);
-  if (!Number.isFinite(n)) return false;
-  if (['ms', 's', 'count', 'percent', 'per_sec', 'bpm'].includes(campo.unit) && n < 0) return false;
-  if (campo.unit === 'percent' && n > 100) return false;
+  if (value === undefined || value === null) return false;
+  if (typeof value === 'string' && value.trim() === '') return false;
+
+  if (campo?.tipo === 'number') {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return false;
+    if (['ms', 's', 'count', 'percent', 'per_sec', 'bpm'].includes(campo.unit) && n < 0) return false;
+    if (campo.unit === 'percent' && n > 100) return false;
+    return true;
+  }
+
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === 'object') return Object.keys(value).length > 0;
   return true;
 }
 
@@ -571,18 +578,76 @@ function colonneEsercizio(esercizio) {
  * al suo interno ha un valore non vuoto (gestisce anche le sottoCondizioni).
  */
 function esercizioCompilato(esercizio, valore) {
-  if (!valore) return false;
+  if (!esercizio || !valore || typeof valore !== 'object') return false;
   const campi = campiEsercizioVisibili(esercizio);
+
   if (esercizio.sottoCondizioni) {
     return esercizio.sottoCondizioni.some((sc) => {
       const v = valore[sc.key];
-      return v && campi.some((c) => v[c.key] !== undefined && v[c.key] !== '' && v[c.key] !== null);
+      return v && campi.some((campo) => valoreCampoValido(campo, v[campo.key]));
     });
   }
-  return campi.some((c) => valore[c.key] !== undefined && valore[c.key] !== '' && valore[c.key] !== null);
+
+  return campi.some((campo) => valoreCampoValido(campo, valore[campo.key]));
 }
 
 /** Numero di esercizi compilati in una sessione (usato nell'elenco sessioni del profilo e nella vista "Tutte le sessioni"). */
 function contaEserciziCompilati(sessione) {
   return ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, sessione.esercizi && sessione.esercizi[e.key])).length;
 }
+
+function pulisciValoreEsercizio(esercizio, valore) {
+  if (!esercizio || !valore || typeof valore !== 'object') return null;
+  const campi = campiEsercizioVisibili(esercizio);
+
+  if (esercizio.sottoCondizioni) {
+    const risultato = {};
+    esercizio.sottoCondizioni.forEach((sc) => {
+      const sorgente = valore[sc.key];
+      if (!sorgente || typeof sorgente !== 'object') return;
+      const pulito = {};
+      campi.forEach((campo) => {
+        const raw = sorgente[campo.key];
+        if (valoreCampoValido(campo, raw)) pulito[campo.key] = raw;
+      });
+      if (Object.keys(pulito).length) risultato[sc.key] = pulito;
+    });
+    return Object.keys(risultato).length ? risultato : null;
+  }
+
+  const risultato = {};
+  campi.forEach((campo) => {
+    const raw = valore[campo.key];
+    if (valoreCampoValido(campo, raw)) risultato[campo.key] = raw;
+  });
+  return Object.keys(risultato).length ? risultato : null;
+}
+
+function pulisciEserciziSessione(sessione) {
+  const originali = sessione?.esercizi && typeof sessione.esercizi === 'object' ? sessione.esercizi : {};
+  const puliti = {};
+
+  Object.entries(originali).forEach(([key, valore]) => {
+    if (key === 'jetProgramOriginale') {
+      puliti[key] = valore;
+      return;
+    }
+
+    const esercizio = getEsercizioConfig(key);
+    if (!esercizio) {
+      // Dati storici non riconosciuti: non vengono distrutti, ma non sono mostrati come test.
+      puliti[key] = valore;
+      return;
+    }
+
+    const valorePulito = pulisciValoreEsercizio(esercizio, valore);
+    if (valorePulito) puliti[key] = valorePulito;
+  });
+
+  return { ...sessione, esercizi: puliti };
+}
+
+function sessioneHaRisultatiVisibili(sessione) {
+  return contaEserciziCompilati(sessione) > 0;
+}
+
