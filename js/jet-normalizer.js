@@ -133,3 +133,62 @@ function riepilogoSessione(sessione) {
   const n = contaEserciziCompilati(sessione);
   return n ? `${n} test con dati · Apri il dettaglio` : 'Nessun risultato registrato';
 }
+
+
+/* Sessioni storiche dell'app precedente: i tempi medi erano salvati in secondi
+ * (es. 0.46) mentre l'interfaccia attuale li esprime in millisecondi.
+ * La conversione è solo in memoria; Firestore non viene riscritto.
+ */
+const LEGACY_MS_FIELDS = {
+  localizzazioneSpaziale: ['tempoReazioneMedio'],
+  pedana360: ['tempoReazioneMedio'],
+  proActionReaction: ['tempoRilascioMedio', 'tempoClickMedio'],
+  attenzioneSeparata: ['tempoReazioneMedio'],
+  reazioneVisuoMotoriaSceltaMultipla: ['tempoReazioneMedio'],
+};
+
+function normalizzaSessioneLegacy(sessione) {
+  if (!sessione || haDatiJet(sessione) || sessione.modalita || sessione.testStandard) return sessione;
+  const esercizi = sessione.esercizi;
+  if (!esercizi || typeof esercizi !== 'object') return sessione;
+
+  let cambiata = false;
+  const nuoviEsercizi = { ...esercizi };
+
+  Object.entries(LEGACY_MS_FIELDS).forEach(([testKey, campi]) => {
+    const dati = esercizi[testKey];
+    if (!dati || typeof dati !== 'object') return;
+    const nuovo = { ...dati };
+    let testCambiato = false;
+
+    campi.forEach((key) => {
+      const v = Number(dati[key]);
+      if (Number.isFinite(v) && v > 0 && v < 10) {
+        nuovo[key] = Math.round(v * 1000 * 100) / 100;
+        testCambiato = true;
+      }
+    });
+
+    if (testCambiato) {
+      nuoviEsercizi[testKey] = nuovo;
+      cambiata = true;
+    }
+  });
+
+  return cambiata ? { ...sessione, esercizi: nuoviEsercizi, _legacyTempiNormalizzati: true } : sessione;
+}
+
+function sessioneHaDatiTest(sessione) {
+  if (!sessione) return false;
+  const esercizi = sessione.esercizi;
+  if (!esercizi || typeof esercizi !== 'object') return false;
+  return Object.entries(esercizi).some(([key, value]) => {
+    if (key === 'jetProgramOriginale') return value && typeof value === 'object' && Object.keys(value).length > 0;
+    if (!value || typeof value !== 'object') return false;
+    return Object.values(value).some((v) => {
+      if (v === null || v === undefined || v === '') return false;
+      if (typeof v === 'object') return Object.keys(v).length > 0;
+      return true;
+    });
+  });
+}
