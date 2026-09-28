@@ -4,7 +4,7 @@
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v30.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v32.
 
 Il 28/09/2026 è stato analizzato l'export Firestore reale:
 139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
@@ -62,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v30 usa rete con fallback offline, include il normalizzatore e limita
+La cache v32 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
@@ -176,3 +176,19 @@ Questi valori restano conservati nei dati originali ma non vengono presentati co
 - Il report PDF è stato ridisegnato: copertina, KPI, anagrafica, dati clinici compilati, sezioni test, tabelle con unità, grafici, allegati, numerazione pagine e footer.
 - Per evitare PDF enormi, ogni sezione riporta in tabella le ultime 12 valutazioni e nei grafici le ultime 20, indicando quante valutazioni totali sono disponibili.
 - I test E2E verificano anche che il PDF generato sia un file PDF non vuoto.
+
+
+## Fusione dei doppioni atleta
+
+La voce "Sistema archivio" ora:
+1. scarica un backup JSON prima di ogni modifica;
+2. corregge le anagrafiche note;
+3. individua solo gruppi duplicati compatibili;
+4. unisce i profili scegliendo quello con più sessioni;
+5. riassegna le sessioni mantenendo gli stessi id;
+6. completa soltanto i campi mancanti del profilo principale;
+7. conserva il profilo sorgente in `mergeStorico`;
+8. elimina il documento atleta duplicato solo dopo la riassegnazione;
+9. rimuove infine le sole sessioni prive di qualsiasi dato test.
+
+Profili con nomi non vuoti incompatibili o date di nascita discordanti non vengono uniti automaticamente.
