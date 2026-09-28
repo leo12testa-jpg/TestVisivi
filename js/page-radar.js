@@ -16,11 +16,13 @@ function valoriGrezziCampo(sessioni, esercizioKey, campoKey) {
         const scDati = dati[sc.key];
         if (!scDati) return;
         const v = scDati[campoKey];
-        if (v !== undefined && v !== null && v !== '') valori.push(Number(v));
+        const campo = esercizio.campi.find((x) => x.key === campoKey);
+        if (campo && valoreCampoValido(campo, v)) valori.push(Number(v));
       });
     } else {
       const v = dati[campoKey];
-      if (v !== undefined && v !== null && v !== '') valori.push(Number(v));
+      const campo = esercizio.campi.find((x) => x.key === campoKey);
+      if (campo && valoreCampoValido(campo, v)) valori.push(Number(v));
     }
   });
   return valori;
@@ -84,16 +86,17 @@ function costruisciContenuto() {
   container.appendChild(el('div', { id: 'tabella-radar' }));
 }
 
-function renderRadar(punteggiA, punteggiB) {
-  const labels = CATEGORIE_RADAR.map((c) => c.nome);
-  const tooltipTestNames = CATEGORIE_RADAR.map((cat) => getTestNamesForCategoria(cat));
+function renderRadar(punteggiA, punteggiB, indiciAttivi) {
+  const categorie = indiciAttivi.map((i) => CATEGORIE_RADAR[i]);
+  const labels = categorie.map((c) => c.nome);
+  const tooltipTestNames = categorie.map((cat) => getTestNamesForCategoria(cat));
   const arrotonda = (v) => (v === null ? null : Math.round(v * 10) / 10);
-  const datasets = [{ label: 'Periodo A', data: punteggiA.map(arrotonda) }];
-  if (punteggiB) datasets.push({ label: 'Periodo B', data: punteggiB.map(arrotonda) });
+  const datasets = [{ label: 'Periodo A', data: indiciAttivi.map((i) => arrotonda(punteggiA[i])) }];
+  if (punteggiB) datasets.push({ label: 'Periodo B', data: indiciAttivi.map((i) => arrotonda(punteggiB[i])) });
   renderChart(qs('#radar-canvas'), radarChartConfig(labels, datasets, tooltipTestNames));
 }
 
-function renderTabella(punteggiA, punteggiB) {
+function renderTabella(punteggiA, punteggiB, indiciAttivi) {
   const headers = ['Categoria', 'Test associati', 'Periodo A', ...(punteggiB ? ['Periodo B'] : [])];
   const formatta = (v) => (v === null ? '—' : v.toFixed(1));
   const table = el('table', {}, [
@@ -101,20 +104,17 @@ function renderTabella(punteggiA, punteggiB) {
     el(
       'tbody',
       {},
-      CATEGORIE_RADAR.map((cat, i) =>
-        el('tr', {}, [
+      indiciAttivi.map((i) => {
+        const cat = CATEGORIE_RADAR[i];
+        return el('tr', {}, [
           el('td', { text: cat.nome }),
           el('td', { class: 'radar-test-cell' }, [
-            el(
-              'ul',
-              { class: 'radar-test-list' },
-              getTestNamesForCategoria(cat).map((nome) => el('li', { text: nome }))
-            ),
+            el('ul', { class: 'radar-test-list' }, getTestNamesForCategoria(cat).map((nome) => el('li', { text: nome }))),
           ]),
           el('td', { text: formatta(punteggiA[i]) }),
           ...(punteggiB ? [el('td', { text: formatta(punteggiB[i]) })] : []),
-        ])
-      )
+        ]);
+      })
     ),
   ]);
   qs('#tabella-radar').innerHTML = '';
@@ -123,7 +123,6 @@ function renderTabella(punteggiA, punteggiB) {
 
 function calcola() {
   if (_sessioniAtleta.length === 0) return;
-  costruisciContenuto();
 
   const periodoA = leggiPeriodo('periodo-a', true);
   const sessioniA = filtraPerPeriodo(_sessioniAtleta, periodoA.da, periodoA.a);
@@ -136,8 +135,20 @@ function calcola() {
     punteggiB = CATEGORIE_RADAR.map((cat) => calcolaCategoria(cat, sessioniB));
   }
 
-  renderRadar(punteggiA, punteggiB);
-  renderTabella(punteggiA, punteggiB);
+  const indiciAttivi = CATEGORIE_RADAR
+    .map((_, i) => i)
+    .filter((i) => punteggiA[i] !== null || (punteggiB && punteggiB[i] !== null));
+
+  if (!indiciAttivi.length) {
+    const container = qs('#contenuto-radar');
+    container.innerHTML = '';
+    container.appendChild(el('div', { class: 'empty-state', text: 'Nessun valore reale disponibile nel periodo selezionato.' }));
+    return;
+  }
+
+  costruisciContenuto();
+  renderRadar(punteggiA, punteggiB, indiciAttivi);
+  renderTabella(punteggiA, punteggiB, indiciAttivi);
 }
 
 qs('#periodo-a-da').addEventListener('change', calcola);
@@ -159,11 +170,11 @@ async function init() {
   document.title = `Radar ${nomeCompleto(atleta)} - Test Visivi`;
 
   const [tutteSessioni, sessioniAtleta] = await Promise.all([dbGetAllSessioni(), dbGetSessioniByAtleta(atletaId)]);
-  _sessioniAtleta = sessioniAtleta.filter((s) => !isSessioneTraining(s));
-  _statsGlobali = calcolaStatisticheGlobali(tutteSessioni.filter((s) => !isSessioneTraining(s)));
+  _sessioniAtleta = sessioniAtleta.filter((s) => !isSessioneTraining(s) && sessioneHaRisultatiVisibili(s));
+  _statsGlobali = calcolaStatisticheGlobali(tutteSessioni.filter((s) => !isSessioneTraining(s) && sessioneHaRisultatiVisibili(s)));
 
   if (_sessioniAtleta.length === 0) {
-    qs('#contenuto-radar').appendChild(el('div', { class: 'empty-state', text: 'Nessuna sessione registrata per questo atleta: il radar non può essere calcolato.' }));
+    qs('#contenuto-radar').appendChild(el('div', { class: 'empty-state', text: 'Nessun risultato reale disponibile per questo atleta.' }));
     return;
   }
 
