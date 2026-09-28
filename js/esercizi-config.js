@@ -597,30 +597,10 @@ function contaEserciziCompilati(sessione) {
 }
 
 function pulisciValoreEsercizio(esercizio, valore) {
-  if (!esercizio || !valore || typeof valore !== 'object') return null;
-  const campi = campiEsercizioVisibili(esercizio);
-
-  if (esercizio.sottoCondizioni) {
-    const risultato = {};
-    esercizio.sottoCondizioni.forEach((sc) => {
-      const sorgente = valore[sc.key];
-      if (!sorgente || typeof sorgente !== 'object') return;
-      const pulito = {};
-      campi.forEach((campo) => {
-        const raw = sorgente[campo.key];
-        if (valoreCampoValido(campo, raw)) pulito[campo.key] = raw;
-      });
-      if (Object.keys(pulito).length) risultato[sc.key] = pulito;
-    });
-    return Object.keys(risultato).length ? risultato : null;
-  }
-
-  const risultato = {};
-  campi.forEach((campo) => {
-    const raw = valore[campo.key];
-    if (valoreCampoValido(campo, raw)) risultato[campo.key] = raw;
-  });
-  return Object.keys(risultato).length ? risultato : null;
+  // Elimina soltanto l'intero blocco quando NON contiene alcun campo reale.
+  // Se almeno un valore è valido, preserva integralmente il blocco per non perdere
+  // eventuali parametri storici/esterni non gestiti dal form.
+  return esercizioCompilato(esercizio, valore) ? valore : null;
 }
 
 function pulisciEserciziSessione(sessione) {
