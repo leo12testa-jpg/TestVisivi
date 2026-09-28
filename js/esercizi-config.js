@@ -369,7 +369,7 @@ const TEST_STANDARD_INFO = {
   percezioneCampoVisivo: {
     descrizione: 'Consapevolezza e riconoscimento di stimoli periferici mantenendo una mira centrale.',
     principali: ['angoloMassimo', 'errori', 'numeroLettere', 'numeroTarget'],
-    secondari: ['tempoTotale', 'recuperi', 'tempoArea5', 'tempoAreaEsterna'],
+    secondari: ['tempoTotale', 'recuperi', 'tempoArea5', 'tempoAreaEsterna', 'v5', 'v10', 'v15', 'v20', 'v25', 'v30', 'v35', 'v40'],
   },
   localizzazioneAffollamentoOculare: {
     descrizione: 'Localizzazione in affollamento percettivo con movimenti oculari rapidi.',
@@ -379,7 +379,7 @@ const TEST_STANDARD_INFO = {
   memorizzazioneSequenze: {
     descrizione: 'Memoria visiva e concentrazione su sequenze spaziali 7×12.',
     principali: ['livelloMassimo', 'errori', 'tempoTotale', 'completa'],
-    secondari: [],
+    secondari: ['totale'],
   },
   ordinamentoStrategico: {
     descrizione: 'Ordinamento strategico di stimoli in condizioni di confusione percettiva.',
@@ -445,6 +445,15 @@ function formattaValoreCampo(campo, value) {
 
 function metricheEsercizioSessione(sessione, test, soloPrincipali = true) {
   if (!test) return [];
+
+  if (test.sottoCondizioni) {
+    return colonneEsercizio(test).map((col) => {
+      const raw = col.get(sessione);
+      if (raw === '' || !valoreCampoValido(col.campo, raw)) return null;
+      return { key: col.header, label: col.header, valore: formattaValoreCampo(col.campo, raw), raw };
+    }).filter(Boolean);
+  }
+
   const dati = sessione?.esercizi?.[test.key] || {};
   const keys = soloPrincipali && test.campiPrincipali?.length
     ? test.campiPrincipali
