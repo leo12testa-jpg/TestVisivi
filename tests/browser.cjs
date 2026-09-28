@@ -104,6 +104,15 @@ function fakeFirebase(seed) {
     await overflow();
     await page.screenshot({ path: `${out}/profile-desktop.png`, fullPage: true });
 
+    const pdfDownloadPromise = page.waitForEvent('download');
+    await page.locator('#btn-export-pdf').click();
+    const pdfDownload = await pdfDownloadPromise;
+    const pdfPath = `${out}/synthetic-report.pdf`;
+    await pdfDownload.saveAs(pdfPath);
+    const pdfBytes = fs.readFileSync(pdfPath);
+    assert.ok(pdfBytes.length > 10000, 'PDF non vuoto');
+    assert.equal(pdfBytes.subarray(0, 4).toString(), '%PDF', 'PDF valido');
+
     await page.locator('#link-tutte-sessioni').click();
     await page.waitForSelector('#lista-sessioni a');
     assert.equal(await page.locator('#lista-sessioni a').count(), 50);
@@ -116,10 +125,13 @@ function fakeFirebase(seed) {
     await page.screenshot({ path: `${out}/sessions-desktop.png`, fullPage: true });
 
     await go('sessione.html?atletaId=demo&sessioneId=jet');
-    assert.equal(await page.locator('#f__proActionReaction__tempoTotale').inputValue(), '45');
-    assert.equal(await page.locator('#f__proActionReaction__errori').inputValue(), '0');
+    assert.match(await page.locator('#dati-jet').innerText(), /45 s/);
+    assert.match(await page.locator('#dati-jet').innerText(), /Errori/);
     await page.locator('#dati-jet summary').click();
     assert.match(await page.locator('#dati-jet pre').innerText(), /sconosciuto/);
+    await page.getByRole('button', { name: 'Modifica risultati' }).click();
+    assert.equal(await page.locator('#f__proActionReaction__tempoTotale').inputValue(), '45');
+    assert.equal(await page.locator('#f__proActionReaction__errori').inputValue(), '0');
     await page.locator('#f__proActionReaction__tempoTotale').fill('44');
     await page.locator('#btn-salva').click();
     await page.waitForURL('**/atleta.html?id=demo');
@@ -131,6 +143,7 @@ function fakeFirebase(seed) {
     assert.equal(saved.esercizi.proActionReaction.tempoTotale, 44);
 
     await go('sessione.html?atletaId=demo&sessioneId=legacy');
+    await page.getByRole('button', { name: 'Modifica risultati' }).click();
     await page.locator('#f__vvs__gioco__primaDeviazione').fill('3');
     await page.locator('#btn-salva').click();
     await page.waitForURL('**/atleta.html?id=demo');
@@ -139,7 +152,7 @@ function fakeFirebase(seed) {
     assert.deepEqual(legacy.esercizi.campoVisivoAvanzato, fixture.sessioni.legacy.esercizi.campoVisivoAvanzato);
 
     await go('sessione.html?atletaId=demo&sessioneId=unknown');
-    assert.match(await page.locator('#dati-jet').innerText(), /Risultati Jet Program disponibili/);
+    assert.match(await page.locator('#dati-jet').innerText(), /Dati Jet Program presenti/);
     await page.locator('#dati-jet summary').click();
     assert.match(await page.locator('#dati-jet pre').innerText(), /nessuna unità/);
 
@@ -147,7 +160,8 @@ function fakeFirebase(seed) {
     assert.equal(await page.locator('#test-standard option').count(), 14);
     await page.locator('#test-standard').selectOption('proActionReaction');
     await page.locator('#f__proActionReaction__tempoTotale').fill('38');
-    await page.locator('#f__proActionReaction__tempoReazioneMedio').fill('300');
+    await page.locator('#f__proActionReaction__tempoRilascioMedio').fill('300');
+    await page.locator('#f__proActionReaction__tempoClickMedio').fill('340');
     await page.locator('#f__proActionReaction__errori').fill('0');
     await page.screenshot({ path: `${out}/new-test-desktop.png`, fullPage: true });
     await page.evaluate(() => localStorage.setItem('simulate-write-error', '1'));
@@ -183,7 +197,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'storico paginato', 'dettaglio Jet e sconosciuti', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico paginato', 'dettaglio Jet e sconosciuti', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
