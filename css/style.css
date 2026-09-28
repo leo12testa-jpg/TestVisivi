@@ -695,3 +695,269 @@ th, td { padding: 12px 16px; }
   .save-bar { bottom: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+
+/* Final polish — dashboard sport science */
+:root {
+  --accent-soft: color-mix(in srgb, var(--accent) 11%, transparent);
+  --surface-elevated: color-mix(in srgb, var(--surface) 96%, var(--accent) 4%);
+  --shadow-card: 0 10px 30px rgba(20, 48, 65, .07);
+  --shadow-hover: 0 16px 38px rgba(20, 48, 65, .12);
+}
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 82% -8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 30rem),
+    var(--bg);
+}
+
+header.app-header {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 1px 0 var(--border);
+}
+
+header.app-header h1 {
+  font-weight: 760;
+}
+
+.page-intro {
+  margin: 4px 0 28px;
+  padding: 34px 36px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background:
+    linear-gradient(135deg, var(--surface-elevated), var(--surface));
+  box-shadow: var(--shadow-card);
+}
+
+.page-intro.compact {
+  padding: 26px 30px;
+}
+
+.page-intro h2 {
+  margin-top: 8px;
+}
+
+.search-bar {
+  position: relative;
+}
+
+.search-bar input {
+  box-shadow: 0 2px 10px rgba(20, 48, 65, .04);
+}
+
+.card,
+.chart-block,
+.list-item,
+.stat-card,
+details.esercizio {
+  box-shadow: var(--shadow-card);
+}
+
+.list-item {
+  border-color: color-mix(in srgb, var(--border) 90%, var(--accent) 10%);
+}
+
+a.list-item {
+  transform: translateY(0);
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+a.list-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+  background: var(--surface);
+}
+
+.avatar {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
+}
+
+.athlete-name {
+  font-size: 1rem;
+  letter-spacing: -.015em;
+}
+
+.fab-row {
+  align-items: stretch;
+}
+
+.fab-row > button,
+.fab-row > .btn {
+  min-height: 48px;
+}
+
+.subnav {
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow-card);
+}
+
+.subnav .btn,
+.subnav button {
+  min-height: 42px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: var(--accent);
+  opacity: .75;
+}
+
+details.esercizio {
+  border-radius: 18px;
+}
+
+details.esercizio > summary {
+  min-height: 62px;
+  font-size: .98rem;
+}
+
+details.esercizio[open] {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+}
+
+details.esercizio[open] > summary {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.esercizio-body .field-grid {
+  align-items: end;
+}
+
+.session-original-name {
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.jet-original-details {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.raw-data {
+  border: 1px solid var(--border);
+}
+
+.table-scroll {
+  box-shadow: var(--shadow-card);
+}
+
+th {
+  font-size: .74rem;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-2);
+}
+
+.chart-block {
+  border-radius: 18px;
+}
+
+.chart-block h3 {
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.save-bar {
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: 0 14px 40px rgba(20, 48, 65, .16);
+}
+
+.archive-tools {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.archive-tools .meta {
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .page-intro,
+  .page-intro.compact {
+    margin: 0 0 20px;
+    padding: 22px 20px;
+    border-radius: 18px;
+  }
+
+  .page-intro h2 {
+    font-size: 1.65rem;
+  }
+
+  .archive-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .archive-tools button {
+    width: 100%;
+  }
+
+  .subnav {
+    padding: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .subnav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .subnav .btn,
+  .subnav button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-card strong {
+    font-size: 1.18rem;
+  }
+
+  details.esercizio > summary {
+    min-height: 56px;
+  }
+
+  .save-bar {
+    left: 8px;
+    right: 8px;
+    border-radius: 16px;
+  }
+}
