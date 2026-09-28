@@ -527,6 +527,7 @@ function colonneEsercizio(esercizio) {
           header: `${sc.label} — ${campo.label}`,
           get: (s) => getValoreCampoRaw(s, esercizio.key, sc.key, campo.key),
           tipo: campo.tipo,
+          campo,
         });
       });
     });
@@ -536,6 +537,7 @@ function colonneEsercizio(esercizio) {
     header: campo.label,
     get: (s) => getValoreCampoRaw(s, esercizio.key, null, campo.key),
     tipo: campo.tipo,
+    campo,
   }));
 }
 
