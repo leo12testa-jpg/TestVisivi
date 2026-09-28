@@ -1224,3 +1224,42 @@ th {
 .result-test-block h3 { margin:0 0 12px; color:var(--text); font-size:1rem; line-height:1.35; }
 .edit-session-toggle { width:100%; margin:-6px 0 18px; }
 #esercizi-container[hidden], #session-meta-form[hidden], #save-bar[hidden] { display:none !important; }
+
+
+.duplicate-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+  box-shadow: var(--shadow-card);
+}
+
+.duplicate-banner strong {
+  display: block;
+  color: var(--text);
+  font-size: .95rem;
+}
+
+.duplicate-banner .meta {
+  margin: 4px 0 0;
+}
+
+.duplicate-banner button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 640px) {
+  .duplicate-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .duplicate-banner button {
+    width: 100%;
+  }
+}
