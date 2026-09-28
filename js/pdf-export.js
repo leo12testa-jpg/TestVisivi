@@ -63,6 +63,14 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     ? normalizzaAnagraficaCalciatore(atletaRaw)
     : atletaRaw;
 
+  let squadraNome = '';
+  if (atleta.squadraId && typeof dbGetSquadra === 'function') {
+    try {
+      const squadra = await dbGetSquadra(atleta.squadraId);
+      squadraNome = squadra?.nome || '';
+    } catch (_) {}
+  }
+
   const sessioni = (sessioniRaw || [])
     .filter((s) => !isSessioneTraining(s))
     .filter((s) => typeof sessioneHaDatiTest !== 'function' || sessioneHaDatiTest(s))
@@ -394,6 +402,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     ['Altezza', testoValido(atleta.altezza) ? atleta.altezza + ' cm' : ''],
     ['Telefono', atleta.telefono],
     ['Email', atleta.email],
+    ['Squadra', squadraNome],
   ].filter(([, v]) => testoValido(v));
 
   if (anagrafica.length) {
@@ -425,20 +434,27 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     if (!compilate.length) continue;
     if (esercizio.custom && esercizio.key !== 'campoVisivoAvanzato') continue;
 
+    const numeroValutazioni = compilate.length;
+    const storicoTabella = compilate.slice(-12);
+    const storicoGrafico = compilate.slice(-20);
+    const notaStorico = numeroValutazioni > 12
+      ? numeroValutazioni + ' valutazioni totali - tabella: ultime 12'
+      : (numeroValutazioni === 1 ? '1 valutazione disponibile' : numeroValutazioni + ' valutazioni disponibili');
+
     titoloSezione(
       esercizio.label,
-      esercizio.descrizione || (compilate.length === 1 ? '1 valutazione disponibile' : compilate.length + ' valutazioni disponibili')
+      [esercizio.descrizione, notaStorico].filter(Boolean).join(' - ')
     );
 
     if (esercizio.custom) {
-      await disegnaCampoVisivoAvanzato(compilate);
+      await disegnaCampoVisivoAvanzato(storicoTabella);
       continue;
     }
 
-    const cols = colonneConDati(esercizio, compilate);
+    const cols = colonneConDati(esercizio, storicoTabella);
     if (cols.length) {
       const headers = ['Data', ...cols.map((c) => c.header)];
-      const rows = compilate.map((s) => [
+      const rows = storicoTabella.map((s) => [
         formatDataIt(s.data),
         ...cols.map((c) => formattaCella(c, c.get(s))),
       ]);
@@ -448,9 +464,9 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
       disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
     }
 
-    if (compilate.length >= 2) {
+    if (storicoGrafico.length >= 2) {
       for (const group of getChartGroups(esercizio)) {
-        const gruppo = sessioniConGruppo(compilate, group);
+        const gruppo = sessioniConGruppo(storicoGrafico, group);
         const campiConDati = group.campi.filter((campo) =>
           gruppo.some((s) => getValoreCampoGruppo(s, group, campo) !== null)
         );
