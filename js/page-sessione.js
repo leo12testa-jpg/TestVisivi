@@ -167,6 +167,40 @@ function mostraOriginali(sessione) {
   }
 }
 
+function attivaModalitaLetturaSessione() {
+  const meta = qs('#session-meta-form');
+  const esercizi = qs('#esercizi-container');
+  const saveBar = qs('#save-bar');
+  if (!meta || !esercizi || !saveBar) return;
+
+  meta.hidden = true;
+  esercizi.hidden = true;
+  saveBar.hidden = true;
+
+  const btn = el('button', { type: 'button', class: 'secondary edit-session-toggle', text: 'Modifica risultati' });
+  qs('#dati-jet').after(btn);
+
+  btn.addEventListener('click', () => {
+    const apri = esercizi.hidden;
+    meta.hidden = !apri;
+    esercizi.hidden = !apri;
+    saveBar.hidden = !apri;
+    btn.textContent = apri ? 'Chiudi modifica' : 'Modifica risultati';
+
+    if (apri) {
+      qsa('#esercizi-container .field').forEach((field) => {
+        const controllo = qs('input:not([type="file"]), select, textarea', field);
+        if (!controllo) return;
+        field.hidden = String(controllo.value || '').trim() === '';
+      });
+      qsa('#esercizi-container details.esercizio').forEach((details) => {
+        const fields = qsa('.field', details);
+        details.hidden = fields.length > 0 && fields.every((field) => field.hidden);
+      });
+    }
+  });
+}
+
 function popolaEsercizio(esercizio, valore) {
   if (!valore) return;
   const detailsEl = qs(`#es-${esercizio.key}`);
@@ -419,6 +453,7 @@ async function init() {
       _fotoEsistenti = await dbGetAllegatiFotoBySessione(sessioneId);
       _videoEsistenti = await dbGetAllegatiVideoBySessione(sessioneId);
       qs('#btn-elimina-sessione').hidden = false;
+      attivaModalitaLetturaSessione();
     } else throw new Error('Sessione non trovata. Nessun dato è stato modificato.');
   } else {
     qs('#titolo-sessione').textContent = `${getSessioneConfig(_modalitaSessione).titoloNuova} - ${nomeCompleto(atleta)}`;
