@@ -61,39 +61,50 @@ function buildCampoField(esercizioKey, scKey, campo) {
 
 function buildEsercizioSection(esercizio) {
   const body = el('div', { class: 'esercizio-body' });
+  const campi = campiEsercizioVisibili(esercizio);
+
   if (esercizio.sottoCondizioni) {
     esercizio.sottoCondizioni.forEach((sc) => {
-      const grid = el(
-        'div',
-        { class: 'field-grid' },
-        esercizio.campi.map((campo) => buildCampoField(esercizio.key, sc.key, campo))
-      );
+      const grid = el('div', { class: 'field-grid' }, campi.map((campo) => buildCampoField(esercizio.key, sc.key, campo)));
       body.appendChild(el('div', { class: 'sotto-condizione' }, [el('h4', { text: sc.label }), grid]));
     });
+  } else if (esercizio.standard) {
+    const principali = (esercizio.campiPrincipali || []).map((key) => campoEsercizio(esercizio, key)).filter(Boolean);
+    const secondari = (esercizio.campiSecondari || []).map((key) => campoEsercizio(esercizio, key)).filter(Boolean);
+
+    if (principali.length) {
+      body.appendChild(el('p', { class: 'form-section-label', text: 'Risultati principali' }));
+      body.appendChild(el('div', { class: 'field-grid primary-fields' }, principali.map((campo) => buildCampoField(esercizio.key, null, campo))));
+    }
+    if (secondari.length) {
+      const extra = el('details', { class: 'secondary-fields' }, [
+        el('summary', { text: 'Parametri e dettagli aggiuntivi' }),
+        el('div', { class: 'field-grid', style: 'margin-top:14px;' }, secondari.map((campo) => buildCampoField(esercizio.key, null, campo))),
+      ]);
+      body.appendChild(extra);
+    }
   } else {
-    const grid = el(
-      'div',
-      { class: 'field-grid' },
-      esercizio.campi.map((campo) => buildCampoField(esercizio.key, null, campo))
-    );
-    body.appendChild(grid);
+    body.appendChild(el('div', { class: 'field-grid' }, campi.map((campo) => buildCampoField(esercizio.key, null, campo))));
   }
-  const details = el('details', { class: 'esercizio', id: `es-${esercizio.key}` }, [el('summary', { text: esercizio.label }), body]);
-  return details;
+
+  return el('details', { class: 'esercizio', id: `es-${esercizio.key}` }, [el('summary', { text: esercizio.label }), body]);
 }
 
 function renderEserciziForm() {
   const container = qs('#esercizi-container');
-  // Gli esercizi "custom" (es. campoVisivoAvanzato) non hanno un form: sono scritti solo da script esterni.
   ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => container.appendChild(buildEsercizioSection(esercizio)));
   const select = qs('#test-standard');
   TEST_STANDARD.forEach((test) => select.appendChild(el('option', { value: test.key, text: test.label })));
+  if (!qs('#test-help')) select.parentElement.appendChild(el('p', { id: 'test-help', class: 'test-help', text: 'Scegli un test per vedere solo i valori utili da compilare.' }));
   select.addEventListener('change', aggiornaTestVisibili);
   aggiornaTestVisibili();
 }
 
 function aggiornaTestVisibili() {
   const key = qs('#test-standard').value;
+  const test = getEsercizioConfig(key);
+  const help = qs('#test-help');
+  if (help) help.textContent = test?.descrizione || 'Scegli un test per vedere solo i valori utili da compilare.';
   qsa('#esercizi-container > details').forEach((details) => {
     const testKey = details.id.slice(3);
     const esistente = _sessioneCaricata?.esercizi?.[testKey];
@@ -103,18 +114,50 @@ function aggiornaTestVisibili() {
 }
 
 function mostraOriginali(sessione) {
-  if (!haDatiJet(sessione) && !sessione.nomeTestOriginale && !sessione.tipoTest) return;
+  const test = jetTest(sessione) || getEsercizioConfig(sessione.testStandard);
+  const metriche = metrichePrincipaliSessione(sessione);
+  if (!test && !haDatiJet(sessione)) return;
+
   const container = qs('#dati-jet');
   container.hidden = false;
-  container.appendChild(el('h2', { text: 'Risultati Jet Program' }));
-  container.appendChild(el('p', { text: nomeTestSessione(sessione) }));
-  container.appendChild(el('p', { class: 'meta', text: riepilogoSessione(sessione) }));
-  container.appendChild(el('details', {}, [
-    el('summary', { text: 'Apri i dati originali completi' }),
-    el('pre', { class: 'raw-data', text: JSON.stringify({ nomeTestOriginale: sessione.nomeTestOriginale, tipoTest: sessione.tipoTest, datiOriginali: sessione.datiOriginali }, null, 2) }),
-  ]));
-}
+  container.classList.add('result-overview');
 
+  if (test) {
+    container.appendChild(el('p', { class: 'eyebrow', text: 'RISULTATI SESSIONE' }));
+    container.appendChild(el('h2', { class: 'result-title', text: test.label }));
+    if (test.descrizione) container.appendChild(el('p', { class: 'result-description', text: test.descrizione }));
+  }
+
+  if (metriche.length) {
+    container.appendChild(el('div', { class: 'metric-grid' }, metriche.map((m) =>
+      el('div', { class: 'metric-card' }, [
+        el('span', { class: 'metric-label', text: m.label }),
+        el('strong', { class: 'metric-value', text: m.valore }),
+      ])
+    )));
+  } else if (haDatiJet(sessione)) {
+    container.appendChild(el('p', { class: 'meta', text: 'I dati Jet Program originali sono presenti, ma questa prova non ha ancora valori standard utilizzabili.' }));
+  }
+
+  const anomalie = anomalieValoriSessione(sessione);
+  if (anomalie.length) {
+    container.appendChild(el('div', {
+      class: 'data-warning',
+      text: `${anomalie.length} valore/i Jet anomalo/i escluso/i dai riepiloghi e dai grafici: ${anomalie.join(', ')}.`,
+    }));
+  }
+
+  if (haDatiJet(sessione)) {
+    const originale = typeof jetOriginale === 'function' ? jetOriginale(sessione) : null;
+    const nomeOriginale = sessione.jetProgramNomeOriginale || sessione.nomeTestOriginale || originale?.nomeTestOriginale || '';
+    const details = el('details', { class: 'jet-original-details' }, [
+      el('summary', { text: 'Dati tecnici originali Jet Program' }),
+      nomeOriginale ? el('p', { class: 'original-test-name', text: nomeOriginale }) : el('span'),
+      el('pre', { class: 'raw-data', text: JSON.stringify(originale || sessione.datiOriginali || {}, null, 2) }),
+    ]);
+    container.appendChild(details);
+  }
+}
 function popolaEsercizio(esercizio, valore) {
   if (!valore) return;
   const detailsEl = qs(`#es-${esercizio.key}`);
@@ -123,20 +166,30 @@ function popolaEsercizio(esercizio, valore) {
     esercizio.sottoCondizioni.forEach((sc) => {
       const scValore = valore[sc.key];
       if (!scValore) return;
-      esercizio.campi.forEach((campo) => {
+      campiEsercizioVisibili(esercizio).forEach((campo) => {
         const v = scValore[campo.key];
         if (v === undefined || v === null || v === '') return;
         const input = qs(`#${fieldId(esercizio.key, sc.key, campo.key)}`);
+        if (!input) return;
+        if (campo.tipo === 'number' && !valoreCampoValido(campo, v)) {
+          input.parentElement.appendChild(el('small', { class: 'field-warning', text: 'Dato Jet anomalo escluso' }));
+          return;
+        }
         input.value = v;
         sincronizzaToggleDaInput(input);
         haValori = true;
       });
     });
   } else {
-    esercizio.campi.forEach((campo) => {
+    campiEsercizioVisibili(esercizio).forEach((campo) => {
       const v = valore[campo.key];
       if (v === undefined || v === null || v === '') return;
       const input = qs(`#${fieldId(esercizio.key, null, campo.key)}`);
+      if (!input) return;
+      if (campo.tipo === 'number' && !valoreCampoValido(campo, v)) {
+        input.parentElement.appendChild(el('small', { class: 'field-warning', text: 'Dato Jet anomalo escluso' }));
+        return;
+      }
       input.value = v;
       sincronizzaToggleDaInput(input);
       haValori = true;
@@ -152,7 +205,7 @@ function leggiEsercizio(esercizio) {
     esercizio.sottoCondizioni.forEach((sc) => {
       const scRisultato = {};
       let scHaValori = false;
-      esercizio.campi.forEach((campo) => {
+      campiEsercizioVisibili(esercizio).forEach((campo) => {
         const input = qs(`#${fieldId(esercizio.key, sc.key, campo.key)}`);
         if (input.value === '') return;
         scRisultato[campo.key] = campo.tipo === 'number' ? Number(input.value) : input.value.trim();
@@ -167,7 +220,7 @@ function leggiEsercizio(esercizio) {
   }
   const risultato = {};
   let haValori = false;
-  esercizio.campi.forEach((campo) => {
+  campiEsercizioVisibili(esercizio).forEach((campo) => {
     const input = qs(`#${fieldId(esercizio.key, null, campo.key)}`);
     if (input.value === '') return;
     risultato[campo.key] = campo.tipo === 'number' ? Number(input.value) : input.value.trim();
