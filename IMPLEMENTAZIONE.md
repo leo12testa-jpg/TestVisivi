@@ -4,7 +4,7 @@
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v21.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v25.
 
 Il 28/09/2026 è stato analizzato l'export Firestore reale:
 139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
@@ -62,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v21 usa rete con fallback offline, include il normalizzatore e limita
+La cache v25 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
@@ -147,3 +147,20 @@ vecchie pagine di importazione o migrazione per completare questa conversione.
 - `tests/browser.cjs` (nuovo)
 - `tests/normalizer.test.cjs` (nuovo)
 - `tests/pwa.cjs` (nuovo)
+
+
+## Revisione leggibilità test e valori
+
+Dopo il confronto con l'export reale, la UI dei test è stata semplificata:
+
+- i 13 test standard hanno descrizione breve e ordine stabile;
+- ogni test mostra prima solo le metriche principali;
+- parametri tecnici, pedana e configurazioni sono raccolti sotto "Parametri e dettagli aggiuntivi";
+- storico e profilo atleta mostrano mini-metriche già formattate con unità leggibili;
+- le unità sono esplicitate: ms, s, img/s e bpm;
+- i grafici usano solo i campi utili del test standard;
+- i valori numerici Jet anomali vengono esclusi da riepiloghi e grafici, senza cancellarli dagli originali;
+- i dati tecnici Jet Program restano disponibili in un pannello chiuso di dettaglio.
+
+Nell'export reale risultano tre sessioni Pro Action/Reaction con medie temporali negative/anomale.
+Questi valori restano conservati nei dati originali ma non vengono presentati come risultati validi.
