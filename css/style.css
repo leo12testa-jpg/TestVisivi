@@ -1211,3 +1211,11 @@ th {
     font-size: .68rem;
   }
 }
+
+
+.unit-legend {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: .72rem;
+  line-height: 1.45;
+}
