@@ -14,10 +14,10 @@ test('13 standard distinti e chiavi legacy conservate', () => {
 });
 
 test('conversione decimali, zero e unità esplicite; nessuna mutazione', () => {
-  const raw = { nomeTestOriginale: 'Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (ms)': '2500', 'Tempo reazione medio (s)': '0,32', errori: 0, percentualeSuccesso: '98,5', nonInterpretato: [1, 2] } };
+  const raw = { nomeTestOriginale: 'Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (ms)': '2500', 'Tempo di rilascio medio (s)': '0,32', errori: 0, nonInterpretato: [1, 2] } };
   context.input = structuredClone(raw);
   const result = run('normalizzaSessioneJet(input)');
-  assert.deepEqual(result.esercizi.proActionReaction, { tempoTotale: 2.5, errori: 0, tempoReazioneMedio: 320, percentualeSuccesso: 98.5 });
+  assert.deepEqual(result.esercizi.proActionReaction, { tempoTotale: 2.5, tempoRilascioMedio: 320, errori: 0 });
   assert.deepEqual(run('input'), raw);
   assert.deepEqual(result.datiOriginali, raw.datiOriginali);
   assert.deepEqual(run('normalizzaSessioneJet(normalizzaSessioneJet(input))'), result);
@@ -45,7 +45,7 @@ test('nessun valore inventato per unità, nomi o strutture ambigui', () => {
 
 test('Jet non mappato visibile nello storico senza zero esercizi', () => {
   context.input = { nomeTestOriginale: 'Sconosciuto', datiOriginali: { valore: 'originale' } };
-  assert.match(run('riepilogoSessione(input)'), /Risultati Jet Program disponibili/);
+  assert.match(run('riepilogoSessione(input)'), /Dati originali Jet Program disponibili/);
   assert.equal(run('nomeTestSessione(input)'), 'Sconosciuto');
 });
 
