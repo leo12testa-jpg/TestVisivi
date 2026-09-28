@@ -4,7 +4,7 @@
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v32.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v36.
 
 Il 28/09/2026 è stato analizzato l'export Firestore reale:
 139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
@@ -62,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v32 usa rete con fallback offline, include il normalizzatore e limita
+La cache v36 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
@@ -192,3 +192,15 @@ La voce "Sistema archivio" ora:
 9. rimuove infine le sole sessioni prive di qualsiasi dato test.
 
 Profili con nomi non vuoti incompatibili o date di nascita discordanti non vengono uniti automaticamente.
+
+
+## Regola definitiva: mostrare solo test con valori reali
+
+- Un test è considerato presente solo se almeno uno dei suoi campi configurati contiene un valore reale e valido.
+- Stringhe vuote/spazi, null, valori numerici non finiti o valori negativi dove non ammessi non rendono un test compilato.
+- Il valore numerico 0 resta valido e viene mostrato.
+- Profilo atleta, storico, dettaglio sessione, grafici, radar, confronto e PDF ignorano i test senza risultati reali.
+- Le sessioni Jet non standardizzate restano conservate nell'archivio sorgente ma non compaiono nello storico operativo.
+- "Sistema archivio" rimuove fisicamente dai documenti Firestore i soli blocchi di test configurati che non contengono alcun risultato reale.
+- Se un test contiene almeno un risultato reale, il blocco viene conservato integralmente per non perdere eventuali parametri storici/esterni.
+- Le nuove sessioni non possono essere salvate senza almeno un risultato.
