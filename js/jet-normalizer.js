@@ -180,6 +180,8 @@ function normalizzaSessioneLegacy(sessione) {
 
 function sessioneHaDatiTest(sessione) {
   if (!sessione) return false;
+  if (haDatiJet(sessione)) return true;
+
   const esercizi = sessione.esercizi;
   if (!esercizi || typeof esercizi !== 'object') return false;
   return Object.entries(esercizi).some(([key, value]) => {
