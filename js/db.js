@@ -129,8 +129,10 @@ function _snapToObj(doc) {
 }
 
 function _sessioneDaDoc(doc) {
-  const sessione = _snapToObj(doc);
-  return typeof normalizzaSessioneJet === 'function' ? normalizzaSessioneJet(sessione) : sessione;
+  let sessione = _snapToObj(doc);
+  if (typeof normalizzaSessioneJet === 'function') sessione = normalizzaSessioneJet(sessione);
+  if (typeof normalizzaSessioneLegacy === 'function') sessione = normalizzaSessioneLegacy(sessione);
+  return sessione;
 }
 
 async function dbGetAtleti() {
@@ -224,6 +226,40 @@ async function dbDeleteSessione(id) {
   const video = await dbGetAllegatiVideoBySessione(id);
   for (const v of video) await dbDeleteAllegatoVideo(v.id);
   await _sessioniCol().doc(id).delete();
+}
+
+
+async function dbPulisciSessioniVuote() {
+  const snap = await _sessioniCol().get();
+  const vuote = snap.docs.filter((doc) => {
+    const s = doc.data();
+    const esercizi = s.esercizi && typeof s.esercizi === 'object' ? s.esercizi : {};
+    const haEsercizi = Object.keys(esercizi).length > 0;
+    const haJet = s.jetProgramReportId !== undefined || !!s.jetProgramNomeOriginale || !!s.nomeTestOriginale || !!s.tipoTest;
+    const haTitolo = String(s.titolo || '').trim() !== '';
+    return !haEsercizi && !haJet && !haTitolo;
+  });
+  for (const doc of vuote) await dbDeleteSessione(doc.id);
+  return vuote.length;
+}
+
+async function dbCorreggiNomiAtleti() {
+  if (typeof normalizzaAnagraficaCalciatore !== 'function') return 0;
+  const snap = await _atletiCol().get();
+  let aggiornati = 0;
+  for (const doc of snap.docs) {
+    const originale = { ...doc.data(), id: doc.id };
+    const corretto = normalizzaAnagraficaCalciatore(originale);
+    if (corretto.nome !== originale.nome || corretto.cognome !== originale.cognome) {
+      await _atletiCol().doc(doc.id).set({
+        nome: corretto.nome,
+        cognome: corretto.cognome,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      aggiornati++;
+    }
+  }
+  return aggiornati;
 }
 
 /* --- Firestore: squadre --- */
