@@ -51,8 +51,125 @@ function debounce(fn, wait) {
   };
 }
 
+function riparaTestoNome(value) {
+  return String(value || '')
+    .replace(/&#0*39;|&apos;/gi, "'")
+    .replace(/&amp;/gi, '&')
+    .replace(/Ã²/g, 'ò').replace(/Ã³/g, 'ó').replace(/Ã¹/g, 'ù')
+    .replace(/Ã /g, 'à').replace(/Ã¨/g, 'è').replace(/Ã©/g, 'é')
+    .replace(/Ã¬/g, 'ì').replace(/Ã­/g, 'í').replace(/Ã±/g, 'ñ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function titoloNome(value) {
+  return riparaTestoNome(value)
+    .toLocaleLowerCase('it-IT')
+    .replace(/(^|[\s'’-])([\p{L}])/gu, (_, sep, lettera) => sep + lettera.toLocaleUpperCase('it-IT'));
+}
+
+function chiaveNome(value) {
+  return riparaTestoNome(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+}
+
+// Nomi verificati sul sito Bologna FC o su schede storiche del Club.
+// Serve sia per correggere refusi/import incompleti sia per uniformare accenti e spazi.
+const NOMI_CALCIATORI_BOLOGNA = {
+  dallinga: ['Thijs', 'Dallinga'],
+  cambiaghi: ['Nicolò', 'Cambiaghi'],
+  ferguson: ['Lewis', 'Ferguson'],
+  holm: ['Emil', 'Holm'],
+  pobega: ['Tommaso', 'Pobega'],
+  sohm: ['Simon', 'Sohm'],
+  freuler: ['Remo', 'Freuler'],
+  rowe: ['Jonathan', 'Rowe'],
+  castro: ['Santiago', 'Castro'],
+  odgaard: ['Jens', 'Odgaard'],
+  zortea: ['Nadir', 'Zortea'],
+  heggem: ['Torbjørn', 'Heggem'],
+  lucumi: ['Jhon', 'Lucumí'],
+  skorupski: ['Łukasz', 'Skorupski'],
+  skorupsky: ['Łukasz', 'Skorupski'],
+  bernardeschi: ['Federico', 'Bernardeschi'],
+  piccoli: ['Roberto', 'Piccoli'],
+  vitik: ['Martin', 'Vitík'],
+  dovbyk: ['Artem', 'Dovbyk'],
+  dovbyh: ['Artem', 'Dovbyk'],
+  miranda: ['Juan', 'Miranda'],
+  helland: ['Eivind', 'Helland'],
+  lykogiannis: ['Charalampos', 'Lykogiannis'],
+  casale: ['Nicolò', 'Casale'],
+  moro: ['Nikola', 'Moro'],
+  mbangula: ['Samuel', 'Mbangula'],
+  amondarain: ['Mikel', 'Amondarain'],
+  alhassane: ['Rahim', 'Alhassane'],
+  alhassanebonkano: ['Rahim', 'Alhassane'],
+  happonen: ['Ukko', 'Happonen'],
+  libra: ['Marco', 'Libra'],
+  enem: ['Jay', 'Enem'],
+  orsolini: ['Riccardo', 'Orsolini'],
+  theate: ['Arthur', 'Theate'],
+  pessina: ['Massimo', 'Pessina'],
+  ravaglia: ['Federico', 'Ravaglia'],
+  franceschelli: ['Matteo', 'Franceschelli'],
+  dominguez: ['Benjamín', 'Domínguez'],
+  immobile: ['Ciro', 'Immobile'],
+  sarr: ['Fallou', 'Sarr'],
+  molla: ['Marco', 'Molla'],
+  bardi: ['Francesco', 'Bardi'],
+  okwonkwo: ['Orji', 'Okwonkwo'],
+  svanberg: ['Mattias', 'Svanberg'],
+  svamberg: ['Mattias', 'Svanberg'],
+  corbo: ['Gabriele', 'Corbo'],
+  tomiyasu: ['Takehiro', 'Tomiyasu'],
+  donsah: ['Godfred', 'Donsah'],
+  bani: ['Mattia', 'Bani'],
+  pulgar: ['Erick', 'Pulgar'],
+  pirana: ['Caio Vinicius', 'Pirana'],
+  bagnolini: ['Nicola', 'Bagnolini'],
+  denswil: ['Stefano', 'Denswil'],
+  dacosta: ['Angelo', 'Da Costa'],
+  skovolsen: ['Andreas', 'Skov Olsen'],
+  santurro: ['Antonio', 'Santurro'],
+  mattiello: ['Federico', 'Mattiello'],
+  breza: ['Sebastian', 'Breza'],
+  dijks: ['Mitchell', 'Dijks'],
+  schouten: ['Jerdy', 'Schouten'],
+  barrow: ['Musa', 'Barrow'],
+  mirante: ['Antonio', 'Mirante'],
+  mbaye: ['Ibrahima', 'Mbaye'],
+  difrancesco: ['Federico', 'Di Francesco'],
+  verdi: ['Simone', 'Verdi'],
+  destro: ['Mattia', 'Destro'],
+  masina: ['Adam', 'Masina'],
+  helander: ['Filip', 'Helander'],
+  aebischer: ['Michel', 'Aebischer'],
+  prisco: ['Antonio', 'Prisco'],
+};
+
+const NOMI_COMPLETI_BOLOGNA = {
+  michaelkingsley: ['Kingsley', 'Michael'],
+  joaolopes: ['João Mário', 'Neto Lopes'],
+};
+
+function normalizzaAnagraficaCalciatore(atleta) {
+  const nomeRaw = riparaTestoNome(atleta?.nome);
+  const cognomeRaw = riparaTestoNome(atleta?.cognome);
+  const fullKey = chiaveNome(nomeRaw + cognomeRaw);
+  const cognomeKey = chiaveNome(cognomeRaw);
+  const match = NOMI_COMPLETI_BOLOGNA[fullKey] || NOMI_CALCIATORI_BOLOGNA[cognomeKey];
+
+  if (match) return { ...atleta, nome: match[0], cognome: match[1] };
+  return { ...atleta, nome: titoloNome(nomeRaw), cognome: titoloNome(cognomeRaw) };
+}
+
 function nomeCompleto(atleta) {
-  return `${atleta.cognome} ${atleta.nome}`;
+  const a = normalizzaAnagraficaCalciatore(atleta || {});
+  return [a.nome, a.cognome].filter(Boolean).join(' ');
 }
 
 function registerServiceWorker() {
