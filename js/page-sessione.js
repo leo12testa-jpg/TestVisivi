@@ -117,50 +117,56 @@ function aggiornaTestVisibili() {
 }
 
 function mostraOriginali(sessione) {
-  const test = jetTest(sessione) || getEsercizioConfig(sessione.testStandard);
-  const metriche = metrichePrincipaliSessione(sessione);
-  if (!test && !haDatiJet(sessione)) return;
-
   const container = qs('#dati-jet');
+  const compilati = ESERCIZI_CONFIG.filter((test) =>
+    !test.custom && esercizioCompilato(test, sessione.esercizi?.[test.key])
+  );
+  if (!compilati.length && !haDatiJet(sessione)) return;
+
   container.hidden = false;
   container.classList.add('result-overview');
+  container.appendChild(el('p', { class: 'eyebrow', text: 'RISULTATI SESSIONE' }));
+  container.appendChild(el('h2', {
+    class: 'result-title',
+    text: compilati.length === 1 ? compilati[0].label : 'Risultati dei test',
+  }));
+  container.appendChild(el('p', {
+    class: 'result-description',
+    text: formatDataIt(sessione.data) + ' · sono mostrati solo i valori realmente presenti.',
+  }));
 
-  if (test) {
-    container.appendChild(el('p', { class: 'eyebrow', text: 'RISULTATI SESSIONE' }));
-    container.appendChild(el('h2', { class: 'result-title', text: test.label }));
-    if (test.descrizione) container.appendChild(el('p', { class: 'result-description', text: test.descrizione }));
-  }
+  compilati.forEach((test) => {
+    const metriche = metricheEsercizioSessione(sessione, test, false);
+    if (!metriche.length) return;
+    container.appendChild(el('section', { class: 'result-test-block' }, [
+      el('h3', { text: test.label }),
+      el('div', { class: 'metric-grid' }, metriche.map((m) =>
+        el('div', { class: 'metric-card' }, [
+          el('span', { class: 'metric-label', text: m.label }),
+          el('strong', { class: 'metric-value', text: m.valore }),
+        ])
+      )),
+    ]));
+  });
 
-  if (metriche.length) {
-    container.appendChild(el('div', { class: 'metric-grid' }, metriche.map((m) =>
-      el('div', { class: 'metric-card' }, [
-        el('span', { class: 'metric-label', text: m.label }),
-        el('strong', { class: 'metric-value', text: m.valore }),
-      ])
-    )));
-  } else if (haDatiJet(sessione)) {
-    container.appendChild(el('p', { class: 'meta', text: 'I dati Jet Program originali sono presenti, ma questa prova non ha ancora valori standard utilizzabili.' }));
-  }
-
-  const anomalie = anomalieValoriSessione(sessione);
-  if (anomalie.length) {
-    container.appendChild(el('div', {
-      class: 'data-warning',
-      text: `${anomalie.length} valore/i Jet anomalo/i escluso/i dai riepiloghi e dai grafici: ${anomalie.join(', ')}.`,
+  if (!compilati.length && haDatiJet(sessione)) {
+    container.appendChild(el('p', {
+      class: 'meta',
+      text: 'Dati Jet Program presenti, ma non ancora associati a un test standard.',
     }));
   }
 
   if (haDatiJet(sessione)) {
     const originale = typeof jetOriginale === 'function' ? jetOriginale(sessione) : null;
     const nomeOriginale = sessione.jetProgramNomeOriginale || sessione.nomeTestOriginale || originale?.nomeTestOriginale || '';
-    const details = el('details', { class: 'jet-original-details' }, [
+    container.appendChild(el('details', { class: 'jet-original-details' }, [
       el('summary', { text: 'Dati tecnici originali Jet Program' }),
       nomeOriginale ? el('p', { class: 'original-test-name', text: nomeOriginale }) : el('span'),
       el('pre', { class: 'raw-data', text: JSON.stringify(originale || sessione.datiOriginali || {}, null, 2) }),
-    ]);
-    container.appendChild(details);
+    ]));
   }
 }
+
 function popolaEsercizio(esercizio, valore) {
   if (!valore) return;
   const detailsEl = qs(`#es-${esercizio.key}`);
