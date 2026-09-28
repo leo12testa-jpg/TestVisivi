@@ -81,6 +81,20 @@ function archivioUnisciProfiloAtleta(principale, secondario) {
   return unito;
 }
 
+function archivioGruppoCompatibile(items) {
+  const dateNascita = new Set(
+    items.map((a) => String(a.dataNascita || '').trim()).filter(Boolean)
+  );
+  if (dateNascita.size > 1) return false;
+
+  const nomiRaw = new Set(
+    items
+      .map((a) => typeof chiaveNome === 'function' ? chiaveNome(a.nome || '') : String(a.nome || '').toLowerCase().replace(/[^a-z0-9]/g, ''))
+      .filter(Boolean)
+  );
+  return nomiRaw.size <= 1;
+}
+
 function archivioTrovaDoppioniAtleti(atleti, conteggioSessioni = {}) {
   const gruppi = new Map();
   (atleti || []).forEach((atleta) => {
@@ -91,7 +105,7 @@ function archivioTrovaDoppioniAtleti(atleti, conteggioSessioni = {}) {
   });
 
   return [...gruppi.entries()]
-    .filter(([, items]) => items.length > 1)
+    .filter(([, items]) => items.length > 1 && archivioGruppoCompatibile(items))
     .map(([key, items]) => {
       const ordinati = [...items].sort((a, b) => {
         const sa = Number(conteggioSessioni[a.id] || 0);
