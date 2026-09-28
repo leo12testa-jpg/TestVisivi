@@ -8,6 +8,7 @@ let _sessioniAtleta = [];
 function valoriGrezziCampo(sessioni, esercizioKey, campoKey) {
   const esercizio = getEsercizioConfig(esercizioKey);
   const valori = [];
+  if (!esercizio) return valori;
   sessioni.forEach((s) => {
     const dati = s.esercizi && s.esercizi[esercizioKey];
     if (!dati) return;
