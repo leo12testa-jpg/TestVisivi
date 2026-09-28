@@ -34,9 +34,10 @@ function renderLista(filtro) {
 
   atletiFiltrati.forEach((a) => {
     const metaText = 'Profilo, risultati e andamento';
+    const anagrafica = normalizzaAnagraficaCalciatore(a);
 
     const item = el('a', { class: 'list-item', href: `./atleta.html?id=${a.id}`, style: 'text-decoration:none;color:inherit;' }, [
-      el('span', { class: 'avatar', 'aria-hidden': 'true', text: `${(a.nome || '').slice(0, 1)}${(a.cognome || '').slice(0, 1)}` }),
+      el('span', { class: 'avatar', 'aria-hidden': 'true', text: `${(anagrafica.nome || '').slice(0, 1)}${(anagrafica.cognome || '').slice(0, 1)}` }),
       el('div', { class: 'athlete-card-text' }, [el('div', { class: 'athlete-name', text: nomeCompleto(a) }), el('div', { class: 'meta', text: metaText })]),
       el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),
     ]);
@@ -73,6 +74,27 @@ qs('#btn-crea-atleta').addEventListener('click', async () => {
   }
   const id = await dbAddAtleta({ nome, cognome });
   window.location.href = `./atleta.html?id=${id}`;
+});
+
+qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  if (!confirm('Correggere i nomi dei calciatori e rimuovere le sessioni completamente vuote? I risultati dei test e i dati Jet Program non verranno cancellati.')) return;
+
+  button.disabled = true;
+  button.textContent = 'Sistemazione archivio…';
+  try {
+    const [nomiAggiornati, sessioniEliminate] = await Promise.all([
+      dbCorreggiNomiAtleti(),
+      dbPulisciSessioniVuote(),
+    ]);
+    await caricaLista();
+    alert(`Archivio sistemato. Nomi aggiornati: ${nomiAggiornati}. Sessioni vuote eliminate: ${sessioniEliminate}.`);
+  } catch (err) {
+    mostraErrorePagina(err);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Sistema archivio';
+  }
 });
 
 qs('#btn-backup').addEventListener('click', async (event) => {
