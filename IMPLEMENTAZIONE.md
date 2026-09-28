@@ -1,0 +1,148 @@
+# TestVisivi — verifica locale del 28 settembre 2026
+
+## Stato e limite ancora aperto
+
+Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
+form condivisi, storico con risultati e dettaglio originale, grafici, layout
+responsive chiaro/scuro, ottimizzazione home e cache PWA v19.
+
+**La conversione delle sessioni Firestore reali non è ancora validata.**
+Il browser locale non è autenticato. Il solo JSON presente nel repository
+contiene 23 atleti del vecchio import; non è l'export delle circa 114 anagrafiche
+e migliaia di sessioni Jet indicate dall'utente. I test end-to-end usano dati
+sintetici e una sostituzione locale di Firebase, non il database reale.
+
+Serve un export delle sessioni reali, oppure un accesso autenticato, per censire
+nomi, tipi, strutture e unità effettive. Non sono state inventate equivalenze per
+codici numerici, nomi parziali, campi annidati o tempi senza unità.
+
+## Protezione dei dati
+
+- Copia integrale iniziale, inclusi Git, modifiche locali e JSON ignorato:
+  `C:\Users\Leonardo\TestVisivi-backup-20260928-204424`.
+- Commit delle sei modifiche locali preesistenti: `4545639`.
+- Nessuna migrazione eseguita, nessuna scrittura o cancellazione nel Firestore reale.
+- Nessun push.
+- L'adattatore produce un oggetto in memoria: i documenti non vengono riscritti
+  quando si consultano home, profilo, storico o grafici.
+- Il salvataggio esplicito di una sessione conserva `nomeTestOriginale`, `tipoTest`,
+  `datiOriginali`, esercizi custom, campi sconosciuti e sotto-condizioni legacy.
+  I campi lasciati vuoti in modifica non cancellano risultati già esistenti.
+- I risultati numerici già presenti hanno precedenza sulla conversione.
+- L'esportazione dalla home legge i documenti grezzi senza normalizzarli.
+  Non include foto/video: questi restano nell'IndexedDB del dispositivo.
+- Il backup iniziale del repository non costituisce un backup del Firestore remoto.
+
+## Regole di conversione attuali
+
+`js/jet-normalizer.js` riconosce i nomi standard e le relative chiavi esatte,
+normalizzando accenti, maiuscole e punteggiatura. Due identificazioni standard
+discordanti bloccano la conversione. I test legacy rimangono distinti.
+
+Si associano soltanto proprietà dirette di `datiOriginali`, con chiavi canoniche
+non temporali o etichette inequivoche. Per i tempi è richiesta un'unità esplicita
+nel nome, come `Tempo totale (s)` o `Tempo reazione medio (ms)`; s/ms vengono
+convertiti quando necessario. Anche `tempoTotale` senza unità resta originale.
+Nessuna somma, percentuale, tempo medio o punteggio viene dedotto da altri dati.
+Valori discordanti per la stessa misura non vengono convertiti. Zeri e decimali
+con virgola sono gestiti; stringhe parzialmente numeriche, booleani, valori non
+finiti e percentuali fuori intervallo non diventano misure numeriche.
+
+I 13 test usano lo stesso catalogo per inserimento, lettura e grafici. I parametri
+comuni sono opzionali; la disponibilità effettiva per ciascun protocollo Jet deve
+ancora essere verificata sull'export reale. Le strutture originali non riconosciute
+restano nel dettaglio, senza la dicitura errata «0 esercizi compilati».
+
+## Performance e PWA
+
+La home esegue una sola lettura della collezione atleti, senza query per gli
+storici. Conteggi e ultima sessione vengono calcolati nel profilo. Lo storico
+legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
+con ricerca e filtri locali. È paginazione del rendering, non delle letture
+Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
+
+La cache v19 usa rete con fallback offline, include il normalizzatore e limita
+la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
+non cancella cache di altre app, Firestore o IndexedDB.
+
+## Verifiche eseguite
+
+| Verifica | Esito e ambito |
+| --- | --- |
+| Sintassi di tutti gli script JS e `git diff --check` | Superati |
+| Normalizzatore | 6 test superati, inclusi originali immutati e idempotenza |
+| Login reale locale tramite agent-browser | Pagina caricata, campi visibili, nessun errore runtime rilevato |
+| Home e ricerca | E2E sintetico superato; una sola query atleti |
+| Backup JSON | Download verificato: originali grezzi preservati |
+| Profilo | E2E sintetico superato anche senza dati clinici |
+| Elenco sessioni | 69 sessioni sintetiche, 50 iniziali, espansione e filtro verificati |
+| Apertura sessione | Campi numerici, zero errori e originali completi verificati |
+| Modifica | Preservazione di metadati, custom e campi legacy verificata |
+| Nuovo test | Salvataggio, rilettura e gestione di un errore simulato verificati |
+| Grafici | Storico Jet e nuova sessione nello stesso dataset verificati |
+| Mobile chiaro/scuro | Home, profilo, storico, sessione e grafici senza overflow |
+| Console E2E | Nessun errore; nessuna richiesta esterna durante i test sintetici |
+| PWA reale | v18 rimossa, v19 installata, cache estranea preservata, login offline caricato |
+| Sessioni Firestore reali | Da verificare con export/accesso autenticato |
+
+Evidenze locali (ignorate da Git): `reports/browser-results.json`,
+`reports/pwa-results.json` e screenshot desktop/mobile in `reports/`.
+
+## Ripetere i controlli
+
+Avviare dalla cartella del progetto:
+
+```powershell
+python -m http.server 8765 --bind 127.0.0.1
+node --test tests/normalizer.test.cjs
+```
+
+I test browser richiedono Playwright e il suo Chromium. È possibile impostare
+`PLAYWRIGHT_PATH` al percorso di un'installazione locale già disponibile:
+
+```powershell
+node tests/browser.cjs
+node tests/pwa.cjs
+```
+
+Per l'audit reale, accedere alla home locale e usare **Esporta copia dati**.
+Analizzare il file senza modificarlo:
+
+```powershell
+node scripts/audit-jet.cjs "percorso\testvisivi-backup-2026-09-28.json"
+```
+
+Lo script non usa credenziali né API: riporta conteggi, gruppi riconosciuti e
+chiavi dei campi originali. Dopo l'ispezione dei campioni, aggiungere soltanto
+equivalenze dimostrate e test di regressione anonimizzati. Non rilanciare le
+vecchie pagine di importazione o migrazione per completare questa conversione.
+
+## File modificati o aggiunti dopo il backup
+
+- `.gitignore`
+- `IMPLEMENTAZIONE.md` (nuovo)
+- `atleta.html`
+- `confronto.html`
+- `css/style.css`
+- `grafici.html`
+- `import-anagrafiche.html` (solo caricamento normalizzatore)
+- `import-storico.html` (solo caricamento normalizzatore)
+- `index.html`
+- `js/charts.js`
+- `js/db.js`
+- `js/esercizi-config.js`
+- `js/jet-normalizer.js` (nuovo)
+- `js/page-atleta.js`
+- `js/page-elenco-sessioni.js`
+- `js/page-grafici.js`
+- `js/page-home.js`
+- `js/page-sessione.js`
+- `js/utils.js`
+- `radar.html`
+- `scripts/audit-jet.cjs` (nuovo)
+- `sessione.html`
+- `sessioni.html`
+- `sw.js`
+- `tests/browser.cjs` (nuovo)
+- `tests/normalizer.test.cjs` (nuovo)
+- `tests/pwa.cjs` (nuovo)

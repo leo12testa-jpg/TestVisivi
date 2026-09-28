@@ -163,6 +163,15 @@ function leggiFormClinici() {
 /** Le sessioni servono solo come dato per l'export PDF (report ufficiale: esclude le sessioni di Training). */
 async function caricaSessioni() {
   _sessioni = (await dbGetSessioniByAtleta(atletaId)).filter((s) => !isSessioneTraining(s));
+  qs('#stat-sessioni').textContent = String(_sessioni.length);
+  qs('#stat-test').textContent = String(new Set(_sessioni.flatMap((s) => ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, s.esercizi?.[e.key])).map((e) => e.key))).size);
+  qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
+  const recenti = qs('#sessioni-recenti');
+  recenti.innerHTML = '';
+  [..._sessioni].reverse().slice(0, 5).forEach((s) => recenti.appendChild(el('a', {
+    class: 'list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`,
+  }, [el('div', {}, [el('span', { class: 'eyebrow', text: formatDataIt(s.data) }), el('div', { class: 'session-title', text: nomeTestSessione(s) }), el('p', { class: 'meta', text: riepilogoSessione(s) })]), el('span', { 'aria-hidden': 'true', text: '↗' })])));
+  if (!_sessioni.length) recenti.appendChild(el('p', { class: 'empty-state', text: 'Il percorso inizia dal primo test.' }));
 }
 
 function mostraToast(msg) {
@@ -191,6 +200,7 @@ async function init() {
       return;
     }
     qs('#titolo-atleta').textContent = nomeCompleto(_atleta);
+    qs('#nome-atleta').textContent = nomeCompleto(_atleta);
     document.title = `${nomeCompleto(_atleta)} - Test Visivi`;
     qs('#link-grafici').href = `./grafici.html?id=${atletaId}`;
     qs('#link-radar').href = `./radar.html?id=${atletaId}`;
@@ -198,7 +208,13 @@ async function init() {
     costruisciSelectCorrezione();
     await popolaSelectSquadra(_atleta.squadraId);
     popolaAnagrafica(_atleta);
-    popolaFormClinici(_atleta.datiClinici);
+    const defaults = datiCliniciVuoti();
+    const dc = _atleta.datiClinici || {};
+    Object.keys(defaults).forEach((key) => {
+      defaults[key] = typeof defaults[key] === 'object' ? { ...defaults[key], ...(dc[key] || {}) } : (dc[key] ?? defaults[key]);
+    });
+    popolaFormClinici(defaults);
+    _atleta.datiClinici = { ...dc, ...defaults };
     await caricaSessioni();
   } catch (err) {
     mostraErroreInit(err);

@@ -58,9 +58,19 @@ function nomeCompleto(atleta) {
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((registration) => registration.update()).catch(() => {});
     });
   }
+}
+
+function mostraErrorePagina(err) {
+  let banner = qs('#errore-pagina');
+  if (!banner) {
+    banner = el('div', { id: 'errore-pagina', class: 'error-banner', role: 'alert' });
+    qs('main').prepend(banner);
+  }
+  banner.textContent = err?.message || 'Operazione non riuscita. Riprova.';
+  banner.scrollIntoView({ block: 'nearest' });
 }
 
 /** Badge Online/Offline iniettato automaticamente nell'header di ogni pagina. */

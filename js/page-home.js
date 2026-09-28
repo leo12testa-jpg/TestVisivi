@@ -8,10 +8,7 @@ async function caricaLista() {
 
   try {
     _atleti = await dbGetAtleti();
-    const conteggi = await Promise.all(_atleti.map((a) => dbGetSessioniByAtleta(a.id).then((sessioni) => sessioni.filter((s) => !isSessioneTraining(s)))));
-    _atleti.forEach((a, i) => {
-      a._sessioni = conteggi[i];
-    });
+    qs('#numero-atleti').textContent = String(_atleti.length);
     renderLista(qs('#ricerca').value.trim().toLowerCase());
   } catch (err) {
     console.error('Errore caricamento lista atleti:', err);
@@ -36,12 +33,11 @@ function renderLista(filtro) {
   }
 
   atletiFiltrati.forEach((a) => {
-    const nSessioni = a._sessioni.length;
-    const ultima = nSessioni ? formatDataIt(a._sessioni[nSessioni - 1].data) : null;
-    const metaText = nSessioni === 0 ? 'Nessuna sessione' : `${nSessioni} session${nSessioni === 1 ? 'e' : 'i'} · ultima: ${ultima}`;
+    const metaText = 'Profilo, risultati e andamento';
 
     const item = el('a', { class: 'list-item', href: `./atleta.html?id=${a.id}`, style: 'text-decoration:none;color:inherit;' }, [
-      el('div', {}, [el('div', { text: nomeCompleto(a) }), el('div', { class: 'meta', text: metaText })]),
+      el('span', { class: 'avatar', 'aria-hidden': 'true', text: `${(a.nome || '').slice(0, 1)}${(a.cognome || '').slice(0, 1)}` }),
+      el('div', { class: 'athlete-card-text' }, [el('div', { class: 'athlete-name', text: nomeCompleto(a) }), el('div', { class: 'meta', text: metaText })]),
       el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),
     ]);
     container.appendChild(item);
@@ -77,6 +73,22 @@ qs('#btn-crea-atleta').addEventListener('click', async () => {
   }
   const id = await dbAddAtleta({ nome, cognome });
   window.location.href = `./atleta.html?id=${id}`;
+});
+
+qs('#btn-backup').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = 'Preparazione copia…';
+  try {
+    const dati = await dbEsportaCopiaDati();
+    const url = URL.createObjectURL(new Blob([JSON.stringify(dati, null, 2)], { type: 'application/json' }));
+    const link = el('a', { href: url, download: `testvisivi-backup-${oggiIso()}.json` });
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (err) { mostraErrorePagina(err); }
+  finally { button.disabled = false; button.textContent = 'Esporta copia dati'; }
 });
 
 caricaLista();

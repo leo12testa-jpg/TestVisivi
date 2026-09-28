@@ -125,7 +125,12 @@ function _squadreCol() {
 }
 
 function _snapToObj(doc) {
-  return { id: doc.id, ...doc.data() };
+  return { ...doc.data(), id: doc.id };
+}
+
+function _sessioneDaDoc(doc) {
+  const sessione = _snapToObj(doc);
+  return typeof normalizzaSessioneJet === 'function' ? normalizzaSessioneJet(sessione) : sessione;
 }
 
 async function dbGetAtleti() {
@@ -165,7 +170,7 @@ async function dbAddAtleta({ nome, cognome, squadraId }) {
 function dbUpdateAtleta(atleta) {
   atleta.updatedAt = new Date().toISOString();
   const { id, ...dati } = atleta;
-  return _atletiCol().doc(id).set(dati);
+  return _atletiCol().doc(id).set(dati, { merge: true });
 }
 
 async function dbDeleteAtleta(id) {
@@ -178,18 +183,18 @@ async function dbDeleteAtleta(id) {
 
 async function dbGetSessioniByAtleta(atletaId) {
   const snap = await _sessioniCol().where('atletaId', '==', atletaId).get();
-  const sessioni = snap.docs.map(_snapToObj);
-  return sessioni.sort((a, b) => a.data.localeCompare(b.data));
+  const sessioni = snap.docs.map(_sessioneDaDoc);
+  return sessioni.sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')) || a.id.localeCompare(b.id));
 }
 
 async function dbGetAllSessioni() {
   const snap = await _sessioniCol().get();
-  return snap.docs.map(_snapToObj);
+  return snap.docs.map(_sessioneDaDoc);
 }
 
 async function dbGetSessione(id) {
   const doc = await _sessioniCol().doc(id).get();
-  return doc.exists ? _snapToObj(doc) : undefined;
+  return doc.exists ? _sessioneDaDoc(doc) : undefined;
 }
 
 async function dbAddSessione(sessione) {
@@ -200,7 +205,17 @@ async function dbAddSessione(sessione) {
 
 function dbUpdateSessione(sessione) {
   const { id, ...dati } = sessione;
-  return _sessioniCol().doc(id).set(dati);
+  return _sessioniCol().doc(id).set(dati, { merge: true });
+}
+
+/** Copia JSON di sola lettura, senza normalizzare né migrare i documenti. */
+async function dbEsportaCopiaDati() {
+  const [atleti, sessioni, squadre] = await Promise.all([_atletiCol().get(), _sessioniCol().get(), _squadreCol().get()]);
+  return {
+    formato: 'testvisivi-backup-v1', esportatoIl: new Date().toISOString(),
+    atleti: atleti.docs.map(_snapToObj), sessioni: sessioni.docs.map(_snapToObj), squadre: squadre.docs.map(_snapToObj),
+    nota: 'Foto e video risiedono in IndexedDB sul dispositivo e non sono inclusi in questa copia Firestore.',
+  };
 }
 
 async function dbDeleteSessione(id) {

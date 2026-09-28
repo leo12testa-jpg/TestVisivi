@@ -169,7 +169,8 @@ async function init() {
     if (sessioniCompilate.length === 0) return;
     mostratoAlmenoUno = true;
 
-    const sezione = el('section', {}, [el('h2', { text: esercizio.label })]);
+    const sezione = el('section', { 'data-test': esercizio.key, class: 'test-chart-section' }, [el('h2', { text: esercizio.label })]);
+    qs('#filtro-test-grafici').appendChild(el('option', { value: esercizio.key, text: esercizio.label }));
 
     if (esercizio.key === 'tracciamentoVisivo') {
       sezione.appendChild(buildTracciamentoVisivoView(sessioniCompilate));
@@ -177,9 +178,14 @@ async function init() {
       sezione.appendChild(buildGalleriaCampoVisivoAvanzato(sessioniCompilate));
     } else if (sessioniCompilate.length === 1) {
       sezione.appendChild(buildTabellaSingola(esercizio, sessioniCompilate[0]));
+      getChartGroups(esercizio).forEach((group) => {
+        const campi = group.campi.filter((c) => sessioniCompilate.some((s) => getValoreCampoGruppo(s, group, c) !== null));
+        if (campi.length) sezione.appendChild(buildChartBlock({ ...group, campi }, sessioniCompilate));
+      });
     } else {
       getChartGroups(esercizio).forEach((group) => {
-        sezione.appendChild(buildChartBlock(group, sessioniCompilate));
+        const campi = group.campi.filter((c) => sessioniCompilate.some((s) => getValoreCampoGruppo(s, group, c) !== null));
+        if (campi.length) sezione.appendChild(buildChartBlock({ ...group, campi }, sessioniCompilate));
       });
       const tabellaAltreRisposte = buildTabellaAltreRisposte(esercizio, sessioniCompilate);
       if (tabellaAltreRisposte) sezione.appendChild(tabellaAltreRisposte);
@@ -188,12 +194,21 @@ async function init() {
   });
 
   if (!mostratoAlmenoUno) {
-    contenuto.appendChild(el('div', { class: 'empty-state', text: 'Nessun dato ancora registrato per questo atleta.' }));
+    contenuto.appendChild(el('div', { class: 'empty-state', text: sessioni.some(haDatiJet) ? 'Sono presenti risultati originali Jet Program. Le misure non ancora riconosciute sono consultabili nello storico.' : 'Nessun dato ancora registrato per questo atleta.' }));
     return;
   }
+
+  const nonMappate = sessioni.filter((s) => haDatiJet(s) && !contaEserciziCompilati(s)).length;
+  if (nonMappate) contenuto.appendChild(el('p', { class: 'meta' }, [
+    `${nonMappate} sessioni Jet Program hanno risultati originali ancora da associare a una misura. `,
+    el('a', { href: `./sessioni.html?atletaId=${atletaId}`, text: 'Consulta lo storico completo' }),
+  ]));
 
   renderTuttiGrafici();
   onThemeChange(renderTuttiGrafici);
 }
 
-init();
+qs('#filtro-test-grafici').addEventListener('change', (event) => {
+  qsa('[data-test]').forEach((section) => { section.hidden = !!event.target.value && section.dataset.test !== event.target.value; });
+});
+init().catch(mostraErrorePagina);

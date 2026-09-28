@@ -1,3 +1,6 @@
 # Dati storici reali (nomi e dati clinici) usati solo per l'import una tantum:
 # non vanno mai committati in un repository pubblico.
 atleti_importati.json
+reports/
+node_modules/
+*.local.json

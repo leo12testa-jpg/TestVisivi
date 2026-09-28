@@ -2,9 +2,10 @@ registerServiceWorker();
 
 const atletaId = getQueryParam('atletaId');
 let _sessioni = [];
+let _limite = 50;
 
 function passaFiltri(sessione, testo, dataDa, dataA) {
-  if (testo && !(sessione.titolo || '').toLowerCase().includes(testo)) return false;
+  if (testo && !`${nomeTestSessione(sessione)} ${sessione.titolo || ''} ${sessione.nomeTestOriginale || ''}`.toLowerCase().includes(testo)) return false;
   if (dataDa && sessione.data < dataDa) return false;
   if (dataA && sessione.data > dataA) return false;
   return true;
@@ -30,20 +31,20 @@ function renderLista() {
     return;
   }
 
-  filtrate.forEach((s) => {
-    const nEsercizi = contaEserciziCompilati(s);
-    const etichettaData = s.titolo ? `${formatDataIt(s.data)} · ${s.titolo}` : formatDataIt(s.data);
+  filtrate.slice(0, _limite).forEach((s) => {
+    const etichettaData = `${formatDataIt(s.data)} · ${nomeTestSessione(s)}`;
     const rigaData = [el('span', { text: etichettaData })];
     if (isSessioneTraining(s)) rigaData.push(el('span', { class: 'badge', style: 'margin-left:8px;', text: 'Allenamento' }));
     const item = el('a', { class: 'list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`, style: 'text-decoration:none;color:inherit;' }, [
       el('div', {}, [
         el('div', {}, rigaData),
-        el('div', { class: 'meta', text: `${nEsercizi} esercizi${nEsercizi === 1 ? 'o' : ''} compilat${nEsercizi === 1 ? 'o' : 'i'}` }),
+        el('div', { class: 'meta', text: riepilogoSessione(s) }),
       ]),
       el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),
     ]);
     container.appendChild(item);
   });
+  if (filtrate.length > _limite) container.appendChild(el('button', { class: 'secondary', text: `Mostra altre sessioni (${filtrate.length - _limite})`, onclick: () => { _limite += 50; renderLista(); } }));
 }
 
 qs('#filtro-titolo').addEventListener('input', debounce(renderLista, 150));
@@ -68,4 +69,4 @@ async function init() {
   renderLista();
 }
 
-init();
+init().catch(mostraErrorePagina);

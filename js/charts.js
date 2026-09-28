@@ -64,7 +64,7 @@ function getValoreCampoGruppo(sessione, group, campo) {
   const scope = group.sottoCondizione ? dati[group.sottoCondizione.key] : dati;
   if (!scope) return null;
   const v = scope[campo.key];
-  return v === undefined || v === null || v === '' ? null : Number(v);
+  return v === undefined || v === null || v === '' ? null : jetNumero(v);
 }
 
 /** Sessioni (gia' ordinate per data) che hanno almeno un valore per il gruppo dato. */
@@ -83,8 +83,8 @@ function lineChartConfig(labels, datasetsRaw, unitLabel) {
     borderWidth: 2,
     pointRadius: 4,
     pointHoverRadius: 6,
-    spanGaps: true,
-    tension: 0.25,
+    spanGaps: false,
+    tension: 0,
   }));
   return {
     type: 'line',

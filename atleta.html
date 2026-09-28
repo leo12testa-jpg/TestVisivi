@@ -16,16 +16,24 @@
     <h1 id="titolo-atleta">Atleta</h1>
   </header>
   <main>
+    <section class="page-intro compact"><div><p class="eyebrow">PROFILO ATLETA</p><h2 id="nome-atleta">Caricamento…</h2><p class="intro-description">Dati, valutazioni e progressi in un unico spazio.</p></div></section>
     <div class="subnav">
       <a class="btn secondary" id="link-grafici" href="#" style="text-decoration:none;">📈 Grafici</a>
       <a class="btn secondary" id="link-radar" href="#" style="text-decoration:none;">🎯 Radar</a>
-      <button type="button" id="btn-test">Test</button>
+      <button type="button" id="btn-test">+ Nuovo test</button>
       <a class="btn link" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Vedi sessioni passate</a>
       <button type="button" class="secondary" id="btn-training">Training</button>
       <button type="button" class="secondary" id="btn-export-pdf">⬇ Esporta PDF</button>
-      <button type="button" class="danger" id="btn-elimina-atleta">Elimina atleta</button>
     </div>
 
+    <div class="stats-grid">
+      <div class="stat-card"><span>Sessioni test</span><strong id="stat-sessioni">—</strong></div>
+      <div class="stat-card"><span>Test con risultati</span><strong id="stat-test">—</strong></div>
+      <div class="stat-card"><span>Ultima valutazione</span><strong id="stat-ultima">—</strong></div>
+    </div>
+    <section class="recent-section"><h2>Ultime valutazioni</h2><div id="sessioni-recenti" class="list"><p class="meta">Caricamento risultati…</p></div></section>
+
+    <details class="profile-details"><summary>Anagrafica e dati clinici</summary>
     <form id="form-clinici">
       <h2>Dati anagrafici</h2>
       <div class="card">
@@ -117,8 +125,11 @@
         </div>
       </div>
 
-      <button type="submit">Salva profilo</button>
+      <div class="row"><button type="submit">Salva profilo</button>
+      <button type="button" class="danger" id="btn-elimina-atleta">Elimina atleta</button>
+      </div>
     </form>
+    </details>
   </main>
 
   <script src="./vendor/firebase/firebase-app-compat.js"></script>
@@ -126,6 +137,7 @@
   <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
   <script src="./js/firebase-config.js"></script>
   <script src="./js/esercizi-config.js"></script>
+  <script src="./js/jet-normalizer.js"></script>
   <script src="./js/utils.js"></script>
   <script src="./js/auth.js"></script>
   <script src="./js/db.js"></script>

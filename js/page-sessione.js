@@ -5,6 +5,8 @@ const sessioneId = getQueryParam('sessioneId') || null;
 // Modalità dalla querystring per una sessione nuova; se si modifica una sessione
 // esistente prevale la sua modalita già salvata (vedi init()), non quella nell'URL.
 let _modalitaSessione = getSessioneConfig(getQueryParam('mode')).modalita;
+let _sessioneCaricata = null;
+let _salvataggio = false;
 
 qs('#back-link').href = `./atleta.html?id=${atletaId}`;
 
@@ -51,6 +53,8 @@ function buildCampoField(esercizioKey, scKey, campo) {
   if (!isText) {
     inputProps.step = 'any';
     inputProps.inputmode = 'decimal';
+    if (['s', 'ms', 'count', 'percent', 'per_sec'].includes(campo.unit)) inputProps.min = '0';
+    if (campo.unit === 'percent') inputProps.max = '100';
   }
   return el('div', { class: 'field' }, [el('label', { for: id, text: labelConUnita(campo) }), el('input', inputProps)]);
 }
@@ -82,6 +86,33 @@ function renderEserciziForm() {
   const container = qs('#esercizi-container');
   // Gli esercizi "custom" (es. campoVisivoAvanzato) non hanno un form: sono scritti solo da script esterni.
   ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => container.appendChild(buildEsercizioSection(esercizio)));
+  const select = qs('#test-standard');
+  TEST_STANDARD.forEach((test) => select.appendChild(el('option', { value: test.key, text: test.label })));
+  select.addEventListener('change', aggiornaTestVisibili);
+  aggiornaTestVisibili();
+}
+
+function aggiornaTestVisibili() {
+  const key = qs('#test-standard').value;
+  qsa('#esercizi-container > details').forEach((details) => {
+    const testKey = details.id.slice(3);
+    const esistente = _sessioneCaricata?.esercizi?.[testKey];
+    details.hidden = testKey !== key && !esistente;
+    if (!details.hidden) details.open = true;
+  });
+}
+
+function mostraOriginali(sessione) {
+  if (!haDatiJet(sessione) && !sessione.nomeTestOriginale && !sessione.tipoTest) return;
+  const container = qs('#dati-jet');
+  container.hidden = false;
+  container.appendChild(el('h2', { text: 'Risultati Jet Program' }));
+  container.appendChild(el('p', { text: nomeTestSessione(sessione) }));
+  container.appendChild(el('p', { class: 'meta', text: riepilogoSessione(sessione) }));
+  container.appendChild(el('details', {}, [
+    el('summary', { text: 'Apri i dati originali completi' }),
+    el('pre', { class: 'raw-data', text: JSON.stringify({ nomeTestOriginale: sessione.nomeTestOriginale, tipoTest: sessione.tipoTest, datiOriginali: sessione.datiOriginali }, null, 2) }),
+  ]));
 }
 
 function popolaEsercizio(esercizio, valore) {
@@ -147,7 +178,7 @@ function leggiEsercizio(esercizio) {
 
 function leggiTuttiEsercizi() {
   const esercizi = {};
-  ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => {
+  ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom && (sessioneId || esercizio.key === qs('#test-standard').value)).forEach((esercizio) => {
     const valore = leggiEsercizio(esercizio);
     if (valore) esercizi[esercizio.key] = valore;
   });
@@ -306,6 +337,16 @@ async function init() {
   if (sessioneId) {
     const sessione = await dbGetSessione(sessioneId);
     if (sessione) {
+      if (sessione.atletaId !== atletaId) throw new Error('Questa sessione appartiene a un altro atleta.');
+      _sessioneCaricata = sessione;
+      qs('#test-standard').value = jetTest(sessione)?.key || sessione.testStandard || '';
+      if (jetTest(sessione)) qs('#test-standard').disabled = true;
+      mostraOriginali(sessione);
+      if (sessione.esercizi && Object.keys(sessione.esercizi).length) qs('#esercizi-container').after(el('details', { class: 'card' }, [
+        el('summary', { text: 'Tutti i risultati salvati, inclusi i parametri aggiuntivi' }),
+        el('pre', { class: 'raw-data', text: JSON.stringify(sessione.esercizi, null, 2) }),
+      ]));
+      aggiornaTestVisibili();
       _modalitaSessione = getSessioneConfig(sessione.modalita).modalita;
       qs('#titolo-sessione').textContent = `${getSessioneConfig(_modalitaSessione).titoloModifica} - ${nomeCompleto(atleta)}`;
       qs('#f-data').value = sessione.data;
@@ -316,12 +357,13 @@ async function init() {
       _fotoEsistenti = await dbGetAllegatiFotoBySessione(sessioneId);
       _videoEsistenti = await dbGetAllegatiVideoBySessione(sessioneId);
       qs('#btn-elimina-sessione').hidden = false;
-    }
+    } else throw new Error('Sessione non trovata. Nessun dato è stato modificato.');
   } else {
     qs('#titolo-sessione').textContent = `${getSessioneConfig(_modalitaSessione).titoloNuova} - ${nomeCompleto(atleta)}`;
     qs('#f-data').value = oggiIso();
   }
   renderGalleriaAllegati();
+  qs('#btn-salva').disabled = false;
 }
 
 qs('#btn-annulla').addEventListener('click', () => {
@@ -337,6 +379,7 @@ qs('#btn-elimina-sessione').addEventListener('click', async () => {
 });
 
 qs('#btn-salva').addEventListener('click', async () => {
+  if (_salvataggio) return;
   const data = qs('#f-data').value;
   if (!data) {
     qs('#f-data').focus();
@@ -344,36 +387,66 @@ qs('#btn-salva').addEventListener('click', async () => {
   }
   const titolo = qs('#f-titolo').value.trim();
   const esercizi = leggiTuttiEsercizi();
+  const testStandard = qs('#test-standard').value;
+  if (!sessioneId && !testStandard) {
+    mostraErrorePagina(new Error('Scegli il test da registrare.'));
+    qs('#test-standard').focus();
+    return;
+  }
+  if (!qsa('#esercizi-container input').every((input) => input.checkValidity())) {
+    mostraErrorePagina(new Error('Controlla i valori inseriti.'));
+    return;
+  }
   const haAllegatiNuovi = _nuoveFoto.length > 0 || _nuoviVideo.length > 0;
   if (Object.keys(esercizi).length === 0 && !haAllegatiNuovi) {
     if (!confirm('Nessun esercizio compilato. Salvare comunque la sessione?')) return;
   }
 
-  let idSessioneFinale = sessioneId;
-  if (sessioneId) {
-    const sessione = await dbGetSessione(sessioneId);
-    // Gli esercizi "custom" (es. campoVisivoAvanzato) non passano da questo form: se la sessione
-    // li aveva già (scritti da uno script esterno), li preservo invece di perderli al salvataggio.
-    ESERCIZI_CONFIG.filter((e) => e.custom).forEach((e) => {
-      if (sessione.esercizi && sessione.esercizi[e.key]) esercizi[e.key] = sessione.esercizi[e.key];
-    });
-    sessione.data = data;
-    sessione.titolo = titolo;
-    sessione.esercizi = esercizi;
-    sessione.modalita = _modalitaSessione;
-    await dbUpdateSessione(sessione);
-  } else {
-    idSessioneFinale = await dbAddSessione({ atletaId, data, titolo, esercizi, modalita: _modalitaSessione });
-  }
+  _salvataggio = true;
+  qs('#btn-salva').disabled = true;
+  try {
+    let idSessioneFinale = sessioneId;
+    if (sessioneId) {
+      const sessione = await dbGetSessione(sessioneId);
+      if (!sessione || sessione.atletaId !== atletaId) throw new Error('Sessione non disponibile.');
+      // Gli esercizi "custom" (es. campoVisivoAvanzato) non passano da questo form: se la sessione
+      // li aveva già (scritti da uno script esterno), li preservo invece di perderli al salvataggio.
+      ESERCIZI_CONFIG.filter((e) => e.custom).forEach((e) => {
+        if (sessione.esercizi && sessione.esercizi[e.key]) esercizi[e.key] = sessione.esercizi[e.key];
+      });
+      sessione.data = data;
+      sessione.titolo = titolo;
+      // Conserva anche chiavi e campi sconosciuti. Il form non cancella risultati storici.
+      const merged = { ...sessione.esercizi };
+      Object.entries(esercizi).forEach(([key, value]) => {
+        merged[key] = { ...merged[key], ...value };
+        const config = getEsercizioConfig(key);
+        if (config?.sottoCondizioni) config.sottoCondizioni.forEach((sc) => {
+          if (value[sc.key]) merged[key][sc.key] = { ...sessione.esercizi?.[key]?.[sc.key], ...value[sc.key] };
+        });
+      });
+      sessione.esercizi = merged;
+      if (testStandard) sessione.testStandard = testStandard;
+      sessione.modalita = _modalitaSessione;
+      await dbUpdateSessione(sessione);
+    } else {
+      idSessioneFinale = await dbAddSessione({ atletaId, data, titolo, esercizi, testStandard, modalita: _modalitaSessione });
+    }
 
-  for (const file of _nuoveFoto) {
-    await dbAddAllegatoFoto({ sessioneId: idSessioneFinale, blob: file });
-  }
-  for (const { file, durata } of _nuoviVideo) {
-    await dbAddAllegatoVideo({ sessioneId: idSessioneFinale, blob: file, durata });
-  }
+    for (const file of _nuoveFoto) {
+      await dbAddAllegatoFoto({ sessioneId: idSessioneFinale, blob: file });
+    }
+    for (const { file, durata } of _nuoviVideo) {
+      await dbAddAllegatoVideo({ sessioneId: idSessioneFinale, blob: file, durata });
+    }
 
-  window.location.href = `./atleta.html?id=${atletaId}`;
+    window.location.href = `./atleta.html?id=${atletaId}`;
+  } catch (err) {
+    mostraErrorePagina(err);
+  } finally {
+    _salvataggio = false;
+    qs('#btn-salva').disabled = false;
+  }
 });
 
-init();
+init().catch((err) => { mostraErrorePagina(err); qs('#btn-salva').disabled = true; });

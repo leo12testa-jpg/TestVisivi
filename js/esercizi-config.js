@@ -38,7 +38,7 @@ const ESERCIZI_CONFIG = [
   },
   {
     key: 'pedana360',
-    label: 'Pedana 360',
+    label: 'Equilibrio posturale e coordinazione occhio-mano su pedana',
     campi: campoValori([
       { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
       { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
@@ -174,6 +174,38 @@ const ESERCIZI_CONFIG = [
     ],
   },
 ];
+
+// Le chiavi preesistenti restano stabili: nessuna riclassificazione dei test legacy.
+const TEST_STANDARD_KEYS = [
+  'localizzazioneSpaziale', 'pedana360', 'proActionReaction', 'attenzioneSeparata',
+  'localizzazioneAffollamento', 'velocitaRiconoscimento', 'percezioneCampoVisivo',
+  'affollamentoMovimentiOculari', 'memorizzazioneSequenze', 'ordinamentoStrategico',
+  'traiettorie', 'riconoscimentoNumeri', 'reazioneSceltaMultipla',
+];
+const CAMPI_RISULTATI = campoValori([
+  { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+  { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
+  { key: 'errori', label: 'Errori', unit: 'count' },
+  { key: 'percentualeSuccesso', label: 'Successo', unit: 'percent' },
+  { key: 'nTarget', label: 'Numero target', unit: 'count' },
+  { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+  { key: 'livelloMassimo', label: 'Livello massimo completato', unit: 'count' },
+]);
+[
+  ['localizzazioneAffollamento', 'Velocità e precisione nella localizzazione spaziale in affollamento percettivo'],
+  ['affollamentoMovimentiOculari', 'Localizzazione in affollamento percettivo e movimenti oculari veloci'],
+  ['ordinamentoStrategico', 'Ordinamento strategico in confusione percettiva'],
+  ['traiettorie', 'Visualizzazione e localizzazione delle traiettorie'],
+  ['riconoscimentoNumeri', 'Riconoscimento visivo veloce di numeri'],
+  ['reazioneSceltaMultipla', 'Reazione visuo-motoria veloce con elevata concentrazione in scelta multipla'],
+].forEach(([key, label]) => ESERCIZI_CONFIG.push({ key, label, campi: [] }));
+ESERCIZI_CONFIG.forEach((test) => {
+  test.standard = TEST_STANDARD_KEYS.includes(test.key);
+  if (test.standard) CAMPI_RISULTATI.forEach((campo) => {
+    if (!test.campi.some((c) => c.key === campo.key)) test.campi.push({ ...campo });
+  });
+});
+const TEST_STANDARD = TEST_STANDARD_KEYS.map((key) => ESERCIZI_CONFIG.find((e) => e.key === key));
 
 function getEsercizioConfig(key) {
   return ESERCIZI_CONFIG.find((e) => e.key === key);

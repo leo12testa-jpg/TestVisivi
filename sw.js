@@ -1,6 +1,6 @@
-/* Service worker: cache-first (con aggiornamento in background) per l'app shell. */
+/* App shell network-first, fallback offline; nessun dato Firestore in CacheStorage. */
 
-const CACHE_NAME = 'jetprogram-cache-v18';
+const CACHE_NAME = 'jetprogram-cache-v19';
 
 const PRECACHE_URLS = [
   './',
@@ -20,6 +20,7 @@ const PRECACHE_URLS = [
   './js/firebase-config.js',
   './js/db.js',
   './js/esercizi-config.js',
+  './js/jet-normalizer.js',
   './js/radar-config.js',
   './js/charts.js',
   './js/pdf-export.js',
@@ -55,26 +56,31 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('jetprogram-cache-') && k !== CACHE_NAME).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+  const shellUrl = new URL(url.pathname, self.location.origin).href;
+  if (!PRECACHE_URLS.some((path) => new URL(path, self.registration.scope).href === shellUrl)) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
+    caches.match(shellUrl).then((cached) => {
       const networkFetch = fetch(event.request)
-        .then((response) => {
+        .then(async (response) => {
           if (response && response.status === 200 && response.type === 'basic') {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(shellUrl, clone);
           }
-          return response;
+          return response.ok ? response : (cached || response);
         })
-        .catch(() => cached);
-      return cached || networkFetch;
+        .catch(() => cached || Response.error());
+      return networkFetch;
     })
   );
 });
