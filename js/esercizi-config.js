@@ -20,6 +20,8 @@ const UNITA_LABEL = {
   deg: '°',
   campo_periferico: 'valore',
   percent: '%',
+  bpm: 'bpm',
+  deg: '°',
 };
 
 function campoValori(campiSemplici) {
@@ -175,36 +177,163 @@ const ESERCIZI_CONFIG = [
   },
 ];
 
-// Le chiavi preesistenti restano stabili: nessuna riclassificazione dei test legacy.
+// I 13 test standard usano le STESSE chiavi già presenti nei documenti Firestore reali.
+// Queste chiavi non vanno rinominate: storico Jet e nuove sessioni devono essere confrontabili.
 const TEST_STANDARD_KEYS = [
-  'localizzazioneSpaziale', 'pedana360', 'proActionReaction', 'attenzioneSeparata',
-  'localizzazioneAffollamento', 'velocitaRiconoscimento', 'percezioneCampoVisivo',
-  'affollamentoMovimentiOculari', 'memorizzazioneSequenze', 'ordinamentoStrategico',
-  'traiettorie', 'riconoscimentoNumeri', 'reazioneSceltaMultipla',
+  'localizzazioneSpaziale',
+  'pedana360',
+  'proActionReaction',
+  'attenzioneSeparata',
+  'velocitaPrecisioneAffollamento',
+  'velocitaRiconoscimento',
+  'percezioneCampoVisivo',
+  'localizzazioneAffollamentoOculare',
+  'memorizzazioneSequenze',
+  'ordinamentoStrategico',
+  'visualizzazioneTraiettorie',
+  'riconoscimentoNumeri',
+  'reazioneVisuoMotoriaSceltaMultipla',
 ];
-const CAMPI_RISULTATI = campoValori([
-  { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
-  { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
-  { key: 'errori', label: 'Errori', unit: 'count' },
-  { key: 'percentualeSuccesso', label: 'Successo', unit: 'percent' },
-  { key: 'nTarget', label: 'Numero target', unit: 'count' },
-  { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
-  { key: 'livelloMassimo', label: 'Livello massimo completato', unit: 'count' },
-]);
-[
-  ['localizzazioneAffollamento', 'Velocità e precisione nella localizzazione spaziale in affollamento percettivo'],
-  ['affollamentoMovimentiOculari', 'Localizzazione in affollamento percettivo e movimenti oculari veloci'],
-  ['ordinamentoStrategico', 'Ordinamento strategico in confusione percettiva'],
-  ['traiettorie', 'Visualizzazione e localizzazione delle traiettorie'],
-  ['riconoscimentoNumeri', 'Riconoscimento visivo veloce di numeri'],
-  ['reazioneSceltaMultipla', 'Reazione visuo-motoria veloce con elevata concentrazione in scelta multipla'],
-].forEach(([key, label]) => ESERCIZI_CONFIG.push({ key, label, campi: [] }));
-ESERCIZI_CONFIG.forEach((test) => {
-  test.standard = TEST_STANDARD_KEYS.includes(test.key);
-  if (test.standard) CAMPI_RISULTATI.forEach((campo) => {
-    if (!test.campi.some((c) => c.key === campo.key)) test.campi.push({ ...campo });
+
+const TEST_STANDARD_LABELS = {
+  localizzazioneSpaziale: 'Localizzazione spaziale (Equilibrio statico)',
+  pedana360: 'Equilibrio posturale e coordinazione occhio-mano su pedana',
+  proActionReaction: 'Pro Action and Reaction Time',
+  attenzioneSeparata: 'Attenzione separata (centrale/periferica)',
+  velocitaPrecisioneAffollamento: 'Velocità e precisione nella localizzazione spaziale in affollamento percettivo',
+  velocitaRiconoscimento: 'Velocità di riconoscimento visivo',
+  percezioneCampoVisivo: 'Percezione campo visivo periferico',
+  localizzazioneAffollamentoOculare: 'Localizzazione in affollamento percettivo e movimenti oculari veloci',
+  memorizzazioneSequenze: 'Memorizzazione sequenze spaziali 7x12',
+  ordinamentoStrategico: 'Ordinamento strategico in confusione percettiva',
+  visualizzazioneTraiettorie: 'Visualizzazione e localizzazione delle traiettorie',
+  riconoscimentoNumeri: 'Riconoscimento visivo veloce di numeri',
+  reazioneVisuoMotoriaSceltaMultipla: 'Reazione visuo-motoria veloce con elevata concentrazione in scelta multipla',
+};
+
+// Campi realmente presenti nello storico Jet già migrato. Gli eventuali campi legacy
+// già definiti sopra restano disponibili e non vengono cancellati.
+const CAMPI_STANDARD_REALI = {
+  localizzazioneSpaziale: [
+    { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
+    { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+    { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'numeroTarget', label: 'Numero target', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+  ],
+  pedana360: [
+    { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
+    { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+    { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+    { key: 'recuperi', label: 'Recuperi', unit: 'count' },
+    { key: 'tempoArea5', label: 'Tempo area 5°', unit: 's' },
+    { key: 'tempoAreaEsterna', label: 'Tempo area esterna', unit: 's' },
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'numeroTarget', label: 'Numero target', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+  ],
+  proActionReaction: [
+    { key: 'tempoRilascioMedio', label: 'Tempo di rilascio medio', unit: 'ms' },
+    { key: 'tempoClickMedio', label: 'Tempo di click medio', unit: 'ms' },
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'numeroTarget', label: 'Numero target', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+  ],
+  attenzioneSeparata: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
+    { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+    { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+    { key: 'numeroTarget', label: 'Numero target', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+    { key: 'recuperi', label: 'Recuperi', unit: 'count' },
+    { key: 'tempoArea5', label: 'Tempo area 5°', unit: 's' },
+    { key: 'tempoAreaEsterna', label: 'Tempo area esterna', unit: 's' },
+  ],
+  velocitaPrecisioneAffollamento: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'clickErrati', label: 'Click errati', unit: 'count' },
+    { key: 'numeroImmagini', label: 'Numero immagini', unit: 'count' },
+    { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+    { key: 'velocita', label: 'Velocità' },
+    { key: 'recuperi', label: 'Recuperi', unit: 'count' },
+    { key: 'tempoArea5', label: 'Tempo area 5°', unit: 's' },
+    { key: 'tempoAreaEsterna', label: 'Tempo area esterna', unit: 's' },
+  ],
+  velocitaRiconoscimento: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'quantitaNumeri', label: 'Quantità elementi riconosciuti', unit: 'count' },
+    { key: 'tempoStimolo', label: 'Tempo stimolo', unit: 's' },
+    { key: 'recuperi', label: 'Recuperi', unit: 'count' },
+    { key: 'tempoArea5', label: 'Tempo area 5°', unit: 's' },
+    { key: 'tempoAreaEsterna', label: 'Tempo area esterna', unit: 's' },
+  ],
+  percezioneCampoVisivo: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'angoloMassimo', label: 'Angolo massimo', unit: 'deg' },
+    { key: 'numeroTarget', label: 'Numero target', unit: 'count' },
+    { key: 'numeroLettere', label: 'Numero lettere', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+    { key: 'recuperi', label: 'Recuperi', unit: 'count' },
+    { key: 'tempoArea5', label: 'Tempo area 5°', unit: 's' },
+    { key: 'tempoAreaEsterna', label: 'Tempo area esterna', unit: 's' },
+  ],
+  localizzazioneAffollamentoOculare: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'metronomo', label: 'Metronomo', unit: 'bpm' },
+  ],
+  memorizzazioneSequenze: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'livelloMassimo', label: 'Livello massimo completato', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+    { key: 'completa', label: 'Completa', tipo: 'text' },
+  ],
+  ordinamentoStrategico: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'clickErrati', label: 'Click errati', unit: 'count' },
+    { key: 'numeroImmagini', label: 'Numero immagini', unit: 'count' },
+    { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+    { key: 'velocita', label: 'Velocità' },
+  ],
+  visualizzazioneTraiettorie: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'clickErrati', label: 'Click errati', unit: 'count' },
+    { key: 'numeroImmagini', label: 'Numero immagini', unit: 'count' },
+    { key: 'immaginiColpite', label: 'Immagini colpite', unit: 'count' },
+    { key: 'velocita', label: 'Velocità' },
+  ],
+  riconoscimentoNumeri: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'quantitaNumeri', label: 'Quantità numeri', unit: 'count' },
+    { key: 'tempoStimolo', label: 'Tempo stimolo', unit: 's' },
+  ],
+  reazioneVisuoMotoriaSceltaMultipla: [
+    { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
+    { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
+    { key: 'numeroTarget', label: 'Numero target', unit: 'count' },
+    { key: 'errori', label: 'Errori', unit: 'count' },
+    { key: 'corretti', label: 'Corretti', unit: 'count' },
+    { key: 'metronomo', label: 'Metronomo', unit: 'bpm' },
+  ],
+};
+
+TEST_STANDARD_KEYS.forEach((key) => {
+  let test = ESERCIZI_CONFIG.find((e) => e.key === key);
+  if (!test) {
+    test = { key, label: TEST_STANDARD_LABELS[key], campi: [] };
+    ESERCIZI_CONFIG.push(test);
+  } else {
+    test.label = TEST_STANDARD_LABELS[key];
+  }
+  (CAMPI_STANDARD_REALI[key] || []).forEach((campo) => {
+    const esistente = test.campi.find((c) => c.key === campo.key);
+    if (esistente) Object.assign(esistente, campo);
+    else test.campi.push({ tipo: 'number', ...campo });
   });
 });
+
+ESERCIZI_CONFIG.forEach((test) => { test.standard = TEST_STANDARD_KEYS.includes(test.key); });
 const TEST_STANDARD = TEST_STANDARD_KEYS.map((key) => ESERCIZI_CONFIG.find((e) => e.key === key));
 
 function getEsercizioConfig(key) {
