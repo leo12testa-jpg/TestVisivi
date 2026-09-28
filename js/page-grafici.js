@@ -160,7 +160,7 @@ async function init() {
   qs('#titolo-grafici').textContent = `Grafici — ${nomeCompleto(atleta)}`;
   document.title = `Grafici ${nomeCompleto(atleta)} - Test Visivi`;
 
-  const sessioni = await dbGetSessioniByAtleta(atletaId);
+  const sessioni = (await dbGetSessioniByAtleta(atletaId)).filter((s) => !isSessioneTraining(s));
   const contenuto = qs('#contenuto');
   let mostratoAlmenoUno = false;
 

@@ -33,9 +33,11 @@ function renderLista() {
   filtrate.forEach((s) => {
     const nEsercizi = contaEserciziCompilati(s);
     const etichettaData = s.titolo ? `${formatDataIt(s.data)} · ${s.titolo}` : formatDataIt(s.data);
+    const rigaData = [el('span', { text: etichettaData })];
+    if (isSessioneTraining(s)) rigaData.push(el('span', { class: 'badge', style: 'margin-left:8px;', text: 'Allenamento' }));
     const item = el('a', { class: 'list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`, style: 'text-decoration:none;color:inherit;' }, [
       el('div', {}, [
-        el('div', { text: etichettaData }),
+        el('div', {}, rigaData),
         el('div', { class: 'meta', text: `${nEsercizi} esercizi${nEsercizi === 1 ? 'o' : ''} compilat${nEsercizi === 1 ? 'o' : 'i'}` }),
       ]),
       el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),

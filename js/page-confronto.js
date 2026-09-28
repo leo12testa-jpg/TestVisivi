@@ -48,7 +48,7 @@ async function raccogliDati(esercizio, scKey, campo) {
   if (squadraSelezionata) atleti = atleti.filter((a) => a.squadraId === squadraSelezionata);
   const risultati = [];
   for (const atleta of atleti) {
-    const sessioni = await dbGetSessioniByAtleta(atleta.id);
+    const sessioni = (await dbGetSessioniByAtleta(atleta.id)).filter((s) => !isSessioneTraining(s));
     const punti = sessioni
       .map((s) => ({ data: s.data, valore: getValoreCampoRaw(s, esercizio.key, scKey, campo.key) }))
       .filter((p) => p.valore !== '')

@@ -2,6 +2,9 @@ registerServiceWorker();
 
 const atletaId = getQueryParam('atletaId');
 const sessioneId = getQueryParam('sessioneId') || null;
+// Modalità dalla querystring per una sessione nuova; se si modifica una sessione
+// esistente prevale la sua modalita già salvata (vedi init()), non quella nell'URL.
+let _modalitaSessione = getSessioneConfig(getQueryParam('mode')).modalita;
 
 qs('#back-link').href = `./atleta.html?id=${atletaId}`;
 
@@ -303,7 +306,8 @@ async function init() {
   if (sessioneId) {
     const sessione = await dbGetSessione(sessioneId);
     if (sessione) {
-      qs('#titolo-sessione').textContent = `Modifica sessione - ${nomeCompleto(atleta)}`;
+      _modalitaSessione = getSessioneConfig(sessione.modalita).modalita;
+      qs('#titolo-sessione').textContent = `${getSessioneConfig(_modalitaSessione).titoloModifica} - ${nomeCompleto(atleta)}`;
       qs('#f-data').value = sessione.data;
       qs('#f-titolo').value = sessione.titolo || '';
       ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) =>
@@ -314,7 +318,7 @@ async function init() {
       qs('#btn-elimina-sessione').hidden = false;
     }
   } else {
-    qs('#titolo-sessione').textContent = `Nuova sessione - ${nomeCompleto(atleta)}`;
+    qs('#titolo-sessione').textContent = `${getSessioneConfig(_modalitaSessione).titoloNuova} - ${nomeCompleto(atleta)}`;
     qs('#f-data').value = oggiIso();
   }
   renderGalleriaAllegati();
@@ -356,9 +360,10 @@ qs('#btn-salva').addEventListener('click', async () => {
     sessione.data = data;
     sessione.titolo = titolo;
     sessione.esercizi = esercizi;
+    sessione.modalita = _modalitaSessione;
     await dbUpdateSessione(sessione);
   } else {
-    idSessioneFinale = await dbAddSessione({ atletaId, data, titolo, esercizi });
+    idSessioneFinale = await dbAddSessione({ atletaId, data, titolo, esercizi, modalita: _modalitaSessione });
   }
 
   for (const file of _nuoveFoto) {

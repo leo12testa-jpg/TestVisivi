@@ -8,7 +8,7 @@ async function caricaLista() {
 
   try {
     _atleti = await dbGetAtleti();
-    const conteggi = await Promise.all(_atleti.map((a) => dbGetSessioniByAtleta(a.id)));
+    const conteggi = await Promise.all(_atleti.map((a) => dbGetSessioniByAtleta(a.id).then((sessioni) => sessioni.filter((s) => !isSessioneTraining(s)))));
     _atleti.forEach((a, i) => {
       a._sessioni = conteggi[i];
     });
