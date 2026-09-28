@@ -4,7 +4,7 @@
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v25.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v30.
 
 Il 28/09/2026 è stato analizzato l'export Firestore reale:
 139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
@@ -62,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v25 usa rete con fallback offline, include il normalizzatore e limita
+La cache v30 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
@@ -164,3 +164,15 @@ Dopo il confronto con l'export reale, la UI dei test è stata semplificata:
 
 Nell'export reale risultano tre sessioni Pro Action/Reaction con medie temporali negative/anomale.
 Questi valori restano conservati nei dati originali ma non vengono presentati come risultati validi.
+
+
+## Stabilità operativa e PDF professionale
+
+- Le sessioni storiche mostrano solo i test e i valori effettivamente presenti.
+- I tempi legacy salvati in secondi vengono convertiti in millisecondi solo in memoria.
+- Le sessioni Jet originali restano sempre nello storico anche se non standardizzate.
+- La pulizia archivio scarica prima un backup JSON e rimuove soltanto le sessioni senza alcun dato test.
+- I nomi atleta vengono normalizzati per maiuscole, entità HTML e refusi Bologna noti.
+- Il report PDF è stato ridisegnato: copertina, KPI, anagrafica, dati clinici compilati, sezioni test, tabelle con unità, grafici, allegati, numerazione pagine e footer.
+- Per evitare PDF enormi, ogni sezione riporta in tabella le ultime 12 valutazioni e nei grafici le ultime 20, indicando quante valutazioni totali sono disponibili.
+- I test E2E verificano anche che il PDF generato sia un file PDF non vuoto.
