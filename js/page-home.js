@@ -87,7 +87,7 @@ qs('#btn-crea-atleta').addEventListener('click', async () => {
 
 qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
   const button = event.currentTarget;
-  if (!confirm('Prima verra scaricata una copia di sicurezza. Poi verranno corretti i nomi e rimosse solo le sessioni senza alcun dato test. Continuare?')) return;
+  if (!confirm('Prima verrà scaricata una copia di sicurezza. Poi verranno corretti i nomi, uniti i profili duplicati e rimosse solo le sessioni senza alcun dato test. Continuare?')) return;
 
   button.disabled = true;
   button.textContent = 'Backup e sistemazione…';
@@ -96,10 +96,17 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
     scaricaJsonArchivio(backup, `testvisivi-prima-pulizia-${oggiIso()}.json`);
 
     const nomiAggiornati = await dbCorreggiNomiAtleti();
+    const unione = await dbUnisciDoppioniAtleti();
     const sessioniEliminate = await dbPulisciSessioniVuote();
     await caricaLista();
 
-    alert(`Archivio sistemato. Backup scaricato. Nomi aggiornati: ${nomiAggiornati}. Sessioni vuote eliminate: ${sessioniEliminate}.`);
+    alert(
+      `Archivio sistemato. Backup scaricato. ` +
+      `Nomi aggiornati: ${nomiAggiornati}. ` +
+      `Doppioni uniti: ${unione.gruppiUniti} gruppi / ${unione.profiliEliminati} profili rimossi. ` +
+      `Sessioni riassegnate: ${unione.sessioniRiassegnate}. ` +
+      `Sessioni vuote eliminate: ${sessioniEliminate}.`
+    );
   } catch (err) {
     mostraErrorePagina(err);
   } finally {
