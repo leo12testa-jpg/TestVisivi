@@ -8,6 +8,8 @@ const context = vm.createContext({
   normalizzaAnagraficaCalciatore(atleta) {
     const cognome = String(atleta.cognome || '').toLowerCase();
     if (cognome === 'skovolsen') return { ...atleta, nome: 'Andreas', cognome: 'Skov Olsen' };
+    if (cognome === 'amondarain') return { ...atleta, nome: 'Mikel', cognome: 'Amondarain' };
+    if (cognome === 'alhassane' || cognome === 'alhassane bonkano') return { ...atleta, nome: 'Rahim', cognome: 'Alhassane' };
     return atleta;
   },
   chiaveNome(value) {
@@ -55,4 +57,16 @@ test('non unisce omonimi incompatibili o date di nascita diverse', () => {
   ];
   context.counts = { a: 2, b: 3 };
   assert.equal(run('archivioTrovaDoppioniAtleti(atleti, counts)').length, 0);
+});
+
+
+test('riconosce anche profilo con nome vuoto come duplicato dello stesso atleta', () => {
+  context.atleti = [
+    { id: 'a', nome: 'mikel', cognome: 'amondarain', dataNascita: '2005-01-06' },
+    { id: 'b', nome: '', cognome: 'Amondarain', dataNascita: '' },
+  ];
+  context.counts = { a: 6, b: 0 };
+  const gruppi = run('archivioTrovaDoppioniAtleti(atleti, counts)');
+  assert.equal(gruppi.length, 1);
+  assert.equal(gruppi[0].principale.id, 'a');
 });
