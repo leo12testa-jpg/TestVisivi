@@ -438,6 +438,10 @@ async function init() {
     if (sessione) {
       if (sessione.atletaId !== atletaId) throw new Error('Questa sessione appartiene a un altro atleta.');
       _sessioneCaricata = sessione;
+      if (!sessioneHaRisultatiVisibili(sessione)) {
+        window.location.href = `./atleta.html?id=${atletaId}`;
+        return;
+      }
       qs('#test-standard').value = jetTest(sessione)?.key || sessione.testStandard || '';
       if (jetTest(sessione)) qs('#test-standard').disabled = true;
       mostraOriginali(sessione);
