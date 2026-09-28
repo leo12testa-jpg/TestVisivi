@@ -486,6 +486,7 @@ qs('#btn-elimina-sessione').addEventListener('click', async () => {
   const data = qs('#f-data').value;
   if (!confirm(`Eliminare la sessione del ${formatDataIt(data)}?`)) return;
   await dbDeleteSessione(sessioneId);
+  _modificheNonSalvate = false;
   window.location.href = `./atleta.html?id=${atletaId}`;
 });
 
@@ -508,7 +509,7 @@ qs('#btn-salva').addEventListener('click', async () => {
     mostraErrorePagina(new Error('Controlla i valori inseriti.'));
     return;
   }
-  if (Object.keys(esercizi).length === 0) {
+  if (!sessioneId && Object.keys(esercizi).length === 0) {
     mostraErrorePagina(new Error('Inserisci almeno un risultato del test prima di salvare.'));
     return;
   }
@@ -551,7 +552,6 @@ qs('#btn-salva').addEventListener('click', async () => {
       await dbAddAllegatoVideo({ sessioneId: idSessioneFinale, blob: file, durata });
     }
 
-    _modificheNonSalvate = false;
     _modificheNonSalvate = false;
     window.location.href = `./atleta.html?id=${atletaId}`;
   } catch (err) {
