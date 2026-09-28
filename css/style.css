@@ -1219,3 +1219,8 @@ th {
   font-size: .72rem;
   line-height: 1.45;
 }
+
+.result-test-block { margin-top:22px; padding-top:20px; border-top:1px solid var(--border); }
+.result-test-block h3 { margin:0 0 12px; color:var(--text); font-size:1rem; line-height:1.35; }
+.edit-session-toggle { width:100%; margin:-6px 0 18px; }
+#esercizi-container[hidden], #session-meta-form[hidden], #save-bar[hidden] { display:none !important; }
