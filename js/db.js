@@ -132,6 +132,7 @@ function _sessioneDaDoc(doc) {
   let sessione = _snapToObj(doc);
   if (typeof normalizzaSessioneJet === 'function') sessione = normalizzaSessioneJet(sessione);
   if (typeof normalizzaSessioneLegacy === 'function') sessione = normalizzaSessioneLegacy(sessione);
+  if (typeof pulisciEserciziSessione === 'function') sessione = pulisciEserciziSessione(sessione);
   return sessione;
 }
 
@@ -240,6 +241,34 @@ async function dbPulisciSessioniVuote() {
   });
   for (const doc of vuote) await dbDeleteSessione(doc.id);
   return vuote.length;
+}
+
+
+async function dbPulisciTestVuoti() {
+  if (typeof pulisciEserciziSessione !== 'function') return { sessioniAggiornate: 0, blocchiRimossi: 0 };
+
+  const snap = await _sessioniCol().get();
+  let sessioniAggiornate = 0;
+  let blocchiRimossi = 0;
+
+  for (const doc of snap.docs) {
+    const originale = { ...doc.data(), id: doc.id };
+    const prima = originale.esercizi && typeof originale.esercizi === 'object' ? originale.esercizi : {};
+    const pulita = pulisciEserciziSessione(originale);
+    const dopo = pulita.esercizi || {};
+
+    const rimossi = Object.keys(prima).filter((key) => !(key in dopo));
+    if (!rimossi.length) continue;
+
+    await _sessioniCol().doc(doc.id).update({
+      esercizi: dopo,
+      updatedAt: new Date().toISOString(),
+    });
+    sessioniAggiornate++;
+    blocchiRimossi += rimossi.length;
+  }
+
+  return { sessioniAggiornate, blocchiRimossi };
 }
 
 async function dbCorreggiNomiAtleti() {
