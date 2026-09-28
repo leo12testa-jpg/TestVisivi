@@ -335,6 +335,137 @@ TEST_STANDARD_KEYS.forEach((key) => {
 ESERCIZI_CONFIG.forEach((test) => { test.standard = TEST_STANDARD_KEYS.includes(test.key); });
 const TEST_STANDARD = TEST_STANDARD_KEYS.map((key) => ESERCIZI_CONFIG.find((e) => e.key === key));
 
+const TEST_STANDARD_INFO = {
+  localizzazioneSpaziale: {
+    descrizione: 'Coordinazione occhio-mano nella percezione e nel tocco periferico.',
+    principali: ['tempoReazioneMedio', 'immaginiColpite', 'errori', 'immaginiAlSec'],
+    secondari: ['tempoTotale', 'numeroTarget'],
+  },
+  pedana360: {
+    descrizione: 'Equilibrio visuo-posturale e coordinazione occhio-mano su pedana.',
+    principali: ['tempoReazioneMedio', 'immaginiColpite', 'errori', 'recuperi'],
+    secondari: ['tempoTotale', 'numeroTarget', 'immaginiAlSec', 'tempoArea5', 'tempoAreaEsterna'],
+  },
+  proActionReaction: {
+    descrizione: 'Tempo di reazione e di risposta motoria.',
+    principali: ['tempoRilascioMedio', 'tempoClickMedio', 'errori', 'tempoTotale'],
+    secondari: ['numeroTarget'],
+  },
+  attenzioneSeparata: {
+    descrizione: 'Attenzione divisa tra lettura centrale e risposta periferica occhio-mano.',
+    principali: ['tempoReazioneMedio', 'errori', 'immaginiColpite', 'tempoTotale'],
+    secondari: ['numeroTarget', 'immaginiAlSec', 'recuperi', 'tempoArea5', 'tempoAreaEsterna'],
+  },
+  velocitaPrecisioneAffollamento: {
+    descrizione: 'Velocità e precisione della localizzazione spaziale in affollamento percettivo.',
+    principali: ['clickErrati', 'tempoTotale', 'immaginiColpite'],
+    secondari: ['numeroImmagini', 'velocita', 'recuperi', 'tempoArea5', 'tempoAreaEsterna'],
+  },
+  velocitaRiconoscimento: {
+    descrizione: 'Riconoscimento visivo veloce di stimoli presentati per un tempo definito.',
+    principali: ['quantitaNumeri', 'tempoTotale'],
+    secondari: ['tempoStimolo', 'recuperi', 'tempoArea5', 'tempoAreaEsterna'],
+  },
+  percezioneCampoVisivo: {
+    descrizione: 'Consapevolezza e riconoscimento di stimoli periferici mantenendo una mira centrale.',
+    principali: ['angoloMassimo', 'errori', 'numeroLettere', 'numeroTarget'],
+    secondari: ['tempoTotale', 'recuperi', 'tempoArea5', 'tempoAreaEsterna'],
+  },
+  localizzazioneAffollamentoOculare: {
+    descrizione: 'Localizzazione in affollamento percettivo con movimenti oculari rapidi.',
+    principali: ['tempoTotale'],
+    secondari: ['metronomo'],
+  },
+  memorizzazioneSequenze: {
+    descrizione: 'Memoria visiva e concentrazione su sequenze spaziali 7×12.',
+    principali: ['livelloMassimo', 'errori', 'tempoTotale', 'completa'],
+    secondari: [],
+  },
+  ordinamentoStrategico: {
+    descrizione: 'Ordinamento strategico di stimoli in condizioni di confusione percettiva.',
+    principali: ['clickErrati', 'tempoTotale', 'immaginiColpite'],
+    secondari: ['numeroImmagini', 'velocita'],
+  },
+  visualizzazioneTraiettorie: {
+    descrizione: 'Visualizzazione e localizzazione di traiettorie.',
+    principali: ['immaginiColpite', 'clickErrati', 'tempoTotale'],
+    secondari: ['numeroImmagini', 'velocita'],
+  },
+  riconoscimentoNumeri: {
+    descrizione: 'Riconoscimento visivo veloce specifico di numeri.',
+    principali: ['quantitaNumeri', 'tempoTotale'],
+    secondari: ['tempoStimolo'],
+  },
+  reazioneVisuoMotoriaSceltaMultipla: {
+    descrizione: 'Reazione visuo-motoria rapida con elevata concentrazione e scelta multipla.',
+    principali: ['tempoReazioneMedio', 'corretti', 'errori', 'numeroTarget'],
+    secondari: ['tempoTotale', 'metronomo'],
+  },
+};
+
+TEST_STANDARD.forEach((test) => {
+  const info = TEST_STANDARD_INFO[test.key] || {};
+  test.descrizione = info.descrizione || '';
+  test.campiPrincipali = info.principali || [];
+  test.campiSecondari = info.secondari || [];
+  test.campiStandard = [...test.campiPrincipali, ...test.campiSecondari];
+});
+
+function campiEsercizioVisibili(esercizio) {
+  if (!esercizio || !esercizio.standard || !esercizio.campiStandard?.length) return esercizio?.campi || [];
+  return esercizio.campi.filter((campo) => esercizio.campiStandard.includes(campo.key));
+}
+
+function campoEsercizio(esercizio, key) {
+  return (esercizio?.campi || []).find((campo) => campo.key === key);
+}
+
+function valoreCampoValido(campo, value) {
+  if (value === undefined || value === null || value === '') return false;
+  if (campo?.tipo !== 'number') return true;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return false;
+  if (['ms', 's', 'count', 'percent', 'per_sec', 'bpm'].includes(campo.unit) && n < 0) return false;
+  if (campo.unit === 'percent' && n > 100) return false;
+  return true;
+}
+
+const _FORMAT_NUMERO = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 });
+
+function formattaValoreCampo(campo, value) {
+  if (!valoreCampoValido(campo, value)) return '—';
+  if (campo?.tipo !== 'number') return String(value);
+  const n = Number(value);
+  const numero = campo.unit === 'ms' || campo.unit === 'count'
+    ? new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 }).format(n)
+    : _FORMAT_NUMERO.format(n);
+  const unita = campo.unit === 'per_sec' ? 'img/s' : (UNITA_LABEL[campo.unit] || '');
+  return unita ? `${numero} ${unita}` : numero;
+}
+
+function metrichePrincipaliSessione(sessione) {
+  const test = typeof jetTest === 'function' ? jetTest(sessione) : null;
+  if (!test) return [];
+  const dati = sessione?.esercizi?.[test.key] || {};
+  return (test.campiPrincipali || []).map((key) => {
+    const campo = campoEsercizio(test, key);
+    const raw = dati[key];
+    return campo && valoreCampoValido(campo, raw)
+      ? { key, label: campo.label, valore: formattaValoreCampo(campo, raw), raw }
+      : null;
+  }).filter(Boolean);
+}
+
+function anomalieValoriSessione(sessione) {
+  const test = typeof jetTest === 'function' ? jetTest(sessione) : null;
+  if (!test) return [];
+  const dati = sessione?.esercizi?.[test.key] || {};
+  return campiEsercizioVisibili(test).filter((campo) => {
+    const raw = dati[campo.key];
+    return raw !== undefined && raw !== null && raw !== '' && !valoreCampoValido(campo, raw);
+  }).map((campo) => campo.label);
+}
+
 function getEsercizioConfig(key) {
   return ESERCIZI_CONFIG.find((e) => e.key === key);
 }
