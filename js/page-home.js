@@ -98,6 +98,7 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
     const nomiAggiornati = await dbCorreggiNomiAtleti();
     const unione = await dbUnisciDoppioniAtleti();
     const sessioniEliminate = await dbPulisciSessioniVuote();
+    const residui = await dbAnalizzaDoppioniAtleti();
     await caricaLista();
 
     alert(
@@ -105,7 +106,8 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
       `Nomi aggiornati: ${nomiAggiornati}. ` +
       `Doppioni uniti: ${unione.gruppiUniti} gruppi / ${unione.profiliEliminati} profili rimossi. ` +
       `Sessioni riassegnate: ${unione.sessioniRiassegnate}. ` +
-      `Sessioni vuote eliminate: ${sessioniEliminate}.`
+      `Sessioni vuote eliminate: ${sessioniEliminate}. ` +
+      `Doppioni compatibili residui: ${residui.length}.`
     );
   } catch (err) {
     mostraErrorePagina(err);
