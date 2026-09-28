@@ -7,6 +7,7 @@ const sessioneId = getQueryParam('sessioneId') || null;
 let _modalitaSessione = getSessioneConfig(getQueryParam('mode')).modalita;
 let _sessioneCaricata = null;
 let _salvataggio = false;
+let _modificheNonSalvate = false;
 
 qs('#back-link').href = `./atleta.html?id=${atletaId}`;
 
@@ -392,6 +393,7 @@ qs('#btn-aggiungi-video').addEventListener('click', () => qs('#input-video').cli
 
 qs('#input-foto').addEventListener('change', (e) => {
   _nuoveFoto.push(...e.target.files);
+  if (e.target.files.length) _modificheNonSalvate = true;
   e.target.value = '';
   renderGalleriaAllegati();
 });
@@ -407,6 +409,7 @@ qs('#input-video').addEventListener('change', async (e) => {
         continue;
       }
       _nuoviVideo.push({ file, durata });
+      _modificheNonSalvate = true;
     } catch (err) {
       alert('Impossibile leggere il video selezionato.');
     }
@@ -419,6 +422,11 @@ qs('#lightbox').addEventListener('click', () => {
 });
 
 window.addEventListener('pagehide', revocaUrlGalleria);
+window.addEventListener('beforeunload', (event) => {
+  if (!_modificheNonSalvate || _salvataggio) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
 
 async function init() {
   const user = await richiedeLogin();
@@ -461,6 +469,12 @@ async function init() {
   }
   renderGalleriaAllegati();
   qs('#btn-salva').disabled = false;
+
+  qsa('input, select, textarea').forEach((controllo) => {
+    if (controllo.type === 'file') return;
+    controllo.addEventListener('input', () => { _modificheNonSalvate = true; });
+    controllo.addEventListener('change', () => { _modificheNonSalvate = true; });
+  });
 }
 
 qs('#btn-annulla').addEventListener('click', () => {
@@ -494,9 +508,9 @@ qs('#btn-salva').addEventListener('click', async () => {
     mostraErrorePagina(new Error('Controlla i valori inseriti.'));
     return;
   }
-  const haAllegatiNuovi = _nuoveFoto.length > 0 || _nuoviVideo.length > 0;
-  if (Object.keys(esercizi).length === 0 && !haAllegatiNuovi) {
-    if (!confirm('Nessun esercizio compilato. Salvare comunque la sessione?')) return;
+  if (Object.keys(esercizi).length === 0) {
+    mostraErrorePagina(new Error('Inserisci almeno un risultato del test prima di salvare.'));
+    return;
   }
 
   _salvataggio = true;
@@ -537,6 +551,8 @@ qs('#btn-salva').addEventListener('click', async () => {
       await dbAddAllegatoVideo({ sessioneId: idSessioneFinale, blob: file, durata });
     }
 
+    _modificheNonSalvate = false;
+    _modificheNonSalvate = false;
     window.location.href = `./atleta.html?id=${atletaId}`;
   } catch (err) {
     mostraErrorePagina(err);
