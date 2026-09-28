@@ -134,7 +134,7 @@ qs('#btn-unisci-doppioni').addEventListener('click', async (event) => {
 
 qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
   const button = event.currentTarget;
-  if (!confirm('Prima verrà scaricata una copia di sicurezza. Poi verranno corretti i nomi, uniti i profili duplicati e rimosse solo le sessioni senza alcun dato test. Continuare?')) return;
+  if (!confirm('Prima verrà scaricata una copia di sicurezza. Poi verranno corretti i nomi, uniti i profili duplicati e rimossi tutti i blocchi test senza valori reali. Continuare?')) return;
 
   button.disabled = true;
   button.textContent = 'Backup e sistemazione…';
@@ -144,6 +144,7 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
 
     const nomiAggiornati = await dbCorreggiNomiAtleti();
     const unione = await dbUnisciDoppioniAtleti();
+    const testPuliti = await dbPulisciTestVuoti();
     const sessioniEliminate = await dbPulisciSessioniVuote();
     const residui = await dbAnalizzaDoppioniAtleti();
     await caricaLista();
@@ -153,6 +154,7 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
       `Nomi aggiornati: ${nomiAggiornati}. ` +
       `Doppioni uniti: ${unione.gruppiUniti} gruppi / ${unione.profiliEliminati} profili rimossi. ` +
       `Sessioni riassegnate: ${unione.sessioniRiassegnate}. ` +
+      `Test vuoti rimossi: ${testPuliti.blocchiRimossi} in ${testPuliti.sessioniAggiornate} sessioni. ` +
       `Sessioni vuote eliminate: ${sessioniEliminate}. ` +
       `Doppioni compatibili residui: ${residui.length}.`
     );
