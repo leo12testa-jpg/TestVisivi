@@ -201,12 +201,14 @@ async function dbGetSessione(id) {
 }
 
 async function dbAddSessione(sessione) {
+  if (typeof pulisciEserciziSessione === 'function') sessione = pulisciEserciziSessione(sessione);
   sessione.createdAt = new Date().toISOString();
   const ref = await _sessioniCol().add(sessione);
   return ref.id;
 }
 
 function dbUpdateSessione(sessione) {
+  if (typeof pulisciEserciziSessione === 'function') sessione = pulisciEserciziSessione(sessione);
   const { id, ...dati } = sessione;
   return _sessioniCol().doc(id).set(dati, { merge: true });
 }
