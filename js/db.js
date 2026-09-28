@@ -261,6 +261,95 @@ async function dbCorreggiNomiAtleti() {
   return aggiornati;
 }
 
+
+async function dbAnalizzaDoppioniAtleti() {
+  if (typeof archivioTrovaDoppioniAtleti !== 'function') {
+    throw new Error('Funzioni archivio duplicati non disponibili.');
+  }
+
+  const [atletiSnap, sessioniSnap] = await Promise.all([_atletiCol().get(), _sessioniCol().get()]);
+  const atleti = atletiSnap.docs.map(_snapToObj);
+  const conteggioSessioni = {};
+  sessioniSnap.docs.forEach((doc) => {
+    const atletaId = doc.data().atletaId;
+    if (!atletaId) return;
+    conteggioSessioni[atletaId] = (conteggioSessioni[atletaId] || 0) + 1;
+  });
+
+  return archivioTrovaDoppioniAtleti(atleti, conteggioSessioni).map((gruppo) => ({
+    ...gruppo,
+    conteggioSessioni,
+  }));
+}
+
+async function dbUnisciDoppioniAtleti() {
+  if (typeof archivioTrovaDoppioniAtleti !== 'function' || typeof archivioUnisciProfiloAtleta !== 'function') {
+    throw new Error('Funzioni archivio duplicati non disponibili.');
+  }
+
+  const [atletiSnap, sessioniSnap] = await Promise.all([_atletiCol().get(), _sessioniCol().get()]);
+  const atleti = atletiSnap.docs.map(_snapToObj);
+  const sessioniDocs = sessioniSnap.docs;
+  const conteggioSessioni = {};
+
+  sessioniDocs.forEach((doc) => {
+    const atletaId = doc.data().atletaId;
+    if (!atletaId) return;
+    conteggioSessioni[atletaId] = (conteggioSessioni[atletaId] || 0) + 1;
+  });
+
+  const gruppi = archivioTrovaDoppioniAtleti(atleti, conteggioSessioni);
+  let profiliEliminati = 0;
+  let sessioniRiassegnate = 0;
+  const dettagli = [];
+
+  for (const gruppo of gruppi) {
+    let principale = gruppo.principale;
+    let unito = principale;
+    const riassegnateGruppo = [];
+
+    for (const duplicato of gruppo.duplicati) {
+      const sessioniDuplicate = sessioniDocs.filter((doc) => doc.data().atletaId === duplicato.id);
+
+      for (const doc of sessioniDuplicate) {
+        await _sessioniCol().doc(doc.id).set({ atletaId: principale.id }, { merge: true });
+        sessioniRiassegnate++;
+        riassegnateGruppo.push(doc.id);
+      }
+
+      unito = archivioUnisciProfiloAtleta(unito, duplicato);
+    }
+
+    const corretto = typeof normalizzaAnagraficaCalciatore === 'function'
+      ? normalizzaAnagraficaCalciatore(unito)
+      : unito;
+
+    const { id, ...datiDaSalvare } = { ...unito, nome: corretto.nome, cognome: corretto.cognome };
+    datiDaSalvare.updatedAt = new Date().toISOString();
+    await _atletiCol().doc(principale.id).set(datiDaSalvare, { merge: true });
+
+    for (const duplicato of gruppo.duplicati) {
+      await _atletiCol().doc(duplicato.id).delete();
+      profiliEliminati++;
+    }
+
+    dettagli.push({
+      atletaId: principale.id,
+      nome: `${corretto.nome || ''} ${corretto.cognome || ''}`.trim(),
+      profiliUniti: gruppo.duplicati.length + 1,
+      sessioniRiassegnate: riassegnateGruppo.length,
+      sessioniTotali: gruppo.sessioniTotali,
+    });
+  }
+
+  return {
+    gruppiUniti: gruppi.length,
+    profiliEliminati,
+    sessioniRiassegnate,
+    dettagli,
+  };
+}
+
 /* --- Firestore: squadre --- */
 
 async function dbGetSquadre() {
