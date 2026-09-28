@@ -2,6 +2,15 @@ registerServiceWorker();
 
 let _atleti = [];
 
+function scaricaJsonArchivio(dati, nomeFile) {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(dati, null, 2)], { type: 'application/json' }));
+  const link = el('a', { href: url, download: nomeFile });
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
 async function caricaLista() {
   const user = await richiedeLogin();
   if (!user) return;
@@ -78,17 +87,19 @@ qs('#btn-crea-atleta').addEventListener('click', async () => {
 
 qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
   const button = event.currentTarget;
-  if (!confirm('Correggere i nomi dei calciatori e rimuovere le sessioni completamente vuote? I risultati dei test e i dati Jet Program non verranno cancellati.')) return;
+  if (!confirm('Prima verra scaricata una copia di sicurezza. Poi verranno corretti i nomi e rimosse solo le sessioni senza alcun dato test. Continuare?')) return;
 
   button.disabled = true;
-  button.textContent = 'Sistemazione archivio…';
+  button.textContent = 'Backup e sistemazione…';
   try {
-    const [nomiAggiornati, sessioniEliminate] = await Promise.all([
-      dbCorreggiNomiAtleti(),
-      dbPulisciSessioniVuote(),
-    ]);
+    const backup = await dbEsportaCopiaDati();
+    scaricaJsonArchivio(backup, `testvisivi-prima-pulizia-${oggiIso()}.json`);
+
+    const nomiAggiornati = await dbCorreggiNomiAtleti();
+    const sessioniEliminate = await dbPulisciSessioniVuote();
     await caricaLista();
-    alert(`Archivio sistemato. Nomi aggiornati: ${nomiAggiornati}. Sessioni vuote eliminate: ${sessioniEliminate}.`);
+
+    alert(`Archivio sistemato. Backup scaricato. Nomi aggiornati: ${nomiAggiornati}. Sessioni vuote eliminate: ${sessioniEliminate}.`);
   } catch (err) {
     mostraErrorePagina(err);
   } finally {
@@ -103,12 +114,7 @@ qs('#btn-backup').addEventListener('click', async (event) => {
   button.textContent = 'Preparazione copia…';
   try {
     const dati = await dbEsportaCopiaDati();
-    const url = URL.createObjectURL(new Blob([JSON.stringify(dati, null, 2)], { type: 'application/json' }));
-    const link = el('a', { href: url, download: `testvisivi-backup-${oggiIso()}.json` });
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    scaricaJsonArchivio(dati, `testvisivi-backup-${oggiIso()}.json`);
   } catch (err) { mostraErrorePagina(err); }
   finally { button.disabled = false; button.textContent = 'Esporta copia dati'; }
 });
