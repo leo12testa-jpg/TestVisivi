@@ -43,10 +43,11 @@ test('nessun valore inventato per unità, nomi o strutture ambigui', () => {
   }
 });
 
-test('Jet non mappato visibile nello storico senza zero esercizi', () => {
+test('Jet non mappato resta preservato ma non compare come test senza valori standard', () => {
   context.input = { nomeTestOriginale: 'Sconosciuto', datiOriginali: { valore: 'originale' } };
-  assert.match(run('riepilogoSessione(input)'), /Dati originali Jet Program disponibili/);
+  assert.equal(run('sessioneHaRisultatiVisibili(input)'), false);
   assert.equal(run('nomeTestSessione(input)'), 'Sconosciuto');
+  assert.match(run('riepilogoSessione(input)'), /Dati originali Jet Program disponibili/);
 });
 
 test('ogni test standard condivide lo schema tra import e form', () => {
@@ -79,4 +80,28 @@ test('sessioni senza alcun test sono riconosciute come vuote', () => {
   assert.equal(run('sessioneHaDatiTest(input)'), true);
   context.input = { nomeTestOriginale: 'Jet legacy', datiOriginali: { valore: 1 }, esercizi: {} };
   assert.equal(run('sessioneHaDatiTest(input)'), true);
+});
+
+
+test('blocchi test vuoti vengono eliminati, zero e dati extra di test compilati restano', () => {
+  context.input = {
+    esercizi: {
+      localizzazioneSpaziale: { tempoReazioneMedio: '', errori: null },
+      proActionReaction: { tempoTotale: 0, errori: 0, parametroStorico: 77 },
+      vvs: { gioco: { primaDeviazione: 2, parametroEsterno: 99 } },
+      jetProgramOriginale: { nomeTestOriginale: 'legacy' },
+    },
+  };
+  const result = run('pulisciEserciziSessione(input)');
+  assert.equal(result.esercizi.localizzazioneSpaziale, undefined);
+  assert.equal(result.esercizi.proActionReaction.tempoTotale, 0);
+  assert.equal(result.esercizi.proActionReaction.parametroStorico, 77);
+  assert.equal(result.esercizi.vvs.gioco.parametroEsterno, 99);
+  assert.equal(result.esercizi.jetProgramOriginale.nomeTestOriginale, 'legacy');
+  assert.equal(run('sessioneHaRisultatiVisibili(input)'), true);
+});
+
+test('stringhe vuote o spazi non rendono un test compilato', () => {
+  context.input = { esercizi: { velocitaRiconoscimento: { tempoTotale: '   ', quantitaNumeri: '' } } };
+  assert.equal(run('sessioneHaRisultatiVisibili(input)'), false);
 });
