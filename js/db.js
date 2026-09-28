@@ -233,12 +233,10 @@ async function dbPulisciSessioniVuote() {
   const snap = await _sessioniCol().get();
   const vuote = snap.docs.filter((doc) => {
     const s = doc.data();
-    const haEsercizi = typeof sessioneHaDatiTest === 'function'
+    const haDati = typeof sessioneHaDatiTest === 'function'
       ? sessioneHaDatiTest(s)
       : !!(s.esercizi && Object.keys(s.esercizi).length);
-    const haJet = s.jetProgramReportId !== undefined || !!s.jetProgramNomeOriginale || !!s.nomeTestOriginale || !!s.tipoTest;
-    const haTitolo = String(s.titolo || '').trim() !== '';
-    return !haEsercizi && !haJet && !haTitolo;
+    return !haDati;
   });
   for (const doc of vuote) await dbDeleteSessione(doc.id);
   return vuote.length;
