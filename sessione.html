@@ -18,7 +18,7 @@
   <main>
     <section class="page-intro compact"><div><p class="eyebrow">VALUTAZIONE VISIVA</p><h2>Una misura, un nuovo riferimento.</h2><p class="intro-description">Scegli il test: vedrai prima i risultati principali e, solo se servono, i parametri tecnici aggiuntivi.</p></div></section>
     <div id="dati-jet" class="card" hidden></div>
-    <div class="card">
+    <div class="card" id="session-meta-form">
       <div class="field"><label for="test-standard">Test standard</label><select id="test-standard"><option value="">Seleziona un test…</option></select></div>
       <div class="field">
         <label for="f-data">Data sessione</label>
@@ -44,7 +44,7 @@
       <div id="galleria-allegati" class="allegati-grid"></div>
     </details>
 
-    <div class="row save-bar" style="margin-top:8px;">
+    <div class="row save-bar" id="save-bar" style="margin-top:8px;">
       <button id="btn-salva" disabled>Salva sessione</button>
       <button class="secondary" id="btn-annulla">Annulla</button>
       <button class="danger" id="btn-elimina-sessione" hidden>Elimina</button>
