@@ -77,4 +77,6 @@ test('sessioni senza alcun test sono riconosciute come vuote', () => {
   assert.equal(run('sessioneHaDatiTest(input)'), false);
   context.input = { esercizi: { jetProgramOriginale: { nomeTestOriginale: 'legacy' } } };
   assert.equal(run('sessioneHaDatiTest(input)'), true);
+  context.input = { nomeTestOriginale: 'Jet legacy', datiOriginali: { valore: 1 }, esercizi: {} };
+  assert.equal(run('sessioneHaDatiTest(input)'), true);
 });
