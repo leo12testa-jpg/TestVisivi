@@ -32,15 +32,29 @@ function renderLista() {
   }
 
   filtrate.slice(0, _limite).forEach((s) => {
-    const etichettaData = `${formatDataIt(s.data)} · ${nomeTestSessione(s)}`;
-    const rigaData = [el('span', { text: etichettaData })];
-    if (isSessioneTraining(s)) rigaData.push(el('span', { class: 'badge', style: 'margin-left:8px;', text: 'Allenamento' }));
-    const item = el('a', { class: 'list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`, style: 'text-decoration:none;color:inherit;' }, [
-      el('div', {}, [
-        el('div', {}, rigaData),
-        el('div', { class: 'meta', text: riepilogoSessione(s) }),
-      ]),
-      el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),
+    const metriche = metrichePrincipaliSessione(s).slice(0, 3);
+    const top = [el('time', { class: 'session-date', text: formatDataIt(s.data) })];
+    if (isSessioneTraining(s)) top.push(el('span', { class: 'badge', text: 'Allenamento' }));
+
+    const contenuto = [
+      el('div', { class: 'session-list-top' }, top),
+      el('div', { class: 'session-list-test', text: nomeTestSessione(s) }),
+    ];
+
+    if (metriche.length) {
+      contenuto.push(el('div', { class: 'mini-metrics' }, metriche.map((m) =>
+        el('span', { class: 'mini-metric' }, [
+          el('span', { class: 'mini-metric-label', text: m.label }),
+          el('strong', { text: m.valore }),
+        ])
+      )));
+    } else {
+      contenuto.push(el('div', { class: 'meta', text: riepilogoSessione(s) }));
+    }
+
+    const item = el('a', { class: 'list-item session-list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`, style: 'text-decoration:none;color:inherit;' }, [
+      el('div', { class: 'session-list-content' }, contenuto),
+      el('div', { class: 'session-list-arrow', text: '›' }),
     ]);
     container.appendChild(item);
   });
