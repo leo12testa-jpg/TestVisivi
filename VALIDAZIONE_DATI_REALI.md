@@ -58,3 +58,19 @@ Avrebbe reso invisibili o non confrontabili 325 sessioni già standardizzate. Il
 - Le 5.230 non standardizzate restano consultabili con nome e dati Jet originali.
 - Non eseguire una migrazione massiva aggiuntiva finché non esiste una regola verificata per ciascun gruppo non assegnato.
 - Le nuove sessioni devono usare le stesse 13 chiavi reali e gli stessi campi delle sessioni storiche.
+
+
+## Doppioni anagrafici
+
+Sul backup reale sono stati rilevati 23 gruppi duplicati dopo la normalizzazione dei nomi Bologna.
+
+- 20 gruppi hanno un solo profilo con sessioni e un secondo profilo senza sessioni.
+- 3 gruppi hanno sessioni su entrambi i profili e richiedono una vera fusione:
+  - Andreas Skov Olsen: 55 + 4 sessioni;
+  - Mattias Svanberg: 211 + 5 sessioni;
+  - Rahim Alhassane: 3 + 2 sessioni.
+- La fusione automatica sceglie come profilo principale quello con più sessioni, poi quello con più campi compilati.
+- Tutte le sessioni del duplicato vengono riassegnate al profilo principale mantenendo invariato l'id della sessione.
+- I campi mancanti del profilo principale vengono completati dal duplicato; valori già compilati non vengono sovrascritti.
+- Il profilo sorgente viene conservato in `mergeStorico` prima della sua eliminazione.
+- Se nomi non vuoti o date di nascita risultano incompatibili, la fusione automatica viene esclusa.
