@@ -162,7 +162,7 @@ function leggiFormClinici() {
 
 /** Le sessioni servono solo come dato per l'export PDF (report ufficiale: esclude le sessioni di Training). */
 async function caricaSessioni() {
-  _sessioni = (await dbGetSessioniByAtleta(atletaId)).filter((s) => !isSessioneTraining(s));
+  _sessioni = (await dbGetSessioniByAtleta(atletaId)).filter((s) => !isSessioneTraining(s) && sessioneHaDatiTest(s));
   qs('#stat-sessioni').textContent = String(_sessioni.length);
   qs('#stat-test').textContent = String(new Set(_sessioni.flatMap((s) => ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, s.esercizi?.[e.key])).map((e) => e.key))).size);
   qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
