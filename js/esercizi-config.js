@@ -33,7 +33,7 @@ const ESERCIZI_CONFIG = [
     label: 'Localizzazione spaziale (Equilibrio statico)',
     campi: campoValori([
       { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
-      { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+      { key: 'immaginiAlSec', label: 'Target al secondo', unit: 'per_sec' },
       { key: 'immaginiColpite', label: 'Target colpiti', unit: 'count' },
     ]),
   },
@@ -42,7 +42,7 @@ const ESERCIZI_CONFIG = [
     label: 'Equilibrio posturale e coordinazione occhio-mano su pedana',
     campi: campoValori([
       { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
-      { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+      { key: 'immaginiAlSec', label: 'Target al secondo', unit: 'per_sec' },
       { key: 'immaginiColpite', label: 'Target colpiti', unit: 'count' },
       { key: 'recuperi', label: 'Recuperi equilibrio', unit: 'count' },
       { key: 'tempoArea5', label: 'Tempo in area 5°', unit: 's' },
@@ -53,8 +53,8 @@ const ESERCIZI_CONFIG = [
     key: 'proActionReaction',
     label: 'Pro Action and Reaction Time',
     campi: campoValori([
-      { key: 'tempoRilascioMedio', label: 'Tempo di rilascio medio', unit: 'ms' },
-      { key: 'tempoClickMedio', label: 'Tempo di click medio', unit: 'ms' },
+      { key: 'tempoRilascioMedio', label: 'Tempo medio di rilascio', unit: 'ms' },
+      { key: 'tempoClickMedio', label: 'Tempo medio di tocco', unit: 'ms' },
       { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
       { key: 'errori', label: 'Errori', unit: 'count' },
     ]),
@@ -124,7 +124,7 @@ const ESERCIZI_CONFIG = [
     label: 'Memorizzazione sequenze spaziali 7x12',
     campi: campoValori([
       { key: 'totale', label: 'Totale', unit: 'count' },
-      { key: 'livelloMassimo', label: 'Livello massimo completato', unit: 'count' },
+      { key: 'livelloMassimo', label: 'Livello massimo', unit: 'count' },
       { key: 'errori', label: 'Errori', unit: 'count' },
     ]),
   },
@@ -215,7 +215,7 @@ const TEST_STANDARD_LABELS = {
 const CAMPI_STANDARD_REALI = {
   localizzazioneSpaziale: [
     { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
-    { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+    { key: 'immaginiAlSec', label: 'Target al secondo', unit: 'per_sec' },
     { key: 'immaginiColpite', label: 'Target colpiti', unit: 'count' },
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
     { key: 'numeroTarget', label: 'Target presentati', unit: 'count' },
@@ -223,7 +223,7 @@ const CAMPI_STANDARD_REALI = {
   ],
   pedana360: [
     { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
-    { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+    { key: 'immaginiAlSec', label: 'Target al secondo', unit: 'per_sec' },
     { key: 'immaginiColpite', label: 'Target colpiti', unit: 'count' },
     { key: 'recuperi', label: 'Recuperi equilibrio', unit: 'count' },
     { key: 'tempoArea5', label: 'Tempo in area 5°', unit: 's' },
@@ -233,8 +233,8 @@ const CAMPI_STANDARD_REALI = {
     { key: 'errori', label: 'Errori', unit: 'count' },
   ],
   proActionReaction: [
-    { key: 'tempoRilascioMedio', label: 'Tempo di rilascio medio', unit: 'ms' },
-    { key: 'tempoClickMedio', label: 'Tempo di click medio', unit: 'ms' },
+    { key: 'tempoRilascioMedio', label: 'Tempo medio di rilascio', unit: 'ms' },
+    { key: 'tempoClickMedio', label: 'Tempo medio di tocco', unit: 'ms' },
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
     { key: 'numeroTarget', label: 'Target presentati', unit: 'count' },
     { key: 'errori', label: 'Errori', unit: 'count' },
@@ -243,7 +243,7 @@ const CAMPI_STANDARD_REALI = {
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
     { key: 'tempoReazioneMedio', label: 'Tempo reazione medio', unit: 'ms' },
     { key: 'immaginiColpite', label: 'Target colpiti', unit: 'count' },
-    { key: 'immaginiAlSec', label: 'Immagini al sec', unit: 'per_sec' },
+    { key: 'immaginiAlSec', label: 'Target al secondo', unit: 'per_sec' },
     { key: 'numeroTarget', label: 'Target presentati', unit: 'count' },
     { key: 'errori', label: 'Errori', unit: 'count' },
     { key: 'recuperi', label: 'Recuperi equilibrio', unit: 'count' },
@@ -263,14 +263,14 @@ const CAMPI_STANDARD_REALI = {
   velocitaRiconoscimento: [
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
     { key: 'quantitaNumeri', label: 'Elementi riconosciuti', unit: 'count' },
-    { key: 'tempoStimolo', label: 'Tempo stimolo', unit: 's' },
+    { key: 'tempoStimolo', label: 'Durata stimolo', unit: 's' },
     { key: 'recuperi', label: 'Recuperi equilibrio', unit: 'count' },
     { key: 'tempoArea5', label: 'Tempo in area 5°', unit: 's' },
     { key: 'tempoAreaEsterna', label: 'Tempo fuori area 5°', unit: 's' },
   ],
   percezioneCampoVisivo: [
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
-    { key: 'angoloMassimo', label: 'Angolo massimo', unit: 'deg' },
+    { key: 'angoloMassimo', label: 'Ampiezza periferica massima', unit: 'deg' },
     { key: 'numeroTarget', label: 'Target presentati', unit: 'count' },
     { key: 'numeroLettere', label: 'Numero lettere', unit: 'count' },
     { key: 'errori', label: 'Errori', unit: 'count' },
@@ -284,7 +284,7 @@ const CAMPI_STANDARD_REALI = {
   ],
   memorizzazioneSequenze: [
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
-    { key: 'livelloMassimo', label: 'Livello massimo completato', unit: 'count' },
+    { key: 'livelloMassimo', label: 'Livello massimo', unit: 'count' },
     { key: 'errori', label: 'Errori', unit: 'count' },
     { key: 'completa', label: 'Test completato', tipo: 'text' },
   ],
@@ -305,7 +305,7 @@ const CAMPI_STANDARD_REALI = {
   riconoscimentoNumeri: [
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
     { key: 'quantitaNumeri', label: 'Numeri riconosciuti', unit: 'count' },
-    { key: 'tempoStimolo', label: 'Tempo stimolo', unit: 's' },
+    { key: 'tempoStimolo', label: 'Durata stimolo', unit: 's' },
   ],
   reazioneVisuoMotoriaSceltaMultipla: [
     { key: 'tempoTotale', label: 'Tempo totale', unit: 's' },
