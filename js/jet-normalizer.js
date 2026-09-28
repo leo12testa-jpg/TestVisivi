@@ -109,17 +109,9 @@ function nomeTestSessione(sessione) {
 }
 
 function riepilogoSessione(sessione) {
-  const parti = [];
-  ESERCIZI_CONFIG.forEach((test) => {
-    colonneEsercizio(test).forEach((col, i) => {
-      const value = col.get(sessione);
-      if (value === '' || col.tipo !== 'number' || jetNumero(value) === null) return;
-      const campo = test.campi[i % test.campi.length];
-      parti.push(`${col.header}: ${value}${UNITA_LABEL[campo.unit] ? ' ' + UNITA_LABEL[campo.unit] : ''}`);
-    });
-  });
-  if (parti.length) return parti.slice(0, 3).join(' · ');
-  if (haDatiJet(sessione)) return 'Risultati Jet Program disponibili · Apri il dettaglio originale';
+  const metriche = typeof metrichePrincipaliSessione === 'function' ? metrichePrincipaliSessione(sessione) : [];
+  if (metriche.length) return metriche.slice(0, 3).map((m) => `${m.label}: ${m.valore}`).join(' · ');
+  if (haDatiJet(sessione)) return 'Dati originali Jet Program disponibili';
   const n = contaEserciziCompilati(sessione);
   return n ? `${n} test con dati · Apri il dettaglio` : 'Nessun risultato registrato';
 }
