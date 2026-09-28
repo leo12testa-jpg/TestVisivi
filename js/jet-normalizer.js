@@ -175,7 +175,7 @@ function normalizzaSessioneLegacy(sessione) {
     }
   });
 
-  return cambiata ? { ...sessione, esercizi: nuoviEsercizi, _legacyTempiNormalizzati: true } : sessione;
+  return cambiata ? { ...sessione, esercizi: nuoviEsercizi } : sessione;
 }
 
 function sessioneHaDatiTest(sessione) {
