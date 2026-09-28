@@ -196,15 +196,9 @@ async function init() {
   });
 
   if (!mostratoAlmenoUno) {
-    contenuto.appendChild(el('div', { class: 'empty-state', text: sessioni.some(haDatiJet) ? 'Sono presenti risultati originali Jet Program. Le misure non ancora riconosciute sono consultabili nello storico.' : 'Nessun dato ancora registrato per questo atleta.' }));
+    contenuto.appendChild(el('div', { class: 'empty-state', text: 'Nessun risultato reale registrato per questo atleta.' }));
     return;
   }
-
-  const nonMappate = sessioni.filter((s) => haDatiJet(s) && !contaEserciziCompilati(s)).length;
-  if (nonMappate) contenuto.appendChild(el('p', { class: 'meta' }, [
-    `${nonMappate} sessioni Jet Program hanno risultati originali ancora da associare a una misura. `,
-    el('a', { href: `./sessioni.html?atletaId=${atletaId}`, text: 'Consulta lo storico completo' }),
-  ]));
 
   renderTuttiGrafici();
   onThemeChange(renderTuttiGrafici);
