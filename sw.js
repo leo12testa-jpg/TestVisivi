@@ -1,6 +1,6 @@
 /* App shell network-first, fallback offline; nessun dato Firestore in CacheStorage. */
 
-const CACHE_NAME = 'jetprogram-cache-v20';
+const CACHE_NAME = 'jetprogram-cache-v21';
 
 const PRECACHE_URLS = [
   './',
@@ -21,6 +21,7 @@ const PRECACHE_URLS = [
   './js/db.js',
   './js/esercizi-config.js',
   './js/jet-normalizer.js',
+  './js/jet-ui-compat.js',
   './js/radar-config.js',
   './js/charts.js',
   './js/pdf-export.js',
