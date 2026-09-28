@@ -73,7 +73,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
 
   const sessioni = (sessioniRaw || [])
     .filter((s) => !isSessioneTraining(s))
-    .filter((s) => typeof sessioneHaDatiTest !== 'function' || sessioneHaRisultatiVisibili(s))
+    .filter((s) => typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
     .sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
 
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -213,8 +213,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     return colonneEsercizio(esercizio).filter((col) =>
       sessioniCompilate.some((s) => {
         const v = col.get(s);
-        if (v === '' || v === undefined || v === null) return false;
-        return col.tipo !== 'number' || valoreCampoValido(col.campo, v);
+        return valoreCampoValido(col.campo, v);
       })
     );
   }
