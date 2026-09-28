@@ -1,6 +1,7 @@
 registerServiceWorker();
 
 let _modalita = 'ultimo'; // 'ultimo' | 'andamento'
+let _sessioniDisponibili = [];
 
 async function popolaSelectSquadre() {
   const squadre = await dbGetSquadre();
@@ -12,25 +13,36 @@ async function popolaSelectSquadre() {
 
 function popolaSelectEsercizi() {
   const sel = qs('#sel-esercizio');
-  ESERCIZI_CONFIG.forEach((es) => {
-    sel.appendChild(el('option', { value: es.key, text: es.label }));
-  });
+  sel.innerHTML = '';
+  ESERCIZI_CONFIG
+    .filter((es) => _sessioniDisponibili.some((s) => esercizioCompilato(es, s.esercizi?.[es.key])))
+    .forEach((es) => sel.appendChild(el('option', { value: es.key, text: es.label })));
 }
 
 function popolaSelectCampi() {
   const esercizio = getEsercizioConfig(qs('#sel-esercizio').value);
   const sel = qs('#sel-campo');
   sel.innerHTML = '';
-  const numerici = esercizio.campi.filter((c) => c.tipo !== 'text');
+  if (!esercizio) return;
+  const numerici = campiEsercizioVisibili(esercizio).filter((c) => c.tipo === 'number');
+
   if (esercizio.sottoCondizioni) {
     esercizio.sottoCondizioni.forEach((sc) => {
       numerici.forEach((campo) => {
-        sel.appendChild(el('option', { value: `${sc.key}::${campo.key}`, text: `${sc.label} — ${campo.label}` }));
+        const haValori = _sessioniDisponibili.some((s) => {
+          const v = getValoreCampoRaw(s, esercizio.key, sc.key, campo.key);
+          return valoreCampoValido(campo, v);
+        });
+        if (haValori) sel.appendChild(el('option', { value: `${sc.key}::${campo.key}`, text: `${sc.label} — ${campo.label}` }));
       });
     });
   } else {
     numerici.forEach((campo) => {
-      sel.appendChild(el('option', { value: `::${campo.key}`, text: campo.label }));
+      const haValori = _sessioniDisponibili.some((s) => {
+        const v = getValoreCampoRaw(s, esercizio.key, null, campo.key);
+        return valoreCampoValido(campo, v);
+      });
+      if (haValori) sel.appendChild(el('option', { value: `::${campo.key}`, text: campo.label }));
     });
   }
 }
@@ -51,7 +63,7 @@ async function raccogliDati(esercizio, scKey, campo) {
     const sessioni = (await dbGetSessioniByAtleta(atleta.id)).filter((s) => !isSessioneTraining(s));
     const punti = sessioni
       .map((s) => ({ data: s.data, valore: getValoreCampoRaw(s, esercizio.key, scKey, campo.key) }))
-      .filter((p) => p.valore !== '')
+      .filter((p) => valoreCampoValido(campo, p.valore))
       .map((p) => ({ data: p.data, valore: Number(p.valore) }));
     if (punti.length > 0) risultati.push({ atleta, punti });
   }
@@ -183,8 +195,20 @@ async function init() {
 
   await popolaSelectSquadre();
   aggiornaVisibilitaMediaSquadra();
+  _sessioniDisponibili = (await dbGetAllSessioni()).filter((s) => !isSessioneTraining(s) && sessioneHaRisultatiVisibili(s));
   popolaSelectEsercizi();
+
+  if (!qs('#sel-esercizio').value) {
+    qs('#risultato').appendChild(el('div', { class: 'empty-state', text: 'Nessun test con valori reali disponibile per il confronto.' }));
+    return;
+  }
+
   popolaSelectCampi();
+  if (!qs('#sel-campo').value) {
+    qs('#risultato').appendChild(el('div', { class: 'empty-state', text: 'Nessun valore numerico reale disponibile per questo test.' }));
+    return;
+  }
+
   await aggiorna();
   onThemeChange(aggiorna);
 }
