@@ -11,6 +11,17 @@ function scaricaJsonArchivio(dati, nomeFile) {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 }
 
+function aggiornaAvvisoDoppioni() {
+  const banner = qs('#duplicate-banner');
+  const count = qs('#duplicate-count');
+  if (!banner || !count || typeof archivioTrovaDoppioniAtleti !== 'function') return;
+  const gruppi = archivioTrovaDoppioniAtleti(_atleti, {});
+  banner.hidden = gruppi.length === 0;
+  count.textContent = gruppi.length === 1
+    ? '1 doppione rilevato'
+    : `${gruppi.length} gruppi duplicati rilevati`;
+}
+
 async function caricaLista() {
   const user = await richiedeLogin();
   if (!user) return;
@@ -18,6 +29,7 @@ async function caricaLista() {
   try {
     _atleti = await dbGetAtleti();
     qs('#numero-atleti').textContent = String(_atleti.length);
+    aggiornaAvvisoDoppioni();
     renderLista(qs('#ricerca').value.trim().toLowerCase());
   } catch (err) {
     console.error('Errore caricamento lista atleti:', err);
@@ -83,6 +95,41 @@ qs('#btn-crea-atleta').addEventListener('click', async () => {
   }
   const id = await dbAddAtleta({ nome, cognome });
   window.location.href = `./atleta.html?id=${id}`;
+});
+
+qs('#btn-unisci-doppioni').addEventListener('click', async (event) => {
+  const button = event.currentTarget;
+  const gruppi = archivioTrovaDoppioniAtleti(_atleti, {});
+  if (!gruppi.length) {
+    aggiornaAvvisoDoppioni();
+    return;
+  }
+
+  if (!confirm(`Sono stati rilevati ${gruppi.length} gruppi duplicati. Verrà prima scaricato un backup, poi le sessioni saranno accorpate sul profilo principale. Continuare?`)) return;
+
+  button.disabled = true;
+  button.textContent = 'Unione in corso…';
+  try {
+    const backup = await dbEsportaCopiaDati();
+    scaricaJsonArchivio(backup, `testvisivi-prima-unione-doppioni-${oggiIso()}.json`);
+
+    await dbCorreggiNomiAtleti();
+    const esito = await dbUnisciDoppioniAtleti();
+    await caricaLista();
+
+    const residui = archivioTrovaDoppioniAtleti(_atleti, {});
+    alert(
+      `Doppioni uniti: ${esito.gruppiUniti} gruppi. ` +
+      `Profili rimossi: ${esito.profiliEliminati}. ` +
+      `Sessioni riassegnate: ${esito.sessioniRiassegnate}. ` +
+      `Doppioni residui: ${residui.length}.`
+    );
+  } catch (err) {
+    mostraErrorePagina(err);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'Unisci doppioni';
+  }
 });
 
 qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
