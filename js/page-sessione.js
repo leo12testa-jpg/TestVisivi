@@ -53,7 +53,7 @@ function buildCampoField(esercizioKey, scKey, campo) {
   if (!isText) {
     inputProps.step = 'any';
     inputProps.inputmode = 'decimal';
-    if (['s', 'ms', 'count', 'percent', 'per_sec'].includes(campo.unit)) inputProps.min = '0';
+    if (['s', 'ms', 'count', 'percent', 'per_sec', 'bpm'].includes(campo.unit)) inputProps.min = '0';
     if (campo.unit === 'percent') inputProps.max = '100';
   }
   return el('div', { class: 'field' }, [el('label', { for: id, text: labelConUnita(campo) }), el('input', inputProps)]);
@@ -94,7 +94,7 @@ function renderEserciziForm() {
   const container = qs('#esercizi-container');
   ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => container.appendChild(buildEsercizioSection(esercizio)));
   const select = qs('#test-standard');
-  TEST_STANDARD.forEach((test) => select.appendChild(el('option', { value: test.key, text: test.label })));
+  TEST_STANDARD.forEach((test, index) => select.appendChild(el('option', { value: test.key, text: `${index + 1}. ${test.label}` })));
   if (!qs('#test-help')) select.parentElement.appendChild(el('p', { id: 'test-help', class: 'test-help', text: 'Scegli un test per vedere solo i valori utili da compilare.' }));
   select.addEventListener('change', aggiornaTestVisibili);
   aggiornaTestVisibili();
