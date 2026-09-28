@@ -95,7 +95,10 @@ function renderEserciziForm() {
   ESERCIZI_CONFIG.filter((esercizio) => !esercizio.custom).forEach((esercizio) => container.appendChild(buildEsercizioSection(esercizio)));
   const select = qs('#test-standard');
   TEST_STANDARD.forEach((test, index) => select.appendChild(el('option', { value: test.key, text: `${index + 1}. ${test.label}` })));
-  if (!qs('#test-help')) select.parentElement.appendChild(el('p', { id: 'test-help', class: 'test-help', text: 'Scegli un test per vedere solo i valori utili da compilare.' }));
+  if (!qs('#test-help')) {
+    select.parentElement.appendChild(el('p', { id: 'test-help', class: 'test-help', text: 'Scegli un test per vedere solo i valori utili da compilare.' }));
+    select.parentElement.appendChild(el('p', { class: 'unit-legend', text: 'Unità: ms = millisecondi · s = secondi · img/s = target al secondo · bpm = battiti/minuto.' }));
+  }
   select.addEventListener('change', aggiornaTestVisibili);
   aggiornaTestVisibili();
 }
