@@ -132,6 +132,7 @@ const NOMI_CALCIATORI_BOLOGNA = {
   pirana: ['Caio Vinicius', 'Pirana'],
   bagnolini: ['Nicola', 'Bagnolini'],
   denswil: ['Stefano', 'Denswil'],
+  denswill: ['Stefano', 'Denswil'],
   dacosta: ['Angelo', 'Da Costa'],
   skovolsen: ['Andreas', 'Skov Olsen'],
   santurro: ['Antonio', 'Santurro'],
