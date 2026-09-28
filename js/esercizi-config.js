@@ -518,10 +518,11 @@ function getValoreCampoRaw(sessione, esercizioKey, scKey, campoKey) {
  * dai grafici) da quelli testo/booleani (mostrati solo in tabella).
  */
 function colonneEsercizio(esercizio) {
+  const campi = campiEsercizioVisibili(esercizio);
   if (esercizio.sottoCondizioni) {
     const cols = [];
     esercizio.sottoCondizioni.forEach((sc) => {
-      esercizio.campi.forEach((campo) => {
+      campi.forEach((campo) => {
         cols.push({
           header: `${sc.label} — ${campo.label}`,
           get: (s) => getValoreCampoRaw(s, esercizio.key, sc.key, campo.key),
@@ -531,7 +532,7 @@ function colonneEsercizio(esercizio) {
     });
     return cols;
   }
-  return esercizio.campi.map((campo) => ({
+  return campi.map((campo) => ({
     header: campo.label,
     get: (s) => getValoreCampoRaw(s, esercizio.key, null, campo.key),
     tipo: campo.tipo,
@@ -544,13 +545,14 @@ function colonneEsercizio(esercizio) {
  */
 function esercizioCompilato(esercizio, valore) {
   if (!valore) return false;
+  const campi = campiEsercizioVisibili(esercizio);
   if (esercizio.sottoCondizioni) {
     return esercizio.sottoCondizioni.some((sc) => {
       const v = valore[sc.key];
-      return v && esercizio.campi.some((c) => v[c.key] !== undefined && v[c.key] !== '' && v[c.key] !== null);
+      return v && campi.some((c) => v[c.key] !== undefined && v[c.key] !== '' && v[c.key] !== null);
     });
   }
-  return esercizio.campi.some((c) => valore[c.key] !== undefined && valore[c.key] !== '' && valore[c.key] !== null);
+  return campi.some((c) => valore[c.key] !== undefined && valore[c.key] !== '' && valore[c.key] !== null);
 }
 
 /** Numero di esercizi compilati in una sessione (usato nell'elenco sessioni del profilo e nella vista "Tutte le sessioni"). */
