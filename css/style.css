@@ -961,3 +961,156 @@ th {
     border-radius: 16px;
   }
 }
+
+
+/* Test/result clarity */
+.test-help {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: .86rem;
+  line-height: 1.5;
+}
+
+.form-section-label {
+  margin: 0 0 12px;
+  font-size: .72rem;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.primary-fields {
+  margin-bottom: 14px;
+}
+
+.secondary-fields {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.secondary-fields > summary {
+  color: var(--text-secondary);
+  font-size: .86rem;
+  font-weight: 650;
+}
+
+.result-overview {
+  padding: 26px;
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 5%, var(--surface)), var(--surface));
+}
+
+.result-title {
+  margin: 6px 0 6px;
+  font-size: clamp(1.25rem, 2.4vw, 1.8rem);
+  line-height: 1.2;
+}
+
+.result-description {
+  margin: 0;
+  max-width: 760px;
+  color: var(--text-secondary);
+  font-size: .9rem;
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.metric-card {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.metric-label {
+  display: block;
+  min-height: 2.4em;
+  color: var(--text-muted);
+  font-size: .74rem;
+  line-height: 1.25;
+}
+
+.metric-value {
+  display: block;
+  margin-top: 8px;
+  color: var(--text);
+  font-size: clamp(1.12rem, 2.6vw, 1.55rem);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.035em;
+}
+
+.data-warning {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--danger) 7%, var(--surface));
+  color: var(--text-secondary);
+  font-size: .82rem;
+}
+
+.field-warning {
+  display: block;
+  margin-top: 6px;
+  color: var(--danger);
+  font-size: .72rem;
+}
+
+.jet-original-details {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.jet-original-details > summary {
+  color: var(--text-secondary);
+  font-size: .84rem;
+  font-weight: 650;
+}
+
+.original-test-name {
+  margin: 12px 0 8px;
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .76rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .result-overview {
+    padding: 20px 16px;
+  }
+
+  .metric-grid {
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .metric-card {
+    padding: 13px 12px;
+  }
+
+  .metric-label {
+    min-height: 0;
+  }
+
+  .metric-value {
+    font-size: 1.16rem;
+  }
+}
