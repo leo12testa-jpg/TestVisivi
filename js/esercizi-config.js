@@ -21,7 +21,6 @@ const UNITA_LABEL = {
   campo_periferico: 'valore',
   percent: '%',
   bpm: 'bpm',
-  deg: '°',
 };
 
 function campoValori(campiSemplici) {
