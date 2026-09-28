@@ -380,8 +380,15 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   doc.setTextColor(...C.muted);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text('Report generato il ' + formatDataIt(oggiIso()), marginX, y);
-  y += 10;
+  const sottotitoliAtleta = [
+    squadraNome ? 'Squadra: ' + squadraNome : '',
+    'Report generato il ' + formatDataIt(oggiIso()),
+  ].filter(Boolean);
+  sottotitoliAtleta.forEach((riga) => {
+    doc.text(riga, marginX, y);
+    y += 4.5;
+  });
+  y += 5.5;
 
   const testKeys = new Set();
   sessioni.forEach((s) => {
@@ -389,12 +396,14 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
       if (esercizioCompilato(e, s.esercizi?.[e.key])) testKeys.add(e.key);
     });
   });
+  const prima = sessioni.length ? sessioni[0].data : '';
   const ultima = sessioni.length ? sessioni[sessioni.length - 1].data : '';
-  const kGap = 4;
-  const kWidth = (usableWidth - kGap * 2) / 3;
-  cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
-  cardKpi(marginX + kWidth + kGap, y, kWidth, 'TEST CON RISULTATI', testKeys.size);
-  cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'ULTIMA VALUTAZIONE', ultima ? formatDataIt(ultima) : '-');
+  const kGap = 3;
+  const kWidth = (usableWidth - kGap * 3) / 4;
+  cardKpi(marginX, y, kWidth, 'VALUTAZIONI', sessioni.length);
+  cardKpi(marginX + (kWidth + kGap), y, kWidth, 'TEST DIVERSI', testKeys.size);
+  cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'PRIMA', prima ? formatDataIt(prima) : '-');
+  cardKpi(marginX + (kWidth + kGap) * 3, y, kWidth, 'ULTIMA', ultima ? formatDataIt(ultima) : '-');
   y += 27;
 
   const anagrafica = [
@@ -488,6 +497,11 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     doc.setTextColor(...C.muted);
     doc.text('Test Visivi - ' + nomeCompleto(atleta), marginX, footerY);
     doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
+    if (page === totalePagine) {
+      doc.setFontSize(6.3);
+      doc.setTextColor(135, 145, 155);
+      doc.text('Il report riporta esclusivamente i dati registrati nell\'app e non costituisce una diagnosi clinica.', marginX, pageHeight - 5);
+    }
   }
 
   const nomeFile = 'report_test_visivi_' + slug(atleta.cognome) + '_' + oggiIso() + '.pdf';
