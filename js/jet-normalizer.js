@@ -57,6 +57,31 @@ function haDatiJet(sessione) {
   );
 }
 
+const JET_RAW_LABELS = {
+  tempoReazioneMedio: ['Tempo di reazione medio'],
+  tempoRilascioMedio: ['Tempo di rilascio medio'],
+  tempoClickMedio: ['Tempo di click medio'],
+  tempoTotale: ['Tempo totale'],
+  tempoStimolo: ['Tempo'],
+};
+
+function aliasesCampoJet(campo) {
+  const temporale = ['s', 'ms'].includes(campo.unit);
+  const labels = [campo.label, ...(JET_RAW_LABELS[campo.key] || [])];
+  const aliases = temporale ? [] : [{ name: campo.key, unit: campo.unit }];
+
+  if (!temporale) {
+    labels.forEach((label) => aliases.push({ name: label, unit: campo.unit }));
+    return aliases;
+  }
+
+  for (const unit of ['s', 'ms']) {
+    labels.forEach((label) => aliases.push({ name: `${label} (${unit})`, unit }));
+    aliases.push({ name: `${campo.key}${unit}`, unit });
+  }
+  return aliases;
+}
+
 function normalizzaSessioneJet(sessione) {
   if (!sessione || !haDatiJet(sessione)) return sessione;
   const test = jetTest(sessione);
@@ -66,16 +91,9 @@ function normalizzaSessioneJet(sessione) {
   const converted = {};
   // Solo proprietà dirette: non si mescolano prove individuali, impostazioni e risultati.
   test.campi.filter((c) => c.tipo === 'number').forEach((campo) => {
-    const temporale = ['s', 'ms'].includes(campo.unit);
-    const aliases = temporale ? [] : [{ name: campo.key, unit: campo.unit }];
-    // Un'etichetta temporale senza unità non garantisce secondi/millisecondi.
-    if (!temporale) aliases.push({ name: campo.label, unit: campo.unit });
-    if (temporale) {
-      for (const unit of ['s', 'ms']) {
-        aliases.push({ name: `${campo.label} (${unit})`, unit });
-        aliases.push({ name: `${campo.key}${unit}`, unit });
-      }
-    }
+    // La label UI può cambiare senza rompere la lettura dei nomi storici Jet.
+    // Per i tempi continuiamo a richiedere un'unità esplicita (s/ms).
+    const aliases = aliasesCampoJet(campo);
     const candidates = [];
     Object.entries(originale).forEach(([key, raw]) => {
       const alias = aliases.find((a) => a.name === campo.key ? key === campo.key : jetNome(a.name) === jetNome(key));
