@@ -55,3 +55,26 @@ test('ogni test standard condivide lo schema tra import e form', () => {
     assert.equal(run('normalizzaSessioneJet(input)').esercizi[key].tempoTotale, 10);
   }
 });
+
+
+test('tempi legacy in secondi convertiti in ms solo in memoria', () => {
+  context.input = {
+    data: '2019-07-09',
+    esercizi: {
+      localizzazioneSpaziale: { tempoReazioneMedio: 0.46, immaginiColpite: 78 },
+      proActionReaction: { tempoRilascioMedio: 0.33, tempoClickMedio: 0.36, tempoTotale: 59.8 },
+    },
+  };
+  const result = run('normalizzaSessioneLegacy(input)');
+  assert.equal(result.esercizi.localizzazioneSpaziale.tempoReazioneMedio, 460);
+  assert.equal(result.esercizi.proActionReaction.tempoRilascioMedio, 330);
+  assert.equal(result.esercizi.proActionReaction.tempoClickMedio, 360);
+  assert.equal(run('input.esercizi.localizzazioneSpaziale.tempoReazioneMedio'), 0.46);
+});
+
+test('sessioni senza alcun test sono riconosciute come vuote', () => {
+  context.input = { esercizi: {}, titolo: '' };
+  assert.equal(run('sessioneHaDatiTest(input)'), false);
+  context.input = { esercizi: { jetProgramOriginale: { nomeTestOriginale: 'legacy' } } };
+  assert.equal(run('sessioneHaDatiTest(input)'), true);
+});
