@@ -46,3 +46,13 @@ test('unione completa campi vuoti senza sovrascrivere dati esistenti', () => {
   assert.deepEqual(unito.mergedFromAthleteIds, ['b']);
   assert.equal(unito.mergeStorico[0].sourceAthleteId, 'b');
 });
+
+
+test('non unisce omonimi incompatibili o date di nascita diverse', () => {
+  context.atleti = [
+    { id: 'a', nome: 'Mario', cognome: 'Rossi', dataNascita: '2000-01-01' },
+    { id: 'b', nome: 'Marco', cognome: 'Rossi', dataNascita: '2001-01-01' },
+  ];
+  context.counts = { a: 2, b: 3 };
+  assert.equal(run('archivioTrovaDoppioniAtleti(atleti, counts)').length, 0);
+});
