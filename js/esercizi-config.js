@@ -476,16 +476,14 @@ function metricheEsercizioSessione(sessione, test, soloPrincipali = true) {
 }
 
 function metrichePrincipaliSessione(sessione) {
-  const test = typeof jetTest === 'function' ? jetTest(sessione) : null;
+  let test = typeof jetTest === 'function' ? jetTest(sessione) : null;
+  if (!test || !esercizioCompilato(test, sessione?.esercizi?.[test.key])) {
+    test = ESERCIZI_CONFIG.find((e) => esercizioCompilato(e, sessione?.esercizi?.[e.key])) || null;
+  }
   if (!test) return [];
-  const dati = sessione?.esercizi?.[test.key] || {};
-  return (test.campiPrincipali || []).map((key) => {
-    const campo = campoEsercizio(test, key);
-    const raw = dati[key];
-    return campo && valoreCampoValido(campo, raw)
-      ? { key, label: campo.label, valore: formattaValoreCampo(campo, raw), raw }
-      : null;
-  }).filter(Boolean);
+
+  const principali = metricheEsercizioSessione(sessione, test, true);
+  return principali.length ? principali : metricheEsercizioSessione(sessione, test, false);
 }
 
 function anomalieValoriSessione(sessione) {
