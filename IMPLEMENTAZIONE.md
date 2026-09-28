@@ -1,20 +1,21 @@
 # TestVisivi — verifica locale del 28 settembre 2026
 
-## Stato e limite ancora aperto
+## Stato dopo la validazione reale
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v19.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v21.
 
-**La conversione delle sessioni Firestore reali non è ancora validata.**
-Il browser locale non è autenticato. Il solo JSON presente nel repository
-contiene 23 atleti del vecchio import; non è l'export delle circa 114 anagrafiche
-e migliaia di sessioni Jet indicate dall'utente. I test end-to-end usano dati
-sintetici e una sostituzione locale di Firebase, non il database reale.
+Il 28/09/2026 è stato analizzato l'export Firestore reale:
+139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
+Tutte le sessioni Jet conservano i dati originali; 3.314 hanno già risultati
+standard associati a uno dei 13 test e 5.230 restano consultabili come originali
+non standardizzati. La validazione completa e i conteggi sono in
+`VALIDAZIONE_DATI_REALI.md`.
 
-Serve un export delle sessioni reali, oppure un accesso autenticato, per censire
-nomi, tipi, strutture e unità effettive. Non sono state inventate equivalenze per
-codici numerici, nomi parziali, campi annidati o tempi senza unità.
+Le chiavi dei 13 test sono state riallineate alle chiavi realmente presenti nel
+Firestore. Non è necessaria una nuova migrazione massiva per leggere le 3.314
+sessioni già standardizzate.
 
 ## Protezione dei dati
 
@@ -61,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v19 usa rete con fallback offline, include il normalizzatore e limita
+La cache v21 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
@@ -83,7 +84,7 @@ non cancella cache di altre app, Firestore o IndexedDB.
 | Mobile chiaro/scuro | Home, profilo, storico, sessione e grafici senza overflow |
 | Console E2E | Nessun errore; nessuna richiesta esterna durante i test sintetici |
 | PWA reale | v18 rimossa, v19 installata, cache estranea preservata, login offline caricato |
-| Sessioni Firestore reali | Da verificare con export/accesso autenticato |
+| Sessioni Firestore reali | Export reale verificato: 8.544 Jet, originali preservati, 3.314 già standardizzate |
 
 Evidenze locali (ignorate da Git): `reports/browser-results.json`,
 `reports/pwa-results.json` e screenshot desktop/mobile in `reports/`.
