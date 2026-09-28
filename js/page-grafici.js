@@ -10,7 +10,9 @@ function buildTabellaSingola(esercizio, sessione) {
   cols.forEach((col) => {
     const val = col.get(sessione);
     if (val === '') return;
-    tbody.appendChild(el('tr', {}, [el('th', { text: col.header }), el('td', { text: String(val) })]));
+    if (col.tipo === 'number' && !valoreCampoValido(col.campo, val)) return;
+    const visualizzato = col.tipo === 'number' ? formattaValoreCampo(col.campo, val) : String(val);
+    tbody.appendChild(el('tr', {}, [el('th', { text: col.header }), el('td', { text: visualizzato })]));
   });
   table.appendChild(tbody);
   return el('div', { class: 'table-scroll' }, [table]);
