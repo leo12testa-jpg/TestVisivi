@@ -99,7 +99,7 @@ function fakeFirebase(seed) {
     await page.locator('#ricerca').fill('');
     await page.waitForTimeout(200);
     await page.locator('a[href="./atleta.html?id=demo"]').click();
-    await page.waitForSelector('#stat-sessioni:text("69")');
+    await page.waitForSelector('#stat-sessioni:text("68")');
     assert.equal(await page.locator('#sessioni-recenti a').count(), 5);
     await overflow();
     await page.screenshot({ path: `${out}/profile-desktop.png`, fullPage: true });
@@ -117,7 +117,8 @@ function fakeFirebase(seed) {
     await page.waitForSelector('#lista-sessioni a');
     assert.equal(await page.locator('#lista-sessioni a').count(), 50);
     await page.getByRole('button', { name: /Mostra altre/ }).click();
-    assert.equal(await page.locator('#lista-sessioni a').count(), 69);
+    assert.equal(await page.locator('#lista-sessioni a').count(), 68);
+    assert.ok(!(await page.locator('#lista-sessioni').innerText()).includes('Protocollo non riconosciuto'));
     await page.locator('#filtro-titolo').fill('Pro Action');
     await page.waitForTimeout(200);
     assert.equal(await page.locator('#lista-sessioni a').count(), 2);
@@ -150,11 +151,6 @@ function fakeFirebase(seed) {
     const legacy = await page.evaluate(() => JSON.parse(localStorage.getItem('testvisivi-synthetic-e2e')).sessioni.legacy);
     assert.equal(legacy.esercizi.vvs.gioco.parametroEsterno, 77);
     assert.deepEqual(legacy.esercizi.campoVisivoAvanzato, fixture.sessioni.legacy.esercizi.campoVisivoAvanzato);
-
-    await go('sessione.html?atletaId=demo&sessioneId=unknown');
-    assert.match(await page.locator('#dati-jet').innerText(), /Dati Jet Program presenti/);
-    await page.locator('#dati-jet summary').click();
-    assert.match(await page.locator('#dati-jet pre').innerText(), /nessuna unità/);
 
     await go('sessione.html?atletaId=demo&mode=test');
     assert.equal(await page.locator('#test-standard option').count(), 14);
@@ -197,7 +193,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico paginato', 'dettaglio Jet e sconosciuti', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico paginato', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
