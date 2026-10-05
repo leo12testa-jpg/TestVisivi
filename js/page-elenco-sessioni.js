@@ -63,6 +63,30 @@ function renderLista() {
   if (filtrate.length > _limite) container.appendChild(el('button', { class: 'secondary', text: `Mostra altre sessioni (${filtrate.length - _limite})`, onclick: () => { _limite += 50; renderLista(); } }));
 }
 
+function aggiornaTipoStorico() {
+  const testAttivo = _tipo === 'test';
+  qs('#tab-test').classList.toggle('secondary', !testAttivo);
+  qs('#tab-training').classList.toggle('secondary', testAttivo);
+  qs('#storico-heading').textContent = testAttivo ? 'Test' : 'Training';
+  qs('#storico-description').textContent = testAttivo
+    ? 'Valutazioni periodiche ufficiali, separate dalle sessioni di allenamento.'
+    : 'Sessioni di allenamento e monitoraggio frequente.';
+  const atleta = qs('#titolo-pagina').dataset.atleta || '';
+  qs('#titolo-pagina').textContent = `${testAttivo ? 'Test' : 'Training'} — ${atleta}`;
+  _limite = 50;
+  renderLista();
+}
+
+qs('#tab-test').addEventListener('click', () => {
+  _tipo = 'test';
+  aggiornaTipoStorico();
+});
+
+qs('#tab-training').addEventListener('click', () => {
+  _tipo = 'training';
+  aggiornaTipoStorico();
+});
+
 qs('#filtro-titolo').addEventListener('input', debounce(renderLista, 150));
 qs('#filtro-da').addEventListener('change', renderLista);
 qs('#filtro-a').addEventListener('change', renderLista);
@@ -78,11 +102,13 @@ async function init() {
   }
 
   qs('#back-link').href = `./atleta.html?id=${atletaId}`;
-  qs('#titolo-pagina').textContent = `Tutte le sessioni — ${nomeCompleto(atleta)}`;
-  document.title = `Tutte le sessioni ${nomeCompleto(atleta)} - Test Visivi`;
+  qs('#titolo-pagina').dataset.atleta = nomeCompleto(atleta);
+  document.title = `Storico ${nomeCompleto(atleta)} - Test Visivi`;
 
   _sessioni = (await dbGetSessioniByAtleta(atletaId)).filter(sessioneHaRisultatiVisibili);
-  renderLista();
+  qs('#count-test').textContent = String(_sessioni.filter(isSessioneTest).length);
+  qs('#count-training').textContent = String(_sessioni.filter(isSessioneTraining).length);
+  aggiornaTipoStorico();
 }
 
 init().catch(mostraErrorePagina);
