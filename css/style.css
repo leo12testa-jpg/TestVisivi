@@ -1632,3 +1632,119 @@ th {
     line-height: 1.45;
   }
 }
+
+
+/* Selettore periodo PDF */
+.pdf-period-dialog {
+  width: min(620px, calc(100vw - 28px));
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+}
+
+.pdf-period-dialog::backdrop {
+  background: rgba(12, 38, 65, .42);
+  backdrop-filter: blur(4px);
+}
+
+.pdf-period-card {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(12, 38, 65, .22);
+}
+
+.pdf-period-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.pdf-period-head h2 {
+  margin: 5px 0 6px;
+}
+
+.pdf-period-close {
+  min-width: 40px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  font-size: 1.35rem;
+}
+
+.pdf-period-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.pdf-period-actions {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.pdf-period-error {
+  color: var(--danger);
+  font-weight: 650;
+}
+
+/* Riepilogo radar */
+.radar-test-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  max-width: 1100px;
+  margin: 14px auto 0;
+}
+
+.radar-test-summary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
+.radar-test-summary-item strong {
+  display: block;
+  font-size: .88rem;
+  line-height: 1.25;
+}
+
+.radar-test-summary-item .meta {
+  display: block;
+  margin-top: 3px;
+}
+
+.radar-score-pill {
+  flex: 0 0 auto;
+  min-width: 48px;
+  padding: 7px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 620px) {
+  .pdf-period-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pdf-period-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pdf-period-actions button {
+    width: 100%;
+  }
+}
