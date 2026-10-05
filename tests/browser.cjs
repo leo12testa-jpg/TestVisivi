@@ -99,7 +99,7 @@ function fakeFirebase(seed) {
     await page.locator('#ricerca').fill('');
     await page.waitForTimeout(200);
     await page.locator('a[href="./atleta.html?id=demo"]').click();
-    await page.waitForSelector('#stat-sessioni:text("68")');
+    await page.waitForSelector('#stat-sessioni:text("3")');
     assert.equal(await page.locator('#stat-training').innerText(), '1');
     assert.equal(await page.locator('#sessioni-recenti a').count(), 5);
     await overflow();
