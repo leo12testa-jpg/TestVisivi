@@ -57,6 +57,37 @@ function haDatiJet(sessione) {
   );
 }
 
+
+function nomeOriginaleSessioneJet(sessione) {
+  const originale = jetOriginale(sessione);
+  return String(
+    sessione?.jetProgramNomeOriginale ||
+    sessione?.nomeTestOriginale ||
+    originale?.nomeTestOriginale ||
+    sessione?.titolo ||
+    ''
+  ).trim();
+}
+
+/*
+ * Regola archivio Jet concordata:
+ * - nome originale che inizia con "x" / "X" => TEST
+ * - tutti gli altri report Jet => TRAINING
+ * La regola riguarda solo i dati importati da Jet Program.
+ */
+function modalitaSessioneEffettiva(sessione) {
+  if (!sessione) return 'test';
+  if (haDatiJet(sessione)) {
+    const nome = nomeOriginaleSessioneJet(sessione);
+    return /^x/i.test(nome) ? 'test' : 'training';
+  }
+  return sessione.modalita === 'training' ? 'training' : 'test';
+}
+
+function isSessioneJetTest(sessione) {
+  return haDatiJet(sessione) && modalitaSessioneEffettiva(sessione) === 'test';
+}
+
 const JET_RAW_LABELS = {
   tempoReazioneMedio: ['Tempo di reazione medio'],
   tempoRilascioMedio: ['Tempo di rilascio medio'],
