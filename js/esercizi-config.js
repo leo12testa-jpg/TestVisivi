@@ -632,6 +632,7 @@ function pulisciEserciziSessione(sessione) {
 }
 
 function sessioneHaRisultatiVisibili(sessione) {
-  return contaEserciziCompilati(sessione) > 0;
+  if (contaEserciziCompilati(sessione) > 0) return true;
+  return typeof jetOriginaleHaRisultatiReali === 'function' && jetOriginaleHaRisultatiReali(sessione);
 }
 
