@@ -317,12 +317,12 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
 
     titoloSezione(
       'Radar dei test',
-      'Ogni asse corrisponde a un Test e usa la sua ultima valutazione disponibile. Le sessioni Training sono escluse.'
+      'Indice relativo 0-100 sull’ultima valutazione disponibile di ogni Test. 50 corrisponde circa alla mediana dei risultati presenti nell’archivio. I Training sono esclusi.'
     );
 
     if (radar.labels.length >= 3) {
       const config = radarChartConfig(
-        radar.labels,
+        radar.righe.map((riga) => riga.nome + ' · ' + riga.valore + '/100'),
         [{ label: 'Profilo test', data: radar.valori }],
         null
       );
@@ -337,13 +337,14 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
 
     const righe = radar.righe.map((riga) => [
       riga.nome,
-      String(riga.valore),
+      riga.valore + '/100',
+      riga.livello || '-',
       riga.data ? formatDataIt(riga.data) : '-',
     ]);
     disegnaTabella(
-      ['Test', 'Punteggio', 'Ultima valutazione'],
+      ['Test', 'Indice', 'Stima', 'Ultima valutazione'],
       righe,
-      [usableWidth - 64, 28, 36]
+      [usableWidth - 91, 23, 32, 36]
     );
   }
 
