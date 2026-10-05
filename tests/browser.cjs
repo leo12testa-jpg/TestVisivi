@@ -204,8 +204,9 @@ function fakeFirebase(seed) {
     assert.equal(await page.locator('#periodo-a-da').count(), 0);
     assert.equal(await page.locator('#periodo-b-da').count(), 0);
     const radarLabels = await page.evaluate(() => Object.values(Chart.instances).flatMap((chart) => chart.config.type === 'radar' ? chart.data.labels : []));
-    assert.ok(radarLabels.includes('Pro Action / Reaction'));
-    assert.ok(radarLabels.includes('Memoria'));
+    assert.ok(radarLabels.some((label) => String(label).startsWith('Pro Action / Reaction · ')));
+    assert.ok(radarLabels.some((label) => String(label).startsWith('Memoria · ')));
+    assert.match(await page.locator('.radar-score-pill').first().innerText(), /^\d+\/100$/);
     assert.ok(await page.locator('#radar-canvas').isVisible());
     assert.ok(await page.locator('.radar-test-summary-item').count() >= 2);
     await page.screenshot({ path: `${out}/radar-desktop.png`, fullPage: true });
