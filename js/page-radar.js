@@ -23,7 +23,7 @@ function costruisciRadar() {
     el('div', { class: 'chart-canvas-wrap radar-simple-canvas', style: `height:${height}px;` }, [canvas]),
     el('p', {
       class: 'meta radar-simple-note',
-      text: 'Indice relativo 0-100: 50 è circa la mediana dei Test presenti nell’archivio. Più il valore è alto, più quella capacità risulta forte rispetto agli altri risultati registrati. I Training sono esclusi.',
+      text: 'Indice relativo 0-100 calcolato solo sui parametri scelti per ciascun Test. 50 è circa la mediana dell’archivio; i Training sono esclusi.',
     }),
   ]));
 
@@ -43,6 +43,7 @@ function costruisciRadar() {
       el('div', {}, [
         el('strong', { text: riga.nome }),
         el('span', { class: 'meta', text: riga.data ? `Ultimo test: ${formatDataIt(riga.data)}` : '' }),
+        el('span', { class: 'meta', text: riga.parametriRadar?.length ? `Basato su: ${riga.parametriRadar.join(' + ')}` : '' }),
         el('span', { class: 'radar-strength-label', text: riga.livello || '' }),
       ]),
       el('span', { class: 'radar-score-pill', text: riga.valore + '/100' }),
