@@ -43,11 +43,11 @@ test('nessun valore inventato per unità, nomi o strutture ambigui', () => {
   }
 });
 
-test('Jet non mappato resta preservato ma non compare come test senza valori standard', () => {
+test('Jet non mappato con risultati originali reali resta visibile senza inventare uno standard', () => {
   context.input = { nomeTestOriginale: 'Sconosciuto', datiOriginali: { valore: 'originale' } };
-  assert.equal(run('sessioneHaRisultatiVisibili(input)'), false);
+  assert.equal(run('sessioneHaRisultatiVisibili(input)'), true);
   assert.equal(run('nomeTestSessione(input)'), 'Sconosciuto');
-  assert.match(run('riepilogoSessione(input)'), /Dati originali Jet Program disponibili/);
+  assert.match(run('riepilogoSessione(input)'), /Valore: originale/);
 });
 
 test('ogni test standard condivide lo schema tra import e form', () => {
