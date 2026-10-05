@@ -17,7 +17,8 @@ function renderLista() {
   const dataDa = qs('#filtro-da').value;
   const dataA = qs('#filtro-a').value;
 
-  const filtrate = [..._sessioni].reverse().filter((s) => passaFiltri(s, testo, dataDa, dataA));
+  const base = _sessioni.filter((s) => _tipo === 'training' ? isSessioneTraining(s) : isSessioneTest(s));
+  const filtrate = [...base].reverse().filter((s) => passaFiltri(s, testo, dataDa, dataA));
 
   const container = qs('#lista-sessioni');
   container.innerHTML = '';
@@ -26,7 +27,7 @@ function renderLista() {
     container.appendChild(
       el('div', {
         class: 'empty-state',
-        text: _sessioni.length === 0 ? 'Nessuna sessione registrata per questo atleta.' : 'Nessuna sessione corrisponde ai filtri.',
+        text: base.length === 0 ? (_tipo === 'training' ? 'Nessun training registrato per questo atleta.' : 'Nessun test registrato per questo atleta.') : 'Nessuna sessione corrisponde ai filtri.',
       })
     );
     return;
