@@ -51,10 +51,6 @@ function normalizza(valore, stat, direzione) {
   return Math.max(0, Math.min(100, frac * 100));
 }
 
-function filtraPerPeriodo(sessioni, da, a) {
-  return sessioni.filter((s) => (!da || s.data >= da) && (!a || s.data <= a));
-}
-
 function filtraPerAnno(sessioni, anno) {
   if (!anno) return sessioni;
   return sessioni.filter((s) => String(s.data || '').startsWith(anno + '-'));
@@ -62,12 +58,17 @@ function filtraPerAnno(sessioni, anno) {
 
 function popolaAnniRadar() {
   const select = qs('#anno-radar');
-  const anni = [...new Set(_sessioniAtleta.map((s) => String(s.data || '').slice(0, 4)).filter((a) => /^\d{4}$/.test(a)))]
-    .sort((a, b) => b.localeCompare(a));
+  const anni = [...new Set(_sessioniAtleta
+    .map((s) => String(s.data || '').slice(0, 4))
+    .filter((a) => /^\d{4}$/.test(a))
+  )].sort((a, b) => b.localeCompare(a));
+
   select.innerHTML = '';
-  select.appendChild(el('option', { value: '', text: 'Tutti gli anni' }));
   anni.forEach((anno) => select.appendChild(el('option', { value: anno, text: anno })));
   if (anni.length) select.value = anni[0];
+
+  const picker = select.closest('.radar-year-picker');
+  if (picker) picker.hidden = anni.length <= 1;
 }
 
 /** Punteggio 0-100 di una categoria: media piatta di tutti i valori normalizzati di tutti i suoi campi. */
@@ -86,12 +87,6 @@ function calcolaCategoria(categoria, sessioniPeriodo) {
   return normalizzati.length === 0 ? null : normalizzati.reduce((s, v) => s + v, 0) / normalizzati.length;
 }
 
-function leggiPeriodo(prefix, sempreAttivo) {
-  const da = qs(`#${prefix}-da`).value;
-  const a = qs(`#${prefix}-a`).value;
-  return { da, a, attivo: sempreAttivo || !!da || !!a };
-}
-
 function costruisciContenuto() {
   const container = qs('#contenuto-radar');
   container.innerHTML = '';
@@ -107,36 +102,33 @@ function costruisciContenuto() {
   ]));
 }
 
-function renderRadar(punteggiA, punteggiB, indiciAttivi) {
+function renderRadar(punteggi, indiciAttivi, anno) {
   const categorie = indiciAttivi.map((i) => CATEGORIE_RADAR[i]);
   const labels = categorie.map((c) => c.nome);
   const tooltipTestNames = categorie.map((cat) => getTestNamesForCategoria(cat));
   const arrotonda = (v) => (v === null ? null : Math.round(v * 10) / 10);
-  const datasets = [{ label: 'Periodo A', data: indiciAttivi.map((i) => arrotonda(punteggiA[i])) }];
-  if (punteggiB) datasets.push({ label: 'Periodo B', data: indiciAttivi.map((i) => arrotonda(punteggiB[i])) });
+  const datasets = [{
+    label: anno ? `Test ${anno}` : 'Test',
+    data: indiciAttivi.map((i) => arrotonda(punteggi[i])),
+  }];
   renderChart(qs('#radar-canvas'), radarChartConfig(labels, datasets, tooltipTestNames));
 }
 
-function renderTabella(punteggiA, punteggiB, indiciAttivi) {
-  const headers = ['Categoria', 'Test associati', 'Periodo A', ...(punteggiB ? ['Periodo B'] : [])];
+function renderTabella(punteggi, indiciAttivi) {
+  const headers = ['Categoria', 'Test associati', 'Punteggio'];
   const formatta = (v) => (v === null ? '—' : v.toFixed(1));
   const table = el('table', {}, [
     el('thead', {}, [el('tr', {}, headers.map((h) => el('th', { text: h })))]),
-    el(
-      'tbody',
-      {},
-      indiciAttivi.map((i) => {
-        const cat = CATEGORIE_RADAR[i];
-        return el('tr', {}, [
-          el('td', { text: cat.nome }),
-          el('td', { class: 'radar-test-cell' }, [
-            el('ul', { class: 'radar-test-list' }, getTestNamesForCategoria(cat).map((nome) => el('li', { text: nome }))),
-          ]),
-          el('td', { text: formatta(punteggiA[i]) }),
-          ...(punteggiB ? [el('td', { text: formatta(punteggiB[i]) })] : []),
-        ]);
-      })
-    ),
+    el('tbody', {}, indiciAttivi.map((i) => {
+      const cat = CATEGORIE_RADAR[i];
+      return el('tr', {}, [
+        el('td', { text: cat.nome }),
+        el('td', { class: 'radar-test-cell' }, [
+          el('ul', { class: 'radar-test-list' }, getTestNamesForCategoria(cat).map((nome) => el('li', { text: nome }))),
+        ]),
+        el('td', { text: formatta(punteggi[i]) }),
+      ]);
+    })),
   ]);
   qs('#tabella-radar').innerHTML = '';
   qs('#tabella-radar').appendChild(el('div', { class: 'table-scroll' }, [table]));
@@ -216,40 +208,26 @@ function calcola() {
 
   const anno = qs('#anno-radar').value;
   const sessioniAnno = filtraPerAnno(_sessioniAtleta, anno);
-  const periodoA = leggiPeriodo('periodo-a', true);
-  const sessioniA = filtraPerPeriodo(sessioniAnno, periodoA.da, periodoA.a);
-  const punteggiA = CATEGORIE_RADAR.map((cat) => calcolaCategoria(cat, sessioniA));
-
-  const periodoB = leggiPeriodo('periodo-b', false);
-  let punteggiB = null;
-  if (periodoB.attivo) {
-    const sessioniB = filtraPerPeriodo(sessioniAnno, periodoB.da, periodoB.a);
-    punteggiB = CATEGORIE_RADAR.map((cat) => calcolaCategoria(cat, sessioniB));
-  }
-
+  const punteggi = CATEGORIE_RADAR.map((cat) => calcolaCategoria(cat, sessioniAnno));
   const indiciAttivi = CATEGORIE_RADAR
     .map((_, i) => i)
-    .filter((i) => punteggiA[i] !== null || (punteggiB && punteggiB[i] !== null));
+    .filter((i) => punteggi[i] !== null);
 
   costruisciContenuto();
 
   if (!indiciAttivi.length) {
     qs('#radar-canvas')?.closest('.chart-block')?.remove();
-    qs('#tabella-radar').appendChild(el('div', { class: 'empty-state', text: 'Radar sintetico non disponibile per il periodo selezionato.' }));
+    qs('#tabella-radar').appendChild(el('div', { class: 'empty-state', text: 'Radar sintetico non disponibile per questo anno.' }));
     renderAndamentoTestAnnuale(sessioniAnno);
     return;
   }
 
-  renderRadar(punteggiA, punteggiB, indiciAttivi);
-  renderTabella(punteggiA, punteggiB, indiciAttivi);
+  renderRadar(punteggi, indiciAttivi, anno);
+  renderTabella(punteggi, indiciAttivi);
   renderAndamentoTestAnnuale(sessioniAnno);
 }
 
 qs('#anno-radar').addEventListener('change', calcola);
-qs('#periodo-a-da').addEventListener('change', calcola);
-qs('#periodo-a-a').addEventListener('change', calcola);
-qs('#periodo-b-da').addEventListener('change', calcola);
-qs('#periodo-b-a').addEventListener('change', calcola);
 
 async function init() {
   const user = await richiedeLogin();
