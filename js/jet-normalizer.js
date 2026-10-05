@@ -206,7 +206,7 @@ function nomeTestSessione(sessione) {
  */
 function nomeStoricoSessione(sessione) {
   const originale = nomeOriginaleSessioneJet(sessione);
-  if (originale) return originale.replace(/^[xX](?=[A-Za-z0-9])/u, '');
+  if (originale) return originale.replace(/^[xX]\/?/u, '');
   return nomeTestSessione(sessione);
 }
 
