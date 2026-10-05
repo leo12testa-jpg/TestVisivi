@@ -162,6 +162,25 @@ function radarPunteggioTest(testKey, sessione, tutteSessioni) {
   return null;
 }
 
+function radarMetricheSelezionate(testKey, sessione) {
+  const esercizio = getEsercizioConfig(testKey);
+  const dati = sessione?.esercizi?.[testKey];
+  if (!esercizio || !dati) return [];
+
+  return (TEST_RADAR_CONFIG[testKey] || []).map((parametro) => {
+    const campo = esercizio.campi.find((x) => x.key === parametro.campo);
+    if (!campo) return null;
+    const raw = dati[parametro.campo];
+    if (!valoreCampoValido(campo, raw)) return null;
+    return {
+      key: parametro.campo,
+      label: parametro.label || campo.label,
+      valore: formattaValoreCampo(campo, raw),
+      raw,
+    };
+  }).filter(Boolean);
+}
+
 function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
   const testsAtleta = (sessioniAtleta || [])
     .filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
@@ -182,6 +201,7 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
       livello: radarLivello(score),
       data: sessione.data || '',
       parametriRadar: (TEST_RADAR_CONFIG[testKey] || []).map((p) => p.label || p.campo),
+      parametriValoriRadar: radarMetricheSelezionate(testKey, sessione),
       metriche: sessione.esercizi?.[testKey]
         ? metricheEsercizioSessione(sessione, getEsercizioConfig(testKey), false)
         : (typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(sessione, 4) : []),
