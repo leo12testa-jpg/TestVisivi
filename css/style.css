@@ -1596,3 +1596,39 @@ th {
     font-size: .7rem;
   }
 }
+
+
+/* Radar semplice: un asse per ogni test */
+.radar-intro-simple {
+  margin-bottom: 18px;
+}
+
+.radar-simple-card {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.radar-simple-canvas {
+  min-height: 430px;
+}
+
+.radar-simple-note {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .radar-simple-card {
+    padding: 14px 8px;
+  }
+
+  .radar-simple-canvas {
+    min-height: 470px;
+  }
+
+  .radar-simple-note {
+    padding: 0 8px;
+    line-height: 1.45;
+  }
+}
