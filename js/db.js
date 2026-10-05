@@ -133,6 +133,7 @@ function _sessioneDaDoc(doc) {
   if (typeof normalizzaSessioneJet === 'function') sessione = normalizzaSessioneJet(sessione);
   if (typeof normalizzaSessioneLegacy === 'function') sessione = normalizzaSessioneLegacy(sessione);
   if (typeof pulisciEserciziSessione === 'function') sessione = pulisciEserciziSessione(sessione);
+  if (typeof modalitaSessioneEffettiva === 'function') sessione = { ...sessione, modalita: modalitaSessioneEffettiva(sessione) };
   return sessione;
 }
 
@@ -245,6 +246,37 @@ async function dbPulisciSessioniVuote() {
   return vuote.length;
 }
 
+
+
+async function dbRiclassificaSessioniJet() {
+  if (typeof haDatiJet !== 'function' || typeof modalitaSessioneEffettiva !== 'function') {
+    return { aggiornate: 0, test: 0, training: 0 };
+  }
+
+  const snap = await _sessioniCol().get();
+  let aggiornate = 0;
+  let test = 0;
+  let training = 0;
+
+  for (const doc of snap.docs) {
+    const sessione = { ...doc.data(), id: doc.id };
+    if (!haDatiJet(sessione)) continue;
+
+    const modalita = modalitaSessioneEffettiva(sessione);
+    if (modalita === 'training') training++;
+    else test++;
+
+    if (sessione.modalita !== modalita) {
+      await _sessioniCol().doc(doc.id).set({
+        modalita,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+      aggiornate++;
+    }
+  }
+
+  return { aggiornate, test, training };
+}
 
 async function dbPulisciTestVuoti() {
   if (typeof pulisciEserciziSessione !== 'function') return { sessioniAggiornate: 0, blocchiRimossi: 0 };
