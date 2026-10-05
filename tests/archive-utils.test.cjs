@@ -70,3 +70,12 @@ test('riconosce anche profilo con nome vuoto come duplicato dello stesso atleta'
   assert.equal(gruppi.length, 1);
   assert.equal(gruppi[0].principale.id, 'a');
 });
+
+
+test('unione conserva osservazioni distinte dei profili duplicati', () => {
+  context.a = { id: 'a', nome: 'Mario', cognome: 'Rossi', osservazioni: [{ id: 'o1', data: '2026-01-01', testo: 'prima' }] };
+  context.b = { id: 'b', nome: 'Mario', cognome: 'Rossi', osservazioni: [{ id: 'o2', data: '2026-02-01', testo: 'seconda' }] };
+  const unito = run('archivioUnisciProfiloAtleta(a, b)');
+  assert.equal(unito.osservazioni.length, 2);
+  assert.deepEqual(unito.osservazioni.map(x => x.id), ['o1', 'o2']);
+});
