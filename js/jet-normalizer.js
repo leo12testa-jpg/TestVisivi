@@ -122,7 +122,8 @@ function metricheOriginaliJet(sessione, limite = Infinity) {
     let valore = raw;
     if (Array.isArray(raw)) valore = raw.filter(jetValoreReale).join(' · ');
     else if (raw && typeof raw === 'object') return;
-    metriche.push({ key: label, label, valore: String(valore), raw });
+    const labelVisuale = String(label || '').replace(/^./u, (ch) => ch.toLocaleUpperCase('it-IT'));
+    metriche.push({ key: label, label: labelVisuale, valore: String(valore), raw });
   });
   return metriche;
 }
