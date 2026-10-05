@@ -60,32 +60,129 @@ function jetSyncApplyProfile(atleta, src) {
   return atleta;
 }
 
+function jetSyncRawValues(raw, label) {
+  const v = raw?.[label];
+  const values = Array.isArray(v) ? v : [v];
+  return values
+    .map((x) => typeof x === 'string' ? x.trim() : x)
+    .filter((x) => x !== '' && x !== null && x !== undefined);
+}
+
+function jetSyncRawNumber(raw, label, mode = 'first') {
+  const nums = jetSyncRawValues(raw, label)
+    .map((x) => Number(String(x).replace(',', '.')))
+    .filter(Number.isFinite);
+  if (!nums.length) return null;
+  if (mode === 'max') return Math.max(...nums);
+  return nums[0];
+}
+
+function jetSyncStandardizzaRisultati(nomeOriginale, raw) {
+  const temp = { jetProgramNomeOriginale: nomeOriginale, esercizi: { jetProgramOriginale: { nomeTestOriginale: nomeOriginale } } };
+  const key = typeof chiaveStandardDaNomeProtocollo === 'function' ? chiaveStandardDaNomeProtocollo(temp) : null;
+  if (!key) return { key: null, dati: null };
+
+  const n = (label, mode) => jetSyncRawNumber(raw, label, mode);
+  const dati = {};
+  const set = (campo, valore) => {
+    if (valore !== null && valore !== undefined && valore !== '') dati[campo] = valore;
+  };
+  const ms = (label) => {
+    const valore = n(label);
+    return valore === null ? null : Math.round(valore * 1000 * 1000) / 1000;
+  };
+
+  const comuniTarget = () => {
+    set('tempoTotale', n('Tempo totale'));
+    set('numeroTarget', n('Numero target'));
+    set('errori', n('Errori'));
+  };
+  const comuniPedana = () => {
+    set('recuperi', n('Pedana - numero recuperi'));
+    set('tempoArea5', n('Pedana - tempo area 5gradi'));
+    set('tempoAreaEsterna', n('Pedana - tempo area esterna'));
+  };
+
+  if (['localizzazioneSpaziale', 'pedana360', 'attenzioneSeparata'].includes(key)) {
+    comuniTarget();
+    set('tempoReazioneMedio', ms('Tempo di reazione medio'));
+    set('immaginiColpite', n('Immagini colpite'));
+    set('immaginiAlSec', n('Immagini al secondo'));
+    if (key !== 'localizzazioneSpaziale' || n('Pedana - numero recuperi') !== null) comuniPedana();
+  } else if (key === 'proActionReaction') {
+    comuniTarget();
+    set('tempoRilascioMedio', ms('Tempo di rilascio medio'));
+    set('tempoClickMedio', ms('Tempo di click medio'));
+  } else if (['velocitaPrecisioneAffollamento', 'ordinamentoStrategico', 'visualizzazioneTraiettorie'].includes(key)) {
+    set('tempoTotale', n('Tempo totale'));
+    set('clickErrati', n('Click errati'));
+    set('numeroImmagini', n('Numero immagini'));
+    set('immaginiColpite', n('Immagini colpite'));
+    set('velocita', n('Velocita'));
+    if (key === 'velocitaPrecisioneAffollamento') comuniPedana();
+  } else if (['velocitaRiconoscimento', 'riconoscimentoNumeri'].includes(key)) {
+    set('tempoTotale', n('Tempo totale'));
+    set('quantitaNumeri', n('Cifre viste'));
+    set('tempoStimolo', n('Tempo'));
+    if (key === 'velocitaRiconoscimento') comuniPedana();
+  } else if (key === 'percezioneCampoVisivo') {
+    set('tempoTotale', n('Tempo totale'));
+    set('angoloMassimo', n('angolo', 'max'));
+    set('numeroTarget', n('Numero target'));
+    set('numeroLettere', n('Numero lettere'));
+    set('errori', n('Errori'));
+    comuniPedana();
+  } else if (key === 'memorizzazioneSequenze') {
+    set('tempoTotale', n('Tempo totale'));
+    set('livelloMassimo', n('Livello massimo completato'));
+    set('errori', n('Errori'));
+    const completa = jetSyncRawValues(raw, 'Completa')[0];
+    set('completa', completa);
+  } else if (key === 'reazioneVisuoMotoriaSceltaMultipla') {
+    comuniTarget();
+    set('tempoReazioneMedio', ms('Tempo di reazione medio'));
+    set('corretti', n('Corretti'));
+    set('metronomo', n('Metronomo'));
+  } else if (key === 'localizzazioneAffollamentoOculare') {
+    set('tempoTotale', n('Tempo totale'));
+    set('metronomo', n('Metronomo'));
+  }
+
+  return { key, dati: Object.keys(dati).length ? dati : null };
+}
+
 function jetSyncSessionFromSource(atletaId, jetUserId, s) {
   const nomeOriginale = s.nomeTestOriginale || s.titolo || 'Sessione Jet Program';
   const modalita = /^x/i.test(String(nomeOriginale).trim()) ? 'test' : 'training';
 
+  const standard = jetSyncStandardizzaRisultati(nomeOriginale, s.risultatiOriginali || {});
+  const esercizi = {
+    jetProgramOriginale: {
+      nomeTestOriginale: nomeOriginale,
+      nomeBreve: s.nomeBreve || '',
+      categoria: s.categoria || '',
+      tipoTest: s.tipoTest || '',
+      descrizione: s.descrizione || '',
+      noteReport: s.noteReport || '',
+      risultatiSintesi: s.risultatiSintesi || {},
+      parametriOriginali: s.parametriOriginali || {},
+      risultatiOriginali: s.risultatiOriginali || {},
+    },
+  };
+  if (standard.key && standard.dati) esercizi[standard.key] = standard.dati;
+
   return {
     atletaId,
     data: s.data || '',
-    titolo: nomeOriginale,
+    titolo: standard.key ? (TEST_STANDARD_LABELS[standard.key] || nomeOriginale) : nomeOriginale,
     modalita,
     origine: 'jetprogram',
     jetProgramUserId: jetUserId,
     jetProgramReportId: s.jetReportId,
+    jetProgramStandardKey: standard.key || undefined,
+    jetProgramNomeOriginale: nomeOriginale,
     jetProgramDataOraOriginale: s.dataOraOriginale || '',
-    esercizi: {
-      jetProgramOriginale: {
-        nomeTestOriginale: nomeOriginale,
-        nomeBreve: s.nomeBreve || '',
-        categoria: s.categoria || '',
-        tipoTest: s.tipoTest || '',
-        descrizione: s.descrizione || '',
-        noteReport: s.noteReport || '',
-        risultatiSintesi: s.risultatiSintesi || {},
-        parametriOriginali: s.parametriOriginali || {},
-        risultatiOriginali: s.risultatiOriginali || {},
-      },
-    },
+    esercizi,
     createdAt: new Date().toISOString(),
   };
 }
