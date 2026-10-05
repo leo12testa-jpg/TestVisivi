@@ -55,6 +55,21 @@ function filtraPerPeriodo(sessioni, da, a) {
   return sessioni.filter((s) => (!da || s.data >= da) && (!a || s.data <= a));
 }
 
+function filtraPerAnno(sessioni, anno) {
+  if (!anno) return sessioni;
+  return sessioni.filter((s) => String(s.data || '').startsWith(anno + '-'));
+}
+
+function popolaAnniRadar() {
+  const select = qs('#anno-radar');
+  const anni = [...new Set(_sessioniAtleta.map((s) => String(s.data || '').slice(0, 4)).filter((a) => /^\d{4}$/.test(a)))]
+    .sort((a, b) => b.localeCompare(a));
+  select.innerHTML = '';
+  select.appendChild(el('option', { value: '', text: 'Tutti gli anni' }));
+  anni.forEach((anno) => select.appendChild(el('option', { value: anno, text: anno })));
+  if (anni.length) select.value = anni[0];
+}
+
 /** Punteggio 0-100 di una categoria: media piatta di tutti i valori normalizzati di tutti i suoi campi. */
 function calcolaCategoria(categoria, sessioniPeriodo) {
   const normalizzati = [];
@@ -85,6 +100,11 @@ function costruisciContenuto() {
     el('div', { class: 'chart-block' }, [el('div', { class: 'chart-canvas-wrap', style: 'height:340px;' }, [canvas])])
   );
   container.appendChild(el('div', { id: 'tabella-radar' }));
+  container.appendChild(el('section', { class: 'radar-year-tests' }, [
+    el('p', { class: 'eyebrow', text: 'ANDAMENTO ANNUALE' }),
+    el('h2', { text: 'Valori dei test nel corso dell’anno' }),
+    el('div', { id: 'andamento-test-annuale' }),
+  ]));
 }
 
 function renderRadar(punteggiA, punteggiB, indiciAttivi) {
@@ -122,17 +142,54 @@ function renderTabella(punteggiA, punteggiB, indiciAttivi) {
   qs('#tabella-radar').appendChild(el('div', { class: 'table-scroll' }, [table]));
 }
 
+function renderAndamentoTestAnnuale(sessioniAnno) {
+  const container = qs('#andamento-test-annuale');
+  if (!container) return;
+  container.innerHTML = '';
+
+  let mostrato = false;
+  ESERCIZI_CONFIG.forEach((test) => {
+    const prove = sessioniAnno.filter((s) => esercizioCompilato(test, s.esercizi?.[test.key]));
+    if (!prove.length) return;
+
+    mostrato = true;
+    const righe = [...prove].sort((a, b) => String(a.data || '').localeCompare(String(b.data || ''))).map((sessione) => {
+      const metriche = metricheEsercizioSessione(sessione, test, false);
+      return el('div', { class: 'radar-test-date-row' }, [
+        el('time', { class: 'session-date', text: formatDataIt(sessione.data) }),
+        el('div', { class: 'mini-metrics' }, metriche.map((m) =>
+          el('span', { class: 'mini-metric' }, [
+            el('span', { class: 'mini-metric-label', text: m.label }),
+            el('strong', { text: m.valore }),
+          ])
+        )),
+      ]);
+    });
+
+    container.appendChild(el('article', { class: 'card radar-test-year-card' }, [
+      el('h3', { text: test.label }),
+      ...righe,
+    ]));
+  });
+
+  if (!mostrato) {
+    container.appendChild(el('div', { class: 'empty-state', text: 'Nessun test con valori reali nell’anno selezionato.' }));
+  }
+}
+
 function calcola() {
   if (_sessioniAtleta.length === 0) return;
 
+  const anno = qs('#anno-radar').value;
+  const sessioniAnno = filtraPerAnno(_sessioniAtleta, anno);
   const periodoA = leggiPeriodo('periodo-a', true);
-  const sessioniA = filtraPerPeriodo(_sessioniAtleta, periodoA.da, periodoA.a);
+  const sessioniA = filtraPerPeriodo(sessioniAnno, periodoA.da, periodoA.a);
   const punteggiA = CATEGORIE_RADAR.map((cat) => calcolaCategoria(cat, sessioniA));
 
   const periodoB = leggiPeriodo('periodo-b', false);
   let punteggiB = null;
   if (periodoB.attivo) {
-    const sessioniB = filtraPerPeriodo(_sessioniAtleta, periodoB.da, periodoB.a);
+    const sessioniB = filtraPerPeriodo(sessioniAnno, periodoB.da, periodoB.a);
     punteggiB = CATEGORIE_RADAR.map((cat) => calcolaCategoria(cat, sessioniB));
   }
 
@@ -150,8 +207,10 @@ function calcola() {
   costruisciContenuto();
   renderRadar(punteggiA, punteggiB, indiciAttivi);
   renderTabella(punteggiA, punteggiB, indiciAttivi);
+  renderAndamentoTestAnnuale(sessioniAnno);
 }
 
+qs('#anno-radar').addEventListener('change', calcola);
 qs('#periodo-a-da').addEventListener('change', calcola);
 qs('#periodo-a-a').addEventListener('change', calcola);
 qs('#periodo-b-da').addEventListener('change', calcola);
@@ -179,6 +238,7 @@ async function init() {
     return;
   }
 
+  popolaAnniRadar();
   calcola();
   onThemeChange(calcola);
 }
