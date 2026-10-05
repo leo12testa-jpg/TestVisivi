@@ -195,19 +195,19 @@ const TEST_STANDARD_KEYS = [
 ];
 
 const TEST_STANDARD_LABELS = {
-  localizzazioneSpaziale: 'Localizzazione spaziale (Equilibrio statico)',
-  pedana360: 'Equilibrio posturale e coordinazione occhio-mano su pedana',
-  proActionReaction: 'Pro Action and Reaction Time',
-  attenzioneSeparata: 'Attenzione separata (centrale/periferica)',
-  velocitaPrecisioneAffollamento: 'Velocità e precisione nella localizzazione spaziale in affollamento percettivo',
-  velocitaRiconoscimento: 'Velocità di riconoscimento visivo',
-  percezioneCampoVisivo: 'Percezione campo visivo periferico',
-  localizzazioneAffollamentoOculare: 'Localizzazione in affollamento percettivo e movimenti oculari veloci',
-  memorizzazioneSequenze: 'Memorizzazione sequenze spaziali 7x12',
-  ordinamentoStrategico: 'Ordinamento strategico in confusione percettiva',
-  visualizzazioneTraiettorie: 'Visualizzazione e localizzazione delle traiettorie',
-  riconoscimentoNumeri: 'Riconoscimento visivo veloce di numeri',
-  reazioneVisuoMotoriaSceltaMultipla: 'Reazione visuo-motoria veloce con elevata concentrazione in scelta multipla',
+  localizzazioneSpaziale: 'Localizzazione spaziale',
+  pedana360: 'Pedana 360',
+  proActionReaction: 'Pro Action / Reaction',
+  attenzioneSeparata: 'Attenzione separata',
+  velocitaPrecisioneAffollamento: 'Velocità e precisione in affollamento',
+  velocitaRiconoscimento: 'Velocità di riconoscimento',
+  percezioneCampoVisivo: 'Percezione campo visivo',
+  localizzazioneAffollamentoOculare: 'Localizzazione in affollamento oculare',
+  memorizzazioneSequenze: 'Memoria',
+  ordinamentoStrategico: 'Ordinamento strategico',
+  visualizzazioneTraiettorie: 'Visualizzazione traiettorie',
+  riconoscimentoNumeri: 'Riconoscimento numeri',
+  reazioneVisuoMotoriaSceltaMultipla: 'Reazione visuo-motoria a scelta multipla',
 };
 
 // Campi realmente presenti nello storico Jet già migrato. Gli eventuali campi legacy
