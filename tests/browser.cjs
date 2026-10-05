@@ -149,6 +149,7 @@ function fakeFirebase(seed) {
     await page.locator('#dati-jet summary').click();
     assert.match(await page.locator('#dati-jet pre').innerText(), /sconosciuto/);
     await page.getByRole('button', { name: 'Modifica risultati' }).click();
+    assert.equal(await page.locator('#f__proActionReaction__tempoRilascioMedio').inputValue(), '0.35');
     assert.equal(await page.locator('#f__proActionReaction__tempoTotale').inputValue(), '45');
     assert.equal(await page.locator('#f__proActionReaction__errori').inputValue(), '0');
     await page.locator('#f__proActionReaction__tempoTotale').fill('44');
@@ -174,8 +175,8 @@ function fakeFirebase(seed) {
     assert.equal(await page.locator('#test-standard option').count(), 14);
     await page.locator('#test-standard').selectOption('proActionReaction');
     await page.locator('#f__proActionReaction__tempoTotale').fill('38');
-    await page.locator('#f__proActionReaction__tempoRilascioMedio').fill('300');
-    await page.locator('#f__proActionReaction__tempoClickMedio').fill('340');
+    await page.locator('#f__proActionReaction__tempoRilascioMedio').fill('0.3');
+    await page.locator('#f__proActionReaction__tempoClickMedio').fill('0.34');
     await page.locator('#f__proActionReaction__errori').fill('0');
     await page.screenshot({ path: `${out}/new-test-desktop.png`, fullPage: true });
     await page.evaluate(() => localStorage.setItem('simulate-write-error', '1'));
@@ -194,7 +195,7 @@ function fakeFirebase(seed) {
     await go('grafici.html?id=demo');
     await page.locator('#filtro-test-grafici').selectOption('proActionReaction');
     const datasets = await page.evaluate(() => Object.values(Chart.instances).map(c => c.data.datasets).flat());
-    assert.ok(datasets.some(d => JSON.stringify(d.data) === '[350,320,300]'), 'Grafico contiene storico e nuovo test');
+    assert.ok(datasets.some(d => JSON.stringify(d.data) === '[0.35,0.32,0.3]'), 'Grafico contiene storico e nuovo test in secondi');
     assert.ok(datasets.some(d => JSON.stringify(d.data) === '[44,40,38]'));
     await page.screenshot({ path: `${out}/charts-desktop.png`, fullPage: true });
     await overflow();
