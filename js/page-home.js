@@ -134,7 +134,7 @@ qs('#btn-unisci-doppioni').addEventListener('click', async (event) => {
 
 qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
   const button = event.currentTarget;
-  if (!confirm('Prima verrà scaricata una copia di sicurezza. Poi verranno corretti i nomi, uniti i profili duplicati e rimossi tutti i blocchi test senza valori reali. Continuare?')) return;
+  if (!confirm('Prima verrà scaricata una copia di sicurezza. Poi verranno corretti i nomi, uniti i profili duplicati, riclassificati i report Jet (x = test, gli altri = training) e rimossi i blocchi senza valori reali. Continuare?')) return;
 
   button.disabled = true;
   button.textContent = 'Backup e sistemazione…';
@@ -144,6 +144,7 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
 
     const nomiAggiornati = await dbCorreggiNomiAtleti();
     const unione = await dbUnisciDoppioniAtleti();
+    const classificazioneJet = await dbRiclassificaSessioniJet();
     const testPuliti = await dbPulisciTestVuoti();
     const sessioniEliminate = await dbPulisciSessioniVuote();
     const residui = await dbAnalizzaDoppioniAtleti();
@@ -154,6 +155,7 @@ qs('#btn-sistema-archivio').addEventListener('click', async (event) => {
       `Nomi aggiornati: ${nomiAggiornati}. ` +
       `Doppioni uniti: ${unione.gruppiUniti} gruppi / ${unione.profiliEliminati} profili rimossi. ` +
       `Sessioni riassegnate: ${unione.sessioniRiassegnate}. ` +
+      `Jet riclassificati: ${classificazioneJet.aggiornate} (${classificazioneJet.test} test / ${classificazioneJet.training} training). ` +
       `Test vuoti rimossi: ${testPuliti.blocchiRimossi} in ${testPuliti.sessioniAggiornate} sessioni. ` +
       `Sessioni vuote eliminate: ${sessioniEliminate}. ` +
       `Doppioni compatibili residui: ${residui.length}.`
