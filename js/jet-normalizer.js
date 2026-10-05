@@ -84,6 +84,8 @@ function chiaveStandardDaNomeProtocollo(sessione) {
   if (/(^|\/)DAS(\/|$)/.test(nome)) return 'attenzioneSeparata';
   if (/(^|\/)MAM(\/|$)/.test(nome) || /MEMORY\s*SPOT/.test(nome)) return 'memorizzazioneSequenze';
   if (/(^|\/)TRAJ(\/|$)/.test(nome)) return 'visualizzazioneTraiettorie';
+  if (/(^|\/)FTT(\/|$)/.test(nome)) return 'visualizzazioneTraiettorie';
+  if (/(^|\/)(?:R?BSF|BSFTOUCH)(\/|$)/.test(nome)) return 'localizzazioneAffollamentoOculare';
   if (/(^|\/)4CHART(\/|$)/.test(nome)) return 'localizzazioneAffollamentoOculare';
   if (/(^|\/)CIRCULAR(\/|$)/.test(nome)) return 'velocitaPrecisioneAffollamento';
   if (/(^|\/)ELLIPSE(\/|$)/.test(nome)) return 'ordinamentoStrategico';
@@ -145,13 +147,31 @@ function jetOriginaleHaRisultatiReali(sessione) {
   return !!(risultati && Object.values(risultati).some(jetValoreReale));
 }
 
+function metricaOriginaleJetTecnica(label, raw) {
+  const key = jetNome(label);
+  if ([
+    'arraypunti',
+    'conpedana',
+    'altezzamonitor',
+    'larghezzamonitor',
+    'immaginenumero',
+    'posizioneoriginalex',
+    'posizioneoriginaley',
+    'distanzadalcentrox',
+    'distanzadalcentroy',
+  ].includes(key)) return true;
+
+  if (Array.isArray(raw) && raw.filter(jetValoreReale).length > 8) return true;
+  return false;
+}
+
 function metricheOriginaliJet(sessione, limite = Infinity) {
   const risultati = risultatiOriginaliJet(sessione);
   if (!risultati) return [];
 
   const metriche = [];
   Object.entries(risultati).forEach(([label, raw]) => {
-    if (!jetValoreReale(raw) || metriche.length >= limite) return;
+    if (!jetValoreReale(raw) || metriche.length >= limite || metricaOriginaleJetTecnica(label, raw)) return;
     let valore = raw;
     if (Array.isArray(raw)) valore = raw.filter(jetValoreReale).join(' · ');
     else if (raw && typeof raw === 'object') return;
