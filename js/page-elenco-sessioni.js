@@ -2,6 +2,7 @@ registerServiceWorker();
 
 const atletaId = getQueryParam('atletaId');
 let _sessioni = [];
+let _tipo = getQueryParam('tipo') === 'training' ? 'training' : 'test';
 let _limite = 50;
 
 function passaFiltri(sessione, testo, dataDa, dataA) {
