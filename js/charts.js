@@ -191,7 +191,26 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
           max: 100,
           angleLines: { color: chrome.grid },
           grid: { color: chrome.grid },
-          pointLabels: { color: chrome.text, font: { size: 11 } },
+          pointLabels: {
+            color: chrome.text,
+            font: { size: 11 },
+            callback: (label) => {
+              const parole = String(label || '').split(/\s+/);
+              const righe = [];
+              let corrente = '';
+              parole.forEach((parola) => {
+                const prova = corrente ? corrente + ' ' + parola : parola;
+                if (prova.length > 18 && corrente) {
+                  righe.push(corrente);
+                  corrente = parola;
+                } else {
+                  corrente = prova;
+                }
+              });
+              if (corrente) righe.push(corrente);
+              return righe;
+            },
+          },
           ticks: { color: chrome.muted, backdropColor: 'transparent', stepSize: 25 },
         },
       },
