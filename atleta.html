@@ -16,7 +16,32 @@
     <h1 id="titolo-atleta">Atleta</h1>
   </header>
   <main>
-    <section class="page-intro compact"><div><p class="eyebrow">PROFILO ATLETA</p><h2 id="nome-atleta">Caricamento…</h2><p class="intro-description">Dati, valutazioni e progressi in un unico spazio.</p></div></section>
+    <section class="page-intro compact">
+      <div>
+        <p class="eyebrow">PROFILO ATLETA</p>
+        <div class="athlete-title-row">
+          <h2 id="nome-atleta">Caricamento…</h2>
+          <details class="athlete-notes-compact" id="note-compact">
+            <summary>📝 Note <span id="note-count">0</span></summary>
+            <div class="athlete-notes-popover">
+              <div class="field-grid observation-entry-grid">
+                <div class="field">
+                  <label for="osservazione-data">Data</label>
+                  <input type="date" id="osservazione-data" />
+                </div>
+                <div class="field observation-text-field">
+                  <label for="osservazione-testo">Nota</label>
+                  <textarea id="osservazione-testo" rows="2" placeholder="Es. oggi lo vedo più lento nelle reazioni"></textarea>
+                </div>
+              </div>
+              <div class="row"><button type="button" id="btn-aggiungi-osservazione">Aggiungi nota</button></div>
+              <div id="lista-osservazioni" class="observation-list compact"></div>
+            </div>
+          </details>
+        </div>
+        <p class="intro-description">Dati, valutazioni e progressi in un unico spazio.</p>
+      </div>
+    </section>
     <div class="subnav">
       <a class="btn secondary" id="link-grafici" href="#" style="text-decoration:none;">📈 Grafici</a>
       <a class="btn secondary" id="link-radar" href="#" style="text-decoration:none;">🎯 Radar</a>
@@ -33,28 +58,6 @@
       <div class="stat-card"><span id="label-stat-test">Test diversi</span><strong id="stat-test">—</strong></div>
       <div class="stat-card"><span>Ultimo test</span><strong id="stat-ultima">—</strong></div>
     </div>
-
-    <section class="card athlete-observations">
-      <div class="section-heading-row">
-        <div>
-          <p class="eyebrow">OSSERVAZIONI</p>
-          <h2>Note sul giocatore</h2>
-          <p class="meta">Annota ciò che osservi nel tempo, con una data precisa.</p>
-        </div>
-      </div>
-      <div class="field-grid observation-entry-grid">
-        <div class="field">
-          <label for="osservazione-data">Data</label>
-          <input type="date" id="osservazione-data" />
-        </div>
-        <div class="field observation-text-field">
-          <label for="osservazione-testo">Nota</label>
-          <textarea id="osservazione-testo" rows="3" placeholder="Es. lo vedo più lento nelle reazioni rispetto alla valutazione precedente"></textarea>
-        </div>
-      </div>
-      <div class="row"><button type="button" id="btn-aggiungi-osservazione">Aggiungi nota</button></div>
-      <div id="lista-osservazioni" class="observation-list"></div>
-    </section>
 
     <section class="recent-section"><h2>Ultimi test</h2><div id="sessioni-recenti" class="list"><p class="meta">Caricamento risultati…</p></div></section>
 
