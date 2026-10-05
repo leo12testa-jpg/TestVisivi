@@ -65,7 +65,6 @@ const TEST_RADAR_CONFIG = {
   ],
   memorizzazioneSequenze: [
     { campo: 'livelloMassimo', direzione: 'alto' },
-    { campo: 'totale', direzione: 'alto' },
     { campo: 'errori', direzione: 'basso' },
   ],
   ordinamentoStrategico: [
