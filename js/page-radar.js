@@ -23,14 +23,16 @@ function costruisciRadar() {
     el('div', { class: 'chart-canvas-wrap radar-simple-canvas', style: `height:${height}px;` }, [canvas]),
     el('p', {
       class: 'meta radar-simple-note',
-      text: 'Ogni asse corrisponde a un Test. Il valore usa l’ultima valutazione disponibile di quel Test; i Training non entrano nel radar.',
+      text: 'Indice relativo 0-100: 50 è circa la mediana dei Test presenti nell’archivio. Più il valore è alto, più quella capacità risulta forte rispetto agli altri risultati registrati. I Training sono esclusi.',
     }),
   ]));
+
+  const labelsConPunteggio = radar.righe.map((riga) => riga.nome + ' · ' + riga.valore + '/100');
 
   renderChart(
     canvas,
     radarChartConfig(
-      radar.labels,
+      labelsConPunteggio,
       [{ label: 'Profilo test', data: radar.valori }],
       null
     )
@@ -41,8 +43,9 @@ function costruisciRadar() {
       el('div', {}, [
         el('strong', { text: riga.nome }),
         el('span', { class: 'meta', text: riga.data ? `Ultimo test: ${formatDataIt(riga.data)}` : '' }),
+        el('span', { class: 'radar-strength-label', text: riga.livello || '' }),
       ]),
-      el('span', { class: 'radar-score-pill', text: String(riga.valore) }),
+      el('span', { class: 'radar-score-pill', text: riga.valore + '/100' }),
     ])
   )));
 }
