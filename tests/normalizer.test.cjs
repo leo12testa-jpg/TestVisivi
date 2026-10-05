@@ -154,12 +154,29 @@ test('usa i nomi standard nello storico Test e Training quando il test è ricono
       jetProgramOriginale: { nomeTestOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix', risultatiOriginali: { Errori: ['0'] } },
     },
   };
-  assert.equal(run('nomeStoricoSessione(input)'), 'Localizzazione spaziale (Equilibrio statico)');
+  assert.equal(run('nomeStoricoSessione(input)'), 'Localizzazione spaziale');
 
   context.input = {
     jetProgramReportId: 2,
     jetProgramNomeOriginale: 'PAT/60s/spot5cm/0,7s/LargeScreen',
     esercizi: { jetProgramOriginale: { nomeTestOriginale: 'PAT/60s/spot5cm/0,7s/LargeScreen', risultatiOriginali: { Errori: ['0'] } } },
   };
-  assert.equal(run('nomeStoricoSessione(input)'), 'PAT/60s/spot5cm/0,7s/LargeScreen');
+  assert.equal(run('nomeStoricoSessione(input)'), 'Localizzazione spaziale');
+});
+
+
+test('VPB e MAM non mappati mostrano comunque Pedana 360 e Memoria', () => {
+  context.input = {
+    jetProgramReportId: 10,
+    jetProgramNomeOriginale: 'xS/VPB/60s/120spot/5cm/0,9s/Pedana_J3/Fix',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'xS/VPB/60s/120spot/5cm/0,9s/Pedana_J3/Fix', risultatiOriginali: { Errori: ['2'] } } },
+  };
+  assert.equal(run('nomeStoricoSessione(input)'), 'Pedana 360');
+
+  context.input = {
+    jetProgramReportId: 11,
+    jetProgramNomeOriginale: 'xS/MAM/7x12/Spot5cm/1,5s',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'xS/MAM/7x12/Spot5cm/1,5s', risultatiOriginali: { Errori: ['1'] } } },
+  };
+  assert.equal(run('nomeStoricoSessione(input)'), 'Memoria');
 });
