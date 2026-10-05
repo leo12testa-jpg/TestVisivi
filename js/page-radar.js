@@ -197,14 +197,15 @@ function calcola() {
     .map((_, i) => i)
     .filter((i) => punteggiA[i] !== null || (punteggiB && punteggiB[i] !== null));
 
+  costruisciContenuto();
+
   if (!indiciAttivi.length) {
-    const container = qs('#contenuto-radar');
-    container.innerHTML = '';
-    container.appendChild(el('div', { class: 'empty-state', text: 'Nessun valore reale disponibile nel periodo selezionato.' }));
+    qs('#radar-canvas')?.closest('.chart-block')?.remove();
+    qs('#tabella-radar').appendChild(el('div', { class: 'empty-state', text: 'Radar sintetico non disponibile per il periodo selezionato.' }));
+    renderAndamentoTestAnnuale(sessioniAnno);
     return;
   }
 
-  costruisciContenuto();
   renderRadar(punteggiA, punteggiB, indiciAttivi);
   renderTabella(punteggiA, punteggiB, indiciAttivi);
   renderAndamentoTestAnnuale(sessioniAnno);
