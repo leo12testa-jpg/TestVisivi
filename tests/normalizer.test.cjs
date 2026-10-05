@@ -142,3 +142,20 @@ test('risultati originali Jet reali rendono visibile la sessione anche senza map
   assert.equal(run('sessioneHaRisultatiVisibili(input)'), true);
   assert.match(run('riepilogoSessione(input)'), /Errori: 0/);
 });
+
+
+test('usa lo stesso nome di protocollo nello storico e rimuove solo il marcatore x', () => {
+  context.input = {
+    jetProgramReportId: 1,
+    jetProgramNomeOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix', risultatiOriginali: { Errori: ['0'] } } },
+  };
+  assert.equal(run('nomeStoricoSessione(input)'), 'S/PAT/60s/120spot/5cm/0,7s/Fix');
+
+  context.input = {
+    jetProgramReportId: 2,
+    jetProgramNomeOriginale: 'PAT/60s/spot5cm/0,7s/LargeScreen',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'PAT/60s/spot5cm/0,7s/LargeScreen', risultatiOriginali: { Errori: ['0'] } } },
+  };
+  assert.equal(run('nomeStoricoSessione(input)'), 'PAT/60s/spot5cm/0,7s/LargeScreen');
+});
