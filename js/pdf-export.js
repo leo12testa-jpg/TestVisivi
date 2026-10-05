@@ -317,7 +317,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
 
     titoloSezione(
       'Radar dei test',
-      'Indice relativo 0-100 sull’ultima valutazione disponibile di ogni Test. 50 corrisponde circa alla mediana dei risultati presenti nell’archivio. I Training sono esclusi.'
+      'Indice relativo 0-100 calcolato solo sui parametri selezionati per i cinque Test del radar. 50 corrisponde circa alla mediana dell’archivio. I Training sono esclusi.'
     );
 
     if (radar.labels.length >= 3) {
@@ -339,12 +339,13 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
       riga.nome,
       riga.valore + '/100',
       riga.livello || '-',
+      (riga.parametriRadar || []).join(' + '),
       riga.data ? formatDataIt(riga.data) : '-',
     ]);
     disegnaTabella(
-      ['Test', 'Indice', 'Stima', 'Ultima valutazione'],
+      ['Test', 'Indice', 'Stima', 'Parametri usati', 'Ultima valutazione'],
       righe,
-      [usableWidth - 91, 23, 32, 36]
+      [44, 20, 28, usableWidth - 126, 34]
     );
   }
 
