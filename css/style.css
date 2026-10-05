@@ -1748,3 +1748,34 @@ th {
     width: 100%;
   }
 }
+
+
+/* Sincronizzazione Jet Program */
+.jet-sync-summary {
+  margin: 14px 0 18px;
+}
+
+.jet-sync-kpis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.jet-sync-log {
+  max-height: 360px;
+  overflow: auto;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: .78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+#jet-sync-progress {
+  width: 100%;
+}
