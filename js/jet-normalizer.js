@@ -69,6 +69,39 @@ function nomeOriginaleSessioneJet(sessione) {
   ).trim();
 }
 
+
+/*
+ * Classificazione SOLO VISIVA dei protocolli Jet storici non ancora standardizzati.
+ * Non assegna jetProgramStandardKey e non converte valori: serve soltanto a mostrare
+ * i nomi funzionali concordati (Localizzazione spaziale, Pedana 360, Memoria, ecc.).
+ */
+function chiaveStandardDaNomeProtocollo(sessione) {
+  const raw = nomeOriginaleSessioneJet(sessione);
+  if (!raw) return null;
+  const nome = raw.replace(/^[xX]\/?/u, '').toUpperCase();
+
+  if (/(^|\/)VPB(\/|$)/.test(nome)) return 'pedana360';
+  if (/(^|\/)DAS(\/|$)/.test(nome)) return 'attenzioneSeparata';
+  if (/(^|\/)MAM(\/|$)/.test(nome) || /MEMORY\s*SPOT/.test(nome)) return 'memorizzazioneSequenze';
+  if (/(^|\/)TRAJ(\/|$)/.test(nome)) return 'visualizzazioneTraiettorie';
+  if (/(^|\/)4CHART(\/|$)/.test(nome)) return 'localizzazioneAffollamentoOculare';
+  if (/(^|\/)CIRCULAR(\/|$)/.test(nome)) return 'velocitaPrecisioneAffollamento';
+  if (/(^|\/)ELLIPSE(\/|$)/.test(nome)) return 'ordinamentoStrategico';
+  if (/(^|\/)SR4?(\/|$)/.test(nome) || /SPEEDREACTION/.test(nome)) return 'reazioneVisuoMotoriaSceltaMultipla';
+  if (/(^|\/)PAW(?:_?TOUCH)?(\/|$)/.test(nome) || /(^|\/)PAWTOUCH(\/|$)/.test(nome)) return 'percezioneCampoVisivo';
+  if (/(^|\/)RT(\/|$)/.test(nome)) return 'proActionReaction';
+  if (/(^|\/)FVR\/70CM\/NUMBERS_0[,.][23]S/.test(nome)) return 'riconoscimentoNumeri';
+  if (/(^|\/)FVR(\/|$)/.test(nome)) return 'velocitaRiconoscimento';
+  if (/(^|\/)PAT(\/|$)/.test(nome)) return 'localizzazioneSpaziale';
+
+  return null;
+}
+
+function nomeStandardDaProtocollo(sessione) {
+  const key = chiaveStandardDaNomeProtocollo(sessione);
+  return key ? (TEST_STANDARD_LABELS[key] || getEsercizioConfig(key)?.label || null) : null;
+}
+
 /*
  * Regola archivio Jet concordata:
  * - nome originale che inizia con "x" / "X" => TEST
@@ -191,6 +224,10 @@ function nomeTestSessione(sessione) {
   if (test) return test.label;
   const compilati = ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, sessione.esercizi?.[e.key]));
   if (compilati.length) return compilati.map((e) => e.label).join(' · ');
+
+  const standardDaProtocollo = nomeStandardDaProtocollo(sessione);
+  if (standardDaProtocollo) return standardDaProtocollo;
+
   const originale = jetOriginale(sessione);
   return sessione.jetProgramNomeOriginale || sessione.nomeTestOriginale ||
     (originale && originale.nomeTestOriginale) || sessione.tipoTest ||
@@ -213,8 +250,8 @@ function nomeStoricoSessione(sessione) {
   );
   if (compilati.length) return compilati.map((e) => e.label).join(' · ');
 
-  const originale = nomeOriginaleSessioneJet(sessione);
-  if (originale) return originale.replace(/^[xX]\/?/u, '');
+  const standardDaProtocollo = nomeStandardDaProtocollo(sessione);
+  if (standardDaProtocollo) return standardDaProtocollo;
 
   return nomeTestSessione(sessione);
 }
