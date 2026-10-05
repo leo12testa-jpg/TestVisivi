@@ -11,15 +11,15 @@ const base = 'http://127.0.0.1:8765';
   try {
     // Manifest JSON non registra da solo il worker: prepara le due cache prima dell'install.
     await page.goto(`${base}/manifest.webmanifest`);
-    await page.evaluate(async () => { await caches.open('jetprogram-cache-v51'); await caches.open('other-app-cache'); });
+    await page.evaluate(async () => { await caches.open('jetprogram-cache-v52'); await caches.open('other-app-cache'); });
     await page.goto(`${base}/login.html`);
     await page.evaluate(async () => { await navigator.serviceWorker.ready; });
     await page.waitForFunction(() => !!navigator.serviceWorker.controller);
     const keys = await page.evaluate(() => caches.keys());
-    assert.ok(keys.includes('jetprogram-cache-v52'));
+    assert.ok(keys.includes('jetprogram-cache-v53'));
     assert.ok(keys.includes('other-app-cache'));
-    assert.ok(!keys.includes('jetprogram-cache-v51'));
-    const urls = await page.evaluate(async () => (await (await caches.open('jetprogram-cache-v52')).keys()).map(r => r.url));
+    assert.ok(!keys.includes('jetprogram-cache-v52'));
+    const urls = await page.evaluate(async () => (await (await caches.open('jetprogram-cache-v53')).keys()).map(r => r.url));
     assert.ok(urls.includes(`${base}/js/jet-normalizer.js`));
     assert.ok(urls.includes(`${base}/js/archive-utils.js`));
     assert.ok(urls.includes(`${base}/js/jet-ui-compat.js`));
@@ -31,7 +31,7 @@ const base = 'http://127.0.0.1:8765';
     await page.waitForSelector('#login-email');
     assert.equal(await page.locator('#login-password').count(), 1);
     assert.deepEqual(errors, []);
-    const result = { ok: true, cache: 'jetprogram-cache-v52', oldCacheRemoved: true, unrelatedCachePreserved: true, offlineLoginLoaded: true, errors };
+    const result = { ok: true, cache: 'jetprogram-cache-v53', oldCacheRemoved: true, unrelatedCachePreserved: true, offlineLoginLoaded: true, errors };
     fs.mkdirSync('reports', { recursive: true });
     fs.writeFileSync('reports/pwa-results.json', JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
