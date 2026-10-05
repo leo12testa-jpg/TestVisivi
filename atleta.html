@@ -59,6 +59,34 @@
       <div class="stat-card"><span>Ultimo training</span><strong id="stat-ultima">—</strong></div>
     </div>
 
+    <dialog id="pdf-period-dialog" class="pdf-period-dialog">
+      <form method="dialog" class="pdf-period-card">
+        <div class="pdf-period-head">
+          <div>
+            <p class="eyebrow">ESPORTA PDF</p>
+            <h2>Scegli il periodo dei Test</h2>
+            <p class="meta">Nel PDF entreranno solo i Test compresi tra queste due date. I Training sono sempre esclusi.</p>
+          </div>
+          <button type="button" class="secondary pdf-period-close" id="pdf-period-close" aria-label="Chiudi">×</button>
+        </div>
+        <div class="field-grid pdf-period-grid">
+          <div class="field">
+            <label for="pdf-period-da">Da</label>
+            <input type="date" id="pdf-period-da" required />
+          </div>
+          <div class="field">
+            <label for="pdf-period-a">A</label>
+            <input type="date" id="pdf-period-a" required />
+          </div>
+        </div>
+        <p class="meta" id="pdf-period-summary"></p>
+        <div class="row pdf-period-actions">
+          <button type="button" class="secondary" id="pdf-period-annulla">Annulla</button>
+          <button type="button" id="pdf-period-export">Esporta PDF</button>
+        </div>
+      </form>
+    </dialog>
+
     <section class="recent-section"><h2>Ultimi test</h2><div id="sessioni-recenti" class="list"><p class="meta">Caricamento risultati…</p></div></section>
 
     <details class="profile-details"><summary>Anagrafica e dati clinici</summary>
