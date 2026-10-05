@@ -4,7 +4,7 @@
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v38.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v39.
 
 Il 28/09/2026 è stato analizzato l'export Firestore reale:
 139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
@@ -62,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v38 usa rete con fallback offline, include il normalizzatore e limita
+La cache v39 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
