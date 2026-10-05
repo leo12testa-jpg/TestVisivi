@@ -74,3 +74,18 @@ Sul backup reale sono stati rilevati 23 gruppi duplicati dopo la normalizzazione
 - I campi mancanti del profilo principale vengono completati dal duplicato; valori già compilati non vengono sovrascritti.
 - Il profilo sorgente viene conservato in `mergeStorico` prima della sua eliminazione.
 - Se nomi non vuoti o date di nascita risultano incompatibili, la fusione automatica viene esclusa.
+
+
+## Classificazione Test / Training Jet
+
+Sul backup reale dei 8.544 report Jet:
+
+- 1.525 nomi originali iniziano con `x` / `X` e vengono classificati come **Test**;
+- 7.019 non iniziano con `x` e vengono classificati come **Training**;
+- nel vecchio import tutti gli 8.544 risultavano con `modalita: "test"`, quindi 7.019 report necessitano di riclassificazione;
+- sia i Test sia i Training del backup contengono risultati originali valorizzati.
+
+Esempio Test: `xS/PAT/60s/120spot/5cm/0,7s/Fix`.
+Esempio Training: `5E training di equilibrio 360°`.
+
+La modalità salvata dal vecchio import non viene quindi considerata fonte autorevole per i report Jet: prevale il prefisso del nome originale.
