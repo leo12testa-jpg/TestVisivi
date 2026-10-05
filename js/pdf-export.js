@@ -475,12 +475,13 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   const testKeys = new Set(sessioni.map((s) => nomeTestSessione(s)).filter(Boolean));
   const prima = sessioni.length ? sessioni[0].data : '';
   const ultima = sessioni.length ? sessioni[sessioni.length - 1].data : '';
+  const giornateTest = new Set(sessioni.map((s) => s.data).filter(Boolean)).size;
   const kGap = 3;
   const kWidth = (usableWidth - kGap * 3) / 4;
-  cardKpi(marginX, y, kWidth, 'VALUTAZIONI', sessioni.length);
+  cardKpi(marginX, y, kWidth, 'GIORNATE TEST', giornateTest);
   cardKpi(marginX + (kWidth + kGap), y, kWidth, 'TEST DIVERSI', testKeys.size);
-  cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'PRIMA', prima ? formatDataIt(prima) : '-');
-  cardKpi(marginX + (kWidth + kGap) * 3, y, kWidth, 'ULTIMA', ultima ? formatDataIt(ultima) : '-');
+  cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'PRIMO TEST', prima ? formatDataIt(prima) : '-');
+  cardKpi(marginX + (kWidth + kGap) * 3, y, kWidth, 'ULTIMO TEST', ultima ? formatDataIt(ultima) : '-');
   y += 27;
 
   const anagrafica = [
