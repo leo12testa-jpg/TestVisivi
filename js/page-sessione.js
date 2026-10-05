@@ -228,7 +228,7 @@ function popolaEsercizio(esercizio, valore) {
           input.parentElement.appendChild(el('small', { class: 'field-warning', text: 'Dato Jet anomalo escluso' }));
           return;
         }
-        input.value = v;
+        input.value = campo.tipo === 'number' ? valoreVisualeCampo(campo, v) : v;
         sincronizzaToggleDaInput(input);
         haValori = true;
       });
@@ -243,7 +243,7 @@ function popolaEsercizio(esercizio, valore) {
         input.parentElement.appendChild(el('small', { class: 'field-warning', text: 'Dato Jet anomalo escluso' }));
         return;
       }
-      input.value = v;
+      input.value = campo.tipo === 'number' ? valoreVisualeCampo(campo, v) : v;
       sincronizzaToggleDaInput(input);
       haValori = true;
     });
@@ -261,7 +261,7 @@ function leggiEsercizio(esercizio) {
       campiEsercizioVisibili(esercizio).forEach((campo) => {
         const input = qs(`#${fieldId(esercizio.key, sc.key, campo.key)}`);
         if (input.value === '') return;
-        scRisultato[campo.key] = campo.tipo === 'number' ? Number(input.value) : input.value.trim();
+        scRisultato[campo.key] = campo.tipo === 'number' ? valoreInputInterno(campo, input.value) : input.value.trim();
         scHaValori = true;
       });
       if (scHaValori) {
@@ -276,7 +276,7 @@ function leggiEsercizio(esercizio) {
   campiEsercizioVisibili(esercizio).forEach((campo) => {
     const input = qs(`#${fieldId(esercizio.key, null, campo.key)}`);
     if (input.value === '') return;
-    risultato[campo.key] = campo.tipo === 'number' ? Number(input.value) : input.value.trim();
+    risultato[campo.key] = campo.tipo === 'number' ? valoreInputInterno(campo, input.value) : input.value.trim();
     haValori = true;
   });
   return haValori ? risultato : null;
