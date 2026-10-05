@@ -366,16 +366,91 @@ qs('#btn-elimina-atleta').addEventListener('click', async () => {
   window.location.href = './index.html';
 });
 
-qs('#btn-export-pdf').addEventListener('click', async (e) => {
+function testNelPeriodo(da, a) {
+  return _sessioni.filter((s) =>
+    (!da || String(s.data || '') >= da) &&
+    (!a || String(s.data || '') <= a)
+  );
+}
+
+function aggiornaRiepilogoPdf() {
+  const da = qs('#pdf-period-da').value;
+  const a = qs('#pdf-period-a').value;
+  const selezionati = testNelPeriodo(da, a);
+  const summary = qs('#pdf-period-summary');
+
+  if (da && a && da > a) {
+    summary.textContent = 'La data iniziale deve essere precedente alla data finale.';
+    summary.classList.add('pdf-period-error');
+    return;
+  }
+
+  summary.classList.remove('pdf-period-error');
+  summary.textContent = selezionati.length === 1
+    ? '1 Test verrà inserito nel PDF.'
+    : `${selezionati.length} Test verranno inseriti nel PDF.`;
+}
+
+function apriDialogPdf() {
+  if (!_sessioni.length) {
+    alert('Non ci sono Test da esportare.');
+    return;
+  }
+
+  const date = _sessioni.map((s) => s.data).filter(Boolean).sort();
+  const ultima = date[date.length - 1];
+  const dUltima = new Date(ultima + 'T12:00:00');
+  const dDa = new Date(dUltima);
+  dDa.setFullYear(dDa.getFullYear() - 1);
+
+  const iso = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  qs('#pdf-period-a').value = ultima;
+  qs('#pdf-period-da').value = iso(dDa);
+  aggiornaRiepilogoPdf();
+
+  const dialog = qs('#pdf-period-dialog');
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+}
+
+qs('#pdf-period-da').addEventListener('change', aggiornaRiepilogoPdf);
+qs('#pdf-period-a').addEventListener('change', aggiornaRiepilogoPdf);
+
+qs('#pdf-period-close').addEventListener('click', () => qs('#pdf-period-dialog').close());
+qs('#pdf-period-annulla').addEventListener('click', () => qs('#pdf-period-dialog').close());
+
+qs('#pdf-period-export').addEventListener('click', async (e) => {
+  const da = qs('#pdf-period-da').value;
+  const a = qs('#pdf-period-a').value;
+  if (!da || !a || da > a) {
+    aggiornaRiepilogoPdf();
+    return;
+  }
+
+  const selezionati = testNelPeriodo(da, a);
+  if (!selezionati.length) {
+    aggiornaRiepilogoPdf();
+    return;
+  }
+
   const btn = e.currentTarget;
   btn.disabled = true;
   btn.textContent = 'Generazione PDF...';
   try {
-    await esportaReportPdf(_atleta, _sessioni);
+    await esportaReportPdf(_atleta, selezionati);
+    qs('#pdf-period-dialog').close();
   } finally {
     btn.disabled = false;
-    btn.textContent = '⬇ Esporta PDF';
+    btn.textContent = 'Esporta PDF';
   }
 });
+
+qs('#btn-export-pdf').addEventListener('click', apriDialogPdf);
 
 init();
