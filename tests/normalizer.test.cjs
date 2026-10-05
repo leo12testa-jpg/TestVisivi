@@ -203,3 +203,13 @@ test('FTT e BSF usano nomi standard e le metriche tecniche non invadono il layou
   };
   assert.equal(run('nomeStoricoSessione(input)'), 'Localizzazione in affollamento oculare');
 });
+
+
+test('formatta i decimali senza arrotondare e mostra i millisecondi come secondi', () => {
+  context.campoMs = { tipo: 'number', unit: 'ms', label: 'Tempo' };
+  context.campoS = { tipo: 'number', unit: 's', label: 'Tempo totale' };
+  assert.equal(run('formattaValoreCampo(campoMs, 350.1234)'), '0,3501234 s');
+  assert.equal(run('formattaValoreCampo(campoS, 47.123456)'), '47,123456 s');
+  assert.equal(run('valoreVisualeCampo(campoMs, 350.1234)'), '0.3501234');
+  assert.equal(run('valoreInputInterno(campoMs, "0.3501234")'), 350.1234);
+});
