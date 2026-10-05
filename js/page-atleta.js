@@ -167,27 +167,27 @@ async function caricaSessioni() {
   _sessioni = tutte.filter(isSessioneTest);
   _training = tutte.filter(isSessioneTraining);
 
-  const ultimoAnno = (sessioni) => {
-    const anni = sessioni
-      .map((s) => String(s.data || '').slice(0, 4))
-      .filter((anno) => /^\d{4}$/.test(anno))
-      .sort();
-    return anni.length ? anni[anni.length - 1] : '';
+  const deduplicaStatistiche = (sessioni) => {
+    const viste = new Map();
+    sessioni.forEach((s) => {
+      const chiave = [s.data || '', nomeStoricoSessione(s).toLowerCase(), firmaValoriStorico(s)].join('||');
+      if (!viste.has(chiave)) viste.set(chiave, s);
+    });
+    return [...viste.values()];
   };
 
-  const annoTest = ultimoAnno(_sessioni);
-  const annoTraining = ultimoAnno(_training);
-  const testAnno = annoTest ? _sessioni.filter((s) => String(s.data || '').startsWith(annoTest + '-')) : _sessioni;
-  const trainingAnno = annoTraining ? _training.filter((s) => String(s.data || '').startsWith(annoTraining + '-')) : _training;
+  const testUnici = deduplicaStatistiche(_sessioni);
+  const trainingUnici = deduplicaStatistiche(_training);
+  const ultimaData = (sessioni) => sessioni
+    .map((s) => s.data)
+    .filter(Boolean)
+    .sort()
+    .at(-1) || '';
 
-  qs('#label-stat-sessioni').textContent = annoTest ? `Giornate test ${annoTest}` : 'Giornate test';
-  qs('#label-stat-training').textContent = annoTraining ? `Giornate training ${annoTraining}` : 'Giornate training';
-  qs('#label-stat-test').textContent = annoTest ? `Test diversi ${annoTest}` : 'Test diversi';
-
-  qs('#stat-sessioni').textContent = String(new Set(testAnno.map((s) => s.data).filter(Boolean)).size);
-  qs('#stat-training').textContent = String(new Set(trainingAnno.map((s) => s.data).filter(Boolean)).size);
-  qs('#stat-test').textContent = String(new Set(testAnno.map((s) => nomeStoricoSessione(s))).size);
-  qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
+  qs('#stat-sessioni').textContent = String(testUnici.length);
+  qs('#stat-training').textContent = String(trainingUnici.length);
+  qs('#stat-test').textContent = ultimaData(testUnici) ? formatDataIt(ultimaData(testUnici)) : '—';
+  qs('#stat-ultima').textContent = ultimaData(trainingUnici) ? formatDataIt(ultimaData(trainingUnici)) : '—';
 
   const recenti = qs('#sessioni-recenti');
   recenti.innerHTML = '';
