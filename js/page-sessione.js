@@ -124,14 +124,15 @@ function mostraOriginali(sessione) {
   const compilati = ESERCIZI_CONFIG.filter((test) =>
     !test.custom && esercizioCompilato(test, sessione.esercizi?.[test.key])
   );
-  if (!compilati.length) return;
+  const metricheOriginali = typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(sessione) : [];
+  if (!compilati.length && !metricheOriginali.length) return;
 
   container.hidden = false;
   container.classList.add('result-overview');
   container.appendChild(el('p', { class: 'eyebrow', text: 'RISULTATI SESSIONE' }));
   container.appendChild(el('h2', {
     class: 'result-title',
-    text: compilati.length === 1 ? compilati[0].label : 'Risultati dei test',
+    text: compilati.length === 1 ? compilati[0].label : (compilati.length ? 'Risultati dei test' : nomeTestSessione(sessione)),
   }));
   container.appendChild(el('p', {
     class: 'result-description',
@@ -151,6 +152,17 @@ function mostraOriginali(sessione) {
       )),
     ]));
   });
+
+  if (!compilati.length && metricheOriginali.length) {
+    container.appendChild(el('section', { class: 'result-test-block' }, [
+      el('div', { class: 'metric-grid' }, metricheOriginali.map((m) =>
+        el('div', { class: 'metric-card' }, [
+          el('span', { class: 'metric-label', text: m.label }),
+          el('strong', { class: 'metric-value', text: m.valore }),
+        ])
+      )),
+    ]));
+  }
 
   if (haDatiJet(sessione)) {
     const originale = typeof jetOriginale === 'function' ? jetOriginale(sessione) : null;
