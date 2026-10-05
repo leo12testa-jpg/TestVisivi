@@ -381,6 +381,37 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     }
   }
 
+  async function disegnaTestOriginaliNonStandardizzati() {
+    if (typeof metricheOriginaliJet !== 'function') return;
+
+    const originali = sessioni.filter((s) =>
+      contaEserciziCompilati(s) === 0 &&
+      metricheOriginaliJet(s).length > 0
+    );
+    if (!originali.length) return;
+
+    titoloSezione(
+      'Test originali non standardizzati',
+      'Valori reali dei Test Jet non ancora associati a uno schema standard. Le sessioni Training restano escluse.'
+    );
+
+    for (const sessione of originali.slice(-12)) {
+      assicuraSpazio(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      doc.setTextColor(...C.navyDark);
+      doc.text(`${formatDataIt(sessione.data)} - ${nomeTestSessione(sessione)}`, marginX, y);
+      y += 5;
+
+      const righe = metricheOriginaliJet(sessione).map((m) => [m.label, m.valore]);
+      disegnaTabella(
+        ['Parametro', 'Valore'],
+        righe,
+        [usableWidth * 0.58, usableWidth * 0.42]
+      );
+    }
+  }
+
   async function disegnaAllegati() {
     const righe = [];
     for (const s of sessioni) {
@@ -528,6 +559,8 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
       }
     }
   }
+
+  await disegnaTestOriginaliNonStandardizzati();
 
   // Footer e numerazione pagine.
   const totalePagine = doc.getNumberOfPages();
