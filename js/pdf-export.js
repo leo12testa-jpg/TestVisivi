@@ -312,25 +312,19 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
 
   async function disegnaRadarTest() {
     if (typeof radarDatiSintesi !== 'function' || typeof radarChartConfig !== 'function') return;
-    const anni = sessioni.map((s) => String(s.data || '').slice(0, 4)).filter((a) => /^\d{4}$/.test(a)).sort();
-    const anno = anni.length ? anni[anni.length - 1] : '';
-    const sessioniAnno = anno ? sessioni.filter((s) => String(s.data || '').startsWith(anno + '-')) : sessioni;
-    const globaliAnno = anno
-      ? tutteSessioniPerRadar.filter((s) => String(s.data || '').startsWith(anno + '-'))
-      : tutteSessioniPerRadar;
-    const radar = radarDatiSintesi(sessioniAnno, globaliAnno.length ? globaliAnno : tutteSessioniPerRadar);
+    const radar = radarDatiSintesi(sessioni, tutteSessioniPerRadar);
     if (!radar.labels.length) return;
 
     titoloSezione(
-      anno ? `Radar prestazioni test - ${anno}` : 'Radar prestazioni test',
-      'Sintesi 0-100 calcolata esclusivamente sulle valutazioni Test. Le sessioni Training sono escluse.'
+      'Radar dei test',
+      'Ogni asse corrisponde a un Test e usa la sua ultima valutazione disponibile. Le sessioni Training sono escluse.'
     );
 
     if (radar.labels.length >= 3) {
       const config = radarChartConfig(
         radar.labels,
         [{ label: 'Profilo test', data: radar.valori }],
-        radar.testNames
+        null
       );
       const img = await renderChartOffscreen(config, 900, 720);
       const imgWidth = Math.min(usableWidth, 150);
@@ -341,15 +335,15 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
       y += imgHeight + 7;
     }
 
-    const righe = radar.labels.map((label, index) => [
-      label,
-      String(radar.valori[index]),
-      (radar.testNames[index] || []).join(', '),
+    const righe = radar.righe.map((riga) => [
+      riga.nome,
+      String(riga.valore),
+      riga.data ? formatDataIt(riga.data) : '-',
     ]);
     disegnaTabella(
-      ['Area', 'Punteggio', 'Test associati'],
+      ['Test', 'Punteggio', 'Ultima valutazione'],
       righe,
-      [42, 26, usableWidth - 68]
+      [usableWidth - 64, 28, 36]
     );
   }
 
