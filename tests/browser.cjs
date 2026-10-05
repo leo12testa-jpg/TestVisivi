@@ -15,8 +15,8 @@ const fixture = {
     demo: { nome: 'Andrea', cognome: 'Atleta demo', note: 'Dati sintetici' },
     secondo: { nome: 'Giulia', cognome: 'Esempio', datiClinici: {} },
   }, squadre: {}, sessioni: {
-    jet: { atletaId: 'demo', data: '2026-08-01', nomeTestOriginale: 'Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 45, 'Tempo reazione medio (ms)': 350, errori: 0, sconosciuto: 'conservare' }, esercizi: { testEsterno: { valore: 22 } } },
-    jet2: { atletaId: 'demo', data: '2026-08-12', nomeTestOriginale: 'Pro Action and Reaction Time', datiOriginali: { 'Tempo totale (s)': 40, 'Tempo reazione medio (ms)': 320, errori: 1 } },
+    jet: { atletaId: 'demo', data: '2026-08-01', nomeTestOriginale: 'x/Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 45, 'Tempo reazione medio (ms)': 350, errori: 0, sconosciuto: 'conservare' }, esercizi: { testEsterno: { valore: 22 } } },
+    jet2: { atletaId: 'demo', data: '2026-08-12', nomeTestOriginale: 'x/Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 40, 'Tempo reazione medio (ms)': 320, errori: 1 } },
     unknown: { atletaId: 'demo', data: '2026-08-20', nomeTestOriginale: 'Protocollo non riconosciuto', tipoTest: 999, datiOriginali: { misura: 'nessuna unità' } },
     legacy: { atletaId: 'demo', data: '2026-08-18', esercizi: { vvs: { gioco: { primaDeviazione: 2, parametroEsterno: 77 } }, campoVisivoAvanzato: { durataSecondi: 5, percentualiSettori: [{ settore: 1, fasciaAngoli: '5-10', percentualeCorretta: 90 }] } } },
   },
@@ -100,8 +100,14 @@ function fakeFirebase(seed) {
     await page.waitForTimeout(200);
     await page.locator('a[href="./atleta.html?id=demo"]').click();
     await page.waitForSelector('#stat-sessioni:text("68")');
+    assert.equal(await page.locator('#stat-training').innerText(), '1');
     assert.equal(await page.locator('#sessioni-recenti a').count(), 5);
     await overflow();
+    await page.locator('#osservazione-data').fill('2026-08-22');
+    await page.locator('#osservazione-testo').fill('Osservazione sintetica di prova');
+    await page.locator('#btn-aggiungi-osservazione').click();
+    await page.waitForSelector('#lista-osservazioni .observation-item');
+    assert.match(await page.locator('#lista-osservazioni').innerText(), /Osservazione sintetica di prova/);
     await page.screenshot({ path: `${out}/profile-desktop.png`, fullPage: true });
 
     const pdfDownloadPromise = page.waitForEvent('download');
@@ -123,6 +129,10 @@ function fakeFirebase(seed) {
     await page.waitForTimeout(200);
     assert.equal(await page.locator('#lista-sessioni a').count(), 2);
     assert.ok(!(await page.locator('#lista-sessioni').innerText()).includes('0 esercizi'));
+    await page.locator('#tab-training').click();
+    assert.equal(await page.locator('#lista-sessioni a').count(), 1);
+    assert.match(await page.locator('#lista-sessioni').innerText(), /Protocollo non riconosciuto/);
+    await page.locator('#tab-test').click();
     await page.screenshot({ path: `${out}/sessions-desktop.png`, fullPage: true });
 
     await go('sessione.html?atletaId=demo&sessioneId=jet');
@@ -181,10 +191,16 @@ function fakeFirebase(seed) {
     await page.screenshot({ path: `${out}/charts-desktop.png`, fullPage: true });
     await overflow();
 
+    await go('radar.html?id=demo');
+    assert.ok(await page.locator('#anno-radar option').count() >= 2);
+    assert.match(await page.locator('#andamento-test-annuale').innerText(), /Pro Action and Reaction Time/);
+    await page.screenshot({ path: `${out}/radar-desktop.png`, fullPage: true });
+    await overflow();
+
     for (const theme of ['light', 'dark']) {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
-      for (const [name, url] of [['home', 'index.html'], ['profile', 'atleta.html?id=demo'], ['sessions', 'sessioni.html?atletaId=demo'], ['test', 'sessione.html?atletaId=demo&sessioneId=jet'], ['charts', 'grafici.html?id=demo']]) {
+      for (const [name, url] of [['home', 'index.html'], ['profile', 'atleta.html?id=demo'], ['sessions', 'sessioni.html?atletaId=demo&type=test'], ['test', 'sessione.html?atletaId=demo&sessioneId=jet'], ['charts', 'grafici.html?id=demo'], ['radar', 'radar.html?id=demo']]) {
         await go(url);
         if (name === 'charts') await page.locator('#filtro-test-grafici').selectOption('proActionReaction');
         await overflow();
@@ -193,7 +209,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico paginato', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico paginato', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar annuale', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
