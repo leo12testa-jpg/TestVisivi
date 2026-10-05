@@ -172,6 +172,40 @@ function renderAndamentoTestAnnuale(sessioniAnno) {
     ]));
   });
 
+
+  const originaliNonStandard = sessioniAnno.filter((s) =>
+    contaEserciziCompilati(s) === 0 &&
+    typeof metricheOriginaliJet === 'function' &&
+    metricheOriginaliJet(s).length > 0
+  );
+  const gruppiOriginali = new Map();
+  originaliNonStandard.forEach((sessione) => {
+    const nome = nomeTestSessione(sessione);
+    if (!gruppiOriginali.has(nome)) gruppiOriginali.set(nome, []);
+    gruppiOriginali.get(nome).push(sessione);
+  });
+
+  gruppiOriginali.forEach((prove, nome) => {
+    mostrato = true;
+    const righe = [...prove].sort((a, b) => String(a.data || '').localeCompare(String(b.data || ''))).map((sessione) => {
+      const metriche = metricheOriginaliJet(sessione);
+      return el('div', { class: 'radar-test-date-row' }, [
+        el('time', { class: 'session-date', text: formatDataIt(sessione.data) }),
+        el('div', { class: 'mini-metrics' }, metriche.map((m) =>
+          el('span', { class: 'mini-metric' }, [
+            el('span', { class: 'mini-metric-label', text: m.label }),
+            el('strong', { text: m.valore }),
+          ])
+        )),
+      ]);
+    });
+
+    container.appendChild(el('article', { class: 'card radar-test-year-card' }, [
+      el('h3', { text: nome }),
+      ...righe,
+    ]));
+  });
+
   if (!mostrato) {
     container.appendChild(el('div', { class: 'empty-state', text: 'Nessun test con valori reali nell’anno selezionato.' }));
   }
