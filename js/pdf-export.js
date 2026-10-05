@@ -339,7 +339,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
       riga.nome,
       riga.valore + '/100',
       riga.livello || '-',
-      (riga.parametriRadar || []).join(' + '),
+      (riga.parametriValoriRadar || []).map((m) => m.label + ' ' + m.valore).join(' + '),
       riga.data ? formatDataIt(riga.data) : '-',
     ]);
     disegnaTabella(
