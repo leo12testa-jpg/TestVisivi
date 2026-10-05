@@ -211,53 +211,84 @@ function montaIndicatoreConnessione() {
 }
 montaIndicatoreConnessione();
 
+const APP_BUILD_VERSION = '47';
+
+async function leggiVersionePubblicata() {
+  if (!navigator.onLine) return null;
+  try {
+    const response = await fetch(`./version.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return String(data?.version || '').trim() || null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function montaPulsanteAggiornaApp() {
   const header = document.querySelector('header.app-header');
-  if (!header || document.querySelector('#btn-aggiorna-app')) return;
+  if (!header) return;
 
-  const btn = el('button', {
-    type: 'button',
-    id: 'btn-aggiorna-app',
-    class: 'header-update-btn',
-    text: '↻ Aggiorna',
-    title: 'Scarica l’ultima versione dell’app',
-  });
+  let btn = null;
 
-  btn.addEventListener('click', async () => {
-    if (!navigator.onLine) {
-      alert('Per aggiornare l’app serve una connessione internet.');
-      return;
-    }
+  function nascondi() {
+    if (btn) btn.remove();
+    btn = null;
+  }
 
-    const testoOriginale = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = 'Aggiornamento…';
+  function mostra() {
+    if (btn) return;
+    btn = el('button', {
+      type: 'button',
+      id: 'btn-aggiorna-app',
+      class: 'header-update-btn',
+      text: '↻ Aggiorna',
+      title: 'È disponibile una nuova versione dell’app',
+    });
 
-    try {
-      if ('serviceWorker' in navigator) {
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(registrations.map((registration) => registration.update().catch(() => {})));
+    btn.addEventListener('click', async () => {
+      if (!navigator.onLine) return;
+      btn.disabled = true;
+      btn.textContent = 'Aggiornamento…';
+
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.update().catch(() => {})));
+        }
+
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(
+            keys
+              .filter((key) => key.startsWith('jetprogram-cache-'))
+              .map((key) => caches.delete(key))
+          );
+        }
+
+        window.location.reload();
+      } catch (err) {
+        console.warn('Aggiornamento app non completato:', err);
+        btn.disabled = false;
+        btn.textContent = '↻ Aggiorna';
       }
+    });
 
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(
-          keys
-            .filter((key) => key.startsWith('jetprogram-cache-'))
-            .map((key) => caches.delete(key))
-        );
-      }
+    header.appendChild(btn);
+  }
 
-      window.location.reload();
-    } catch (err) {
-      console.warn('Aggiornamento app non completato:', err);
-      btn.disabled = false;
-      btn.textContent = testoOriginale;
-      alert('Aggiornamento non riuscito. Riprova tra qualche secondo.');
-    }
-  });
+  async function verifica() {
+    const pubblicata = await leggiVersionePubblicata();
+    if (pubblicata && pubblicata !== APP_BUILD_VERSION) mostra();
+    else nascondi();
+  }
 
-  header.appendChild(btn);
+  window.addEventListener('online', verifica);
+  window.addEventListener('focus', verifica);
+  verifica();
 }
 montaPulsanteAggiornaApp();
 
