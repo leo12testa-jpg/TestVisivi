@@ -13,7 +13,7 @@
  */
 
 const UNITA_LABEL = {
-  ms: 'ms',
+  ms: 's',
   s: 's',
   per_sec: 'immagini/sec',
   count: 'n°',
@@ -437,15 +437,63 @@ function valoreCampoValido(campo, value) {
   return true;
 }
 
-const _FORMAT_NUMERO = new Intl.NumberFormat('it-IT', { maximumFractionDigits: 2 });
+function numeroStringaNormale(value) {
+  const raw = String(value ?? '').trim().replace(',', '.');
+  if (!raw) return '';
+  if (!/[eE]/.test(raw)) return raw;
+
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return raw;
+  return n.toLocaleString('en-US', {
+    useGrouping: false,
+    maximumFractionDigits: 20,
+  });
+}
+
+function spostaDecimali(value, posizioni) {
+  const raw = numeroStringaNormale(value);
+  if (!/^-?\d+(?:\.\d+)?$/.test(raw)) return raw;
+
+  const negativo = raw.startsWith('-');
+  const pulito = negativo ? raw.slice(1) : raw;
+  const [intera, decimale = ''] = pulito.split('.');
+  const cifre = intera + decimale;
+  let indice = intera.length + posizioni;
+
+  let out;
+  if (indice <= 0) out = '0.' + '0'.repeat(-indice) + cifre;
+  else if (indice >= cifre.length) out = cifre + '0'.repeat(indice - cifre.length);
+  else out = cifre.slice(0, indice) + '.' + cifre.slice(indice);
+
+  if (out.includes('.')) {
+    out = out.replace(/0+$/, '').replace(/\.$/, '');
+  }
+  out = out.replace(/^0+(?=\d)/, '') || '0';
+  if (out.startsWith('.')) out = '0' + out;
+  return (negativo && out !== '0' ? '-' : '') + out;
+}
+
+function valoreVisualeCampo(campo, value) {
+  if (campo?.tipo !== 'number') return String(value);
+  return campo.unit === 'ms' ? spostaDecimali(value, -3) : numeroStringaNormale(value);
+}
+
+function valoreInputInterno(campo, value) {
+  if (campo?.tipo !== 'number') return String(value).trim();
+  const raw = numeroStringaNormale(value);
+  if (campo.unit === 'ms') return Number(spostaDecimali(raw, 3));
+  return Number(raw);
+}
+
+function formattaNumeroEsatto(value) {
+  return String(value ?? '').replace('.', ',');
+}
 
 function formattaValoreCampo(campo, value) {
   if (!valoreCampoValido(campo, value)) return '—';
   if (campo?.tipo !== 'number') return String(value);
-  const n = Number(value);
-  const numero = campo.unit === 'ms' || campo.unit === 'count'
-    ? new Intl.NumberFormat('it-IT', { maximumFractionDigits: 0 }).format(n)
-    : _FORMAT_NUMERO.format(n);
+  const visuale = valoreVisualeCampo(campo, value);
+  const numero = formattaNumeroEsatto(visuale);
   const unita = campo.unit === 'per_sec' ? 'img/s' : (UNITA_LABEL[campo.unit] || '');
   return unita ? `${numero} ${unita}` : numero;
 }
