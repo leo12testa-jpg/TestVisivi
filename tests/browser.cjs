@@ -103,6 +103,7 @@ function fakeFirebase(seed) {
     assert.equal(await page.locator('#stat-training').innerText(), '1');
     assert.equal(await page.locator('#sessioni-recenti a').count(), 5);
     await overflow();
+    await page.locator('#note-compact > summary').click();
     await page.locator('#osservazione-data').fill('2026-08-22');
     await page.locator('#osservazione-testo').fill('Osservazione sintetica di prova');
     await page.locator('#btn-aggiungi-osservazione').click();
@@ -121,9 +122,9 @@ function fakeFirebase(seed) {
 
     await page.locator('#link-tutte-sessioni').click();
     await page.waitForSelector('#lista-sessioni a');
-    assert.equal(await page.locator('#lista-sessioni a').count(), 50);
-    await page.getByRole('button', { name: /Mostra altre/ }).click();
-    assert.equal(await page.locator('#lista-sessioni a').count(), 68);
+    assert.equal(await page.locator('#lista-sessioni a').count(), 6);
+    assert.ok(await page.locator('.history-name-group').count() >= 3);
+    assert.ok(await page.locator('.duplicate-count-badge').count() >= 1);
     assert.ok(!(await page.locator('#lista-sessioni').innerText()).includes('Protocollo non riconosciuto'));
     await page.locator('#filtro-titolo').fill('Pro Action');
     await page.waitForTimeout(200);
@@ -209,7 +210,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico paginato', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar annuale', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar annuale', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
