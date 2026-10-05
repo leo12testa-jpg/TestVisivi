@@ -180,3 +180,26 @@ test('VPB e MAM non mappati mostrano comunque Pedana 360 e Memoria', () => {
   };
   assert.equal(run('nomeStoricoSessione(input)'), 'Memoria');
 });
+
+
+test('FTT e BSF usano nomi standard e le metriche tecniche non invadono il layout', () => {
+  context.input = {
+    jetProgramNomeOriginale: 'FTT/C-number/tot.9/6cm/LargeSceen',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'FTT/C-number/tot.9/6cm/LargeSceen', risultatiOriginali: {
+      'Tempo totale': ['8.38'],
+      'ArrayPunti': Array.from({ length: 20 }, (_, i) => String(i)),
+      'Con pedana': ['True']
+    } } }
+  };
+  assert.equal(run('nomeStoricoSessione(input)'), 'Visualizzazione traiettorie');
+  assert.deepEqual(run('metricheOriginaliJet(input).map(x => x.label)'), ['Tempo totale']);
+
+  context.input = {
+    jetProgramNomeOriginale: 'BSF/VISION/1Letter_3cm/Obliques_h10-4',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'BSF/VISION/1Letter_3cm/Obliques_h10-4', risultatiOriginali: {
+      'Tempo totale': ['93.77'],
+      'Metronomo': ['66']
+    } } }
+  };
+  assert.equal(run('nomeStoricoSessione(input)'), 'Localizzazione in affollamento oculare');
+});
