@@ -3,6 +3,7 @@ registerServiceWorker();
 const atletaId = getQueryParam('id');
 let _atleta = null;
 let _sessioni = [];
+let _training = [];
 
 /** Da -20.00 a +20.00 step 0.25, segno sempre visibile (usa centesimi interi per evitare arrotondamenti float). */
 function opzioniDiottrie() {
@@ -160,12 +161,19 @@ function leggiFormClinici() {
   };
 }
 
-/** Le sessioni servono solo come dato per l'export PDF (report ufficiale: esclude le sessioni di Training). */
+/** Carica una volta lo storico e separa nettamente Test e Training. */
 async function caricaSessioni() {
-  _sessioni = (await dbGetSessioniByAtleta(atletaId)).filter((s) => !isSessioneTraining(s) && sessioneHaRisultatiVisibili(s));
+  const tutte = (await dbGetSessioniByAtleta(atletaId)).filter(sessioneHaRisultatiVisibili);
+  _sessioni = tutte.filter(isSessioneTest);
+  _training = tutte.filter(isSessioneTraining);
+
   qs('#stat-sessioni').textContent = String(_sessioni.length);
-  qs('#stat-test').textContent = String(new Set(_sessioni.flatMap((s) => ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, s.esercizi?.[e.key])).map((e) => e.key))).size);
+  qs('#stat-training').textContent = String(_training.length);
+  qs('#stat-test').textContent = String(new Set(_sessioni.flatMap((s) =>
+    ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, s.esercizi?.[e.key])).map((e) => e.key)
+  )).size);
   qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
+
   const recenti = qs('#sessioni-recenti');
   recenti.innerHTML = '';
   [..._sessioni].reverse().slice(0, 5).forEach((s) => {
@@ -181,14 +189,81 @@ async function caricaSessioni() {
           el('strong', { text: m.valore }),
         ])
       )));
-    } else {
-      contenuto.push(el('p', { class: 'meta', text: riepilogoSessione(s) }));
     }
     recenti.appendChild(el('a', {
       class: 'list-item session-list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`,
     }, [el('div', { class: 'session-list-content' }, contenuto), el('span', { class: 'session-list-arrow', 'aria-hidden': 'true', text: '›' })]));
   });
-  if (!_sessioni.length) recenti.appendChild(el('p', { class: 'empty-state', text: 'Il percorso inizia dal primo test.' }));
+  if (!_sessioni.length) recenti.appendChild(el('p', { class: 'empty-state', text: 'Nessun test registrato.' }));
+}
+
+function osservazioniAtleta() {
+  return Array.isArray(_atleta?.osservazioni) ? _atleta.osservazioni : [];
+}
+
+function renderOsservazioni() {
+  const container = qs('#lista-osservazioni');
+  if (!container) return;
+  container.innerHTML = '';
+  const items = [...osservazioniAtleta()].sort((a, b) =>
+    String(b.data || '').localeCompare(String(a.data || '')) ||
+    String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
+  );
+
+  if (!items.length) {
+    container.appendChild(el('p', { class: 'empty-state compact', text: 'Nessuna osservazione annotata.' }));
+    return;
+  }
+
+  items.forEach((item) => {
+    const card = el('article', { class: 'observation-item' }, [
+      el('div', { class: 'observation-content' }, [
+        el('time', { class: 'eyebrow', text: item.data ? formatDataIt(item.data) : 'Senza data' }),
+        el('p', { text: item.testo || '' }),
+      ]),
+      el('button', {
+        type: 'button',
+        class: 'secondary observation-delete',
+        text: 'Elimina',
+        onclick: async () => {
+          if (!confirm('Eliminare questa osservazione?')) return;
+          _atleta.osservazioni = osservazioniAtleta().filter((x) => x.id !== item.id);
+          await dbUpdateAtleta(_atleta);
+          renderOsservazioni();
+          mostraToast('Osservazione eliminata');
+        },
+      }),
+    ]);
+    container.appendChild(card);
+  });
+}
+
+async function aggiungiOsservazione() {
+  const data = qs('#osservazione-data').value;
+  const testo = qs('#osservazione-testo').value.trim();
+  if (!data) {
+    qs('#osservazione-data').focus();
+    return;
+  }
+  if (!testo) {
+    qs('#osservazione-testo').focus();
+    return;
+  }
+
+  const id = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `obs-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  _atleta.osservazioni = [...osservazioniAtleta(), {
+    id,
+    data,
+    testo,
+    createdAt: new Date().toISOString(),
+  }];
+  await dbUpdateAtleta(_atleta);
+  qs('#osservazione-testo').value = '';
+  renderOsservazioni();
+  mostraToast('Osservazione aggiunta');
 }
 
 function mostraToast(msg) {
@@ -221,10 +296,13 @@ async function init() {
     document.title = `${nomeCompleto(_atleta)} - Test Visivi`;
     qs('#link-grafici').href = `./grafici.html?id=${atletaId}`;
     qs('#link-radar').href = `./radar.html?id=${atletaId}`;
-    qs('#link-tutte-sessioni').href = `./sessioni.html?atletaId=${atletaId}`;
+    qs('#link-tutte-sessioni').href = `./sessioni.html?atletaId=${atletaId}&tipo=test`;
+    qs('#link-training-storico').href = `./sessioni.html?atletaId=${atletaId}&tipo=training`;
     costruisciSelectCorrezione();
     await popolaSelectSquadra(_atleta.squadraId);
     popolaAnagrafica(_atleta);
+    qs('#osservazione-data').value = oggiIso();
+    renderOsservazioni();
     const defaults = datiCliniciVuoti();
     const dc = _atleta.datiClinici || {};
     Object.keys(defaults).forEach((key) => {
@@ -244,6 +322,10 @@ qs('#form-clinici').addEventListener('submit', async (e) => {
   _atleta.datiClinici = leggiFormClinici();
   await dbUpdateAtleta(_atleta);
   mostraToast('Profilo salvato');
+});
+
+qs('#btn-aggiungi-osservazione').addEventListener('click', () => {
+  aggiungiOsservazione().catch(mostraErrorePagina);
 });
 
 qs('#btn-test').addEventListener('click', () => {
