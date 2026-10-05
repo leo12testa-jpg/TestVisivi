@@ -472,12 +472,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   });
   y += 5.5;
 
-  const testKeys = new Set();
-  sessioni.forEach((s) => {
-    ESERCIZI_CONFIG.forEach((e) => {
-      if (esercizioCompilato(e, s.esercizi?.[e.key])) testKeys.add(e.key);
-    });
-  });
+  const testKeys = new Set(sessioni.map((s) => nomeTestSessione(s)).filter(Boolean));
   const prima = sessioni.length ? sessioni[0].data : '';
   const ultima = sessioni.length ? sessioni[sessioni.length - 1].data : '';
   const kGap = 3;
