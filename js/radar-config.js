@@ -9,85 +9,22 @@
  */
 
 const TEST_RADAR_CONFIG = {
-  localizzazioneSpaziale: [
-    { campo: 'tempoReazioneMedio', direzione: 'basso' },
-    { campo: 'immaginiAlSec', direzione: 'alto' },
-    { campo: 'immaginiColpite', direzione: 'alto' },
-    { campo: 'errori', direzione: 'basso' },
-  ],
-  pedana360: [
-    { campo: 'tempoReazioneMedio', direzione: 'basso' },
-    { campo: 'immaginiAlSec', direzione: 'alto' },
-    { campo: 'immaginiColpite', direzione: 'alto' },
-    { campo: 'recuperi', direzione: 'basso' },
-    { campo: 'tempoArea5', direzione: 'alto' },
-    { campo: 'tempoAreaEsterna', direzione: 'basso' },
-    { campo: 'errori', direzione: 'basso' },
-  ],
-  proActionReaction: [
-    { campo: 'tempoRilascioMedio', direzione: 'basso' },
-    { campo: 'tempoClickMedio', direzione: 'basso' },
-    { campo: 'errori', direzione: 'basso' },
-  ],
   attenzioneSeparata: [
-    { campo: 'tempoReazioneMedio', direzione: 'basso' },
-    { campo: 'immaginiColpite', direzione: 'alto' },
-    { campo: 'immaginiAlSec', direzione: 'alto' },
-    { campo: 'errori', direzione: 'basso' },
-    { campo: 'recuperi', direzione: 'basso' },
-    { campo: 'tempoArea5', direzione: 'alto' },
-    { campo: 'tempoAreaEsterna', direzione: 'basso' },
+    { campo: 'immaginiAlSec', direzione: 'alto', label: 'Immagini al secondo' },
   ],
-  velocitaPrecisioneAffollamento: [
-    { campo: 'clickErrati', direzione: 'basso' },
-    { campo: 'immaginiColpite', direzione: 'alto' },
-    { campo: 'velocita', direzione: 'alto' },
-  ],
-  velocitaRiconoscimento: [
-    { campo: 'quantitaNumeri', direzione: 'alto' },
-    { campo: 'tempoStimolo', direzione: 'basso' },
-  ],
-  percezioneCampoVisivo: [
-    { campo: 'angoloMassimo', direzione: 'alto' },
-    { campo: 'errori', direzione: 'basso' },
-    { campo: 'v5', direzione: 'basso' },
-    { campo: 'v10', direzione: 'basso' },
-    { campo: 'v15', direzione: 'basso' },
-    { campo: 'v20', direzione: 'basso' },
-    { campo: 'v25', direzione: 'basso' },
-    { campo: 'v30', direzione: 'basso' },
-    { campo: 'v35', direzione: 'basso' },
-    { campo: 'v40', direzione: 'basso' },
-  ],
-  localizzazioneAffollamentoOculare: [
-    { campo: 'tempoTotale', direzione: 'basso' },
-    { campo: 'metronomo', direzione: 'alto' },
+  localizzazioneSpaziale: [
+    { campo: 'immaginiAlSec', direzione: 'alto', label: 'Immagini al secondo' },
+    { campo: 'tempoReazioneMedio', direzione: 'basso', label: 'Tempo di reazione medio' },
   ],
   memorizzazioneSequenze: [
-    { campo: 'livelloMassimo', direzione: 'alto' },
-    { campo: 'errori', direzione: 'basso' },
+    { campo: 'livelloMassimo', direzione: 'alto', label: 'Livello massimo' },
   ],
-  ordinamentoStrategico: [
-    { campo: 'clickErrati', direzione: 'basso' },
-    { campo: 'immaginiColpite', direzione: 'alto' },
-    { campo: 'velocita', direzione: 'alto' },
-    { campo: 'tempoTotale', direzione: 'basso' },
+  velocitaPrecisioneAffollamento: [
+    { campo: 'tempoTotale', direzione: 'basso', label: 'Tempo totale' },
   ],
-  visualizzazioneTraiettorie: [
-    { campo: 'immaginiColpite', direzione: 'alto' },
-    { campo: 'clickErrati', direzione: 'basso' },
-    { campo: 'velocita', direzione: 'alto' },
-    { campo: 'tempoTotale', direzione: 'basso' },
-  ],
-  riconoscimentoNumeri: [
-    { campo: 'quantitaNumeri', direzione: 'alto' },
-    { campo: 'tempoStimolo', direzione: 'basso' },
-  ],
-  reazioneVisuoMotoriaSceltaMultipla: [
-    { campo: 'tempoReazioneMedio', direzione: 'basso' },
-    { campo: 'corretti', direzione: 'alto' },
-    { campo: 'errori', direzione: 'basso' },
-    { campo: 'metronomo', direzione: 'alto' },
+  proActionReaction: [
+    { campo: 'tempoRilascioMedio', direzione: 'basso', label: 'Tempo medio di rilascio' },
+    { campo: 'tempoClickMedio', direzione: 'basso', label: 'Tempo medio di tocco' },
   ],
 };
 
@@ -221,11 +158,8 @@ function radarPunteggioTest(testKey, sessione, tutteSessioni) {
     return punteggi.reduce((tot, valore) => tot + valore, 0) / punteggi.length;
   }
 
-  // Il test esiste e ha valori reali ma non dispone ancora di campi confrontabili:
-  // lo manteniamo visibile nel radar con un valore neutro, senza inventare misure.
-  const haDatiStandard = esercizio && esercizioCompilato(esercizio, dati);
-  const haDatiOriginali = typeof jetOriginaleHaRisultatiReali === 'function' && jetOriginaleHaRisultatiReali(sessione);
-  return (haDatiStandard || haDatiOriginali) ? 50 : null;
+  // Se i parametri scelti per il radar non sono presenti, il Test non entra nel radar.
+  return null;
 }
 
 function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
@@ -234,7 +168,7 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
   const testsGlobali = (tutteSessioni || [])
     .filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
 
-  const righe = TEST_STANDARD_KEYS.map((testKey) => {
+  const righe = Object.keys(TEST_RADAR_CONFIG).map((testKey) => {
     const sessione = radarUltimaSessioneTest(testsAtleta, testKey);
     if (!sessione) return null;
     const valore = radarPunteggioTest(testKey, sessione, testsGlobali);
@@ -247,6 +181,7 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
       valore: score,
       livello: radarLivello(score),
       data: sessione.data || '',
+      parametriRadar: (TEST_RADAR_CONFIG[testKey] || []).map((p) => p.label || p.campo),
       metriche: sessione.esercizi?.[testKey]
         ? metricheEsercizioSessione(sessione, getEsercizioConfig(testKey), false)
         : (typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(sessione, 4) : []),
