@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Sincronizza Jet Program - Test Visivi</title>
+  <meta name="theme-color" content="#153e69" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <a class="back" href="./index.html" aria-label="Indietro">‹</a>
+    <h1>Sincronizza Jet Program</h1>
+  </header>
+
+  <main>
+    <section class="page-intro compact">
+      <div>
+        <p class="eyebrow">JET PROGRAM → TEST VISIVI</p>
+        <h2>Aggiungi solo i dati nuovi</h2>
+        <p class="intro-description">Carica il file JSON delta preparato per la sincronizzazione. Gli ID originali Jet impediscono la creazione di doppioni.</p>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="field">
+        <label for="jet-delta-file">File delta Jet Program</label>
+        <input id="jet-delta-file" type="file" accept=".json,application/json" />
+      </div>
+      <div id="jet-sync-summary" class="jet-sync-summary">
+        <p class="meta">Nessun file selezionato.</p>
+      </div>
+      <button type="button" id="jet-sync-start" disabled>Sincronizza dati nuovi</button>
+    </section>
+
+    <section class="card" id="jet-sync-progress-card" hidden>
+      <p class="eyebrow">SINCRONIZZAZIONE</p>
+      <progress id="jet-sync-progress" max="1" value="0"></progress>
+      <p class="meta" id="jet-sync-progress-label"></p>
+      <div id="jet-sync-log" class="jet-sync-log" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="./vendor/firebase/firebase-app-compat.js"></script>
+  <script src="./vendor/firebase/firebase-auth-compat.js"></script>
+  <script src="./vendor/firebase/firebase-firestore-compat.js"></script>
+  <script src="./js/firebase-config.js"></script>
+  <script src="./js/esercizi-config.js"></script>
+  <script src="./js/jet-normalizer.js"></script>
+  <script src="./js/utils.js"></script>
+  <script src="./js/archive-utils.js"></script>
+  <script src="./js/auth.js"></script>
+  <script src="./js/db.js"></script>
+  <script src="./js/page-sincronizza-jet.js"></script>
+</body>
+</html>
