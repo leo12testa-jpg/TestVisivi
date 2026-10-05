@@ -4,7 +4,7 @@
 
 Implementati catalogo dei 13 test, normalizzazione conservativa in lettura,
 form condivisi, storico con risultati e dettaglio originale, grafici, layout
-responsive chiaro/scuro, ottimizzazione home e cache PWA v36.
+responsive chiaro/scuro, ottimizzazione home e cache PWA v37.
 
 Il 28/09/2026 è stato analizzato l'export Firestore reale:
 139 atleti, 8.622 sessioni totali, di cui 8.544 Jet Program.
@@ -62,7 +62,7 @@ legge soltanto le sessioni dell'atleta selezionato e mostra 50 righe per volta,
 con ricerca e filtri locali. È paginazione del rendering, non delle letture
 Firestore: evita di escludere documenti legacy privi dei campi di ordinamento.
 
-La cache v36 usa rete con fallback offline, include il normalizzatore e limita
+La cache v37 usa rete con fallback offline, include il normalizzatore e limita
 la memorizzazione all'app shell. Rimuove soltanto vecchie cache `jetprogram-cache-*`;
 non cancella cache di altre app, Firestore o IndexedDB.
 
@@ -204,3 +204,31 @@ Profili con nomi non vuoti incompatibili o date di nascita discordanti non vengo
 - "Sistema archivio" rimuove fisicamente dai documenti Firestore i soli blocchi di test configurati che non contengono alcun risultato reale.
 - Se un test contiene almeno un risultato reale, il blocco viene conservato integralmente per non perdere eventuali parametri storici/esterni.
 - Le nuove sessioni non possono essere salvate senza almeno un risultato.
+
+
+## Separazione Test / Training Jet
+
+- Per i dati importati da Jet Program la modalità deriva dal nome originale:
+  - nome che inizia con `x` o `X` = **Test**;
+  - tutti gli altri nomi = **Training**.
+- La regola viene applicata subito in lettura e può essere persistita con **Sistema archivio**.
+- Sistema archivio usa batch Firestore per riclassificare migliaia di report senza una scrittura sequenziale per documento.
+- Lo storico atleta ha due viste separate: **Test** e **Training**.
+- Il profilo mostra contatori annuali per **giornate Test**, **giornate Training**, **Test diversi** e data dell'ultimo Test.
+- I risultati Jet originali con valori reali restano visibili anche quando non sono ancora mappati a uno schema standard.
+
+## Radar annuale e PDF
+
+- Il Radar usa esclusivamente le sessioni **Test**, mai Training.
+- È disponibile un selettore anno.
+- Sotto il radar sono mostrati i nomi dei test e i valori reali registrati nelle diverse date dell'anno.
+- Il PDF ufficiale usa esclusivamente sessioni Test per tabelle e grafici.
+- Il PDF include il radar dell'ultimo anno disponibile e una tabella con aree, punteggi e soli test che hanno realmente contribuito.
+- I Test Jet con valori originali ma non ancora standardizzati vengono riportati in una sezione separata del PDF; i Training restano esclusi.
+
+## Diario osservazioni atleta
+
+- Nel profilo atleta è presente una sezione **Note sul giocatore** con data e testo libero.
+- Le osservazioni sono salvate sull'anagrafica Firestore e ordinate dalla più recente.
+- Le osservazioni vengono preservate anche durante l'unione di profili duplicati.
+- Le osservazioni operative non vengono inserite automaticamente nel PDF ufficiale.
