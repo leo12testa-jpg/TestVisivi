@@ -38,6 +38,13 @@ function archivioUnisciOggetti(principale, secondario, path = '') {
     if (['id', 'createdAt', 'updatedAt', 'mergeStorico', 'mergedFromAthleteIds'].includes(key)) return;
     const current = risultato[key];
 
+    if (key === 'osservazioni' && Array.isArray(value)) {
+      const esistenti = Array.isArray(current) ? current : [];
+      const ids = new Set(esistenti.map((item) => item && item.id).filter(Boolean));
+      risultato[key] = [...esistenti, ...value.filter((item) => !item?.id || !ids.has(item.id))];
+      return;
+    }
+
     if (key === 'note' && !archivioValoreVuoto(value)) {
       if (archivioValoreVuoto(current)) risultato[key] = value;
       else if (String(current).trim() !== String(value).trim() && !String(current).includes(String(value))) {
