@@ -35,6 +35,16 @@ function costruisciRadar() {
       null
     )
   );
+
+  container.appendChild(el('section', { class: 'radar-test-summary' }, radar.righe.map((riga) =>
+    el('article', { class: 'radar-test-summary-item' }, [
+      el('div', {}, [
+        el('strong', { text: riga.nome }),
+        el('span', { class: 'meta', text: riga.data ? `Ultimo test: ${formatDataIt(riga.data)}` : '' }),
+      ]),
+      el('span', { class: 'radar-score-pill', text: String(riga.valore) }),
+    ])
+  )));
 }
 
 async function init() {
