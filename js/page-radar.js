@@ -43,7 +43,12 @@ function costruisciRadar() {
       el('div', {}, [
         el('strong', { text: riga.nome }),
         el('span', { class: 'meta', text: riga.data ? `Ultimo test: ${formatDataIt(riga.data)}` : '' }),
-        el('span', { class: 'meta', text: riga.parametriRadar?.length ? `Basato su: ${riga.parametriRadar.join(' + ')}` : '' }),
+        el('span', {
+          class: 'meta',
+          text: riga.parametriValoriRadar?.length
+            ? `Basato su: ${riga.parametriValoriRadar.map((m) => m.label + ' ' + m.valore).join(' + ')}`
+            : '',
+        }),
         el('span', { class: 'radar-strength-label', text: riga.livello || '' }),
       ]),
       el('span', { class: 'radar-score-pill', text: riga.valore + '/100' }),
