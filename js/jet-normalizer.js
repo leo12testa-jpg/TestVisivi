@@ -175,7 +175,18 @@ function metricheOriginaliJet(sessione, limite = Infinity) {
     let valore = raw;
     if (Array.isArray(raw)) valore = raw.filter(jetValoreReale).join(' · ');
     else if (raw && typeof raw === 'object') return;
-    const labelVisuale = String(label || '').replace(/^./u, (ch) => ch.toLocaleUpperCase('it-IT'));
+
+    let labelVisuale = String(label || '').replace(/^./u, (ch) => ch.toLocaleUpperCase('it-IT'));
+    const inMillisecondi = /\(ms\)/i.test(labelVisuale);
+    if (inMillisecondi) {
+      const valori = Array.isArray(raw) ? raw.filter(jetValoreReale) : [raw];
+      const convertiti = valori.map((v) => {
+        const n = jetNumero(v);
+        return n === null ? String(v) : spostaDecimali(v, -3).replace('.', ',');
+      });
+      valore = convertiti.join(' · ');
+      labelVisuale = labelVisuale.replace(/\(ms\)/ig, '(s)');
+    }
     metriche.push({ key: label, label: labelVisuale, valore: String(valore), raw });
   });
   return metriche;
