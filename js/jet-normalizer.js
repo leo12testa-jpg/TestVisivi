@@ -88,6 +88,45 @@ function isSessioneJetTest(sessione) {
   return haDatiJet(sessione) && modalitaSessioneEffettiva(sessione) === 'test';
 }
 
+
+function jetValoreReale(value) {
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value)) return value.some(jetValoreReale);
+  if (typeof value === 'object') return Object.values(value).some(jetValoreReale);
+  return String(value).trim() !== '';
+}
+
+function risultatiOriginaliJet(sessione) {
+  const originale = jetOriginale(sessione);
+  if (originale?.risultatiOriginali && typeof originale.risultatiOriginali === 'object') {
+    return originale.risultatiOriginali;
+  }
+  if (sessione?.datiOriginali && typeof sessione.datiOriginali === 'object') {
+    return sessione.datiOriginali;
+  }
+  return null;
+}
+
+function jetOriginaleHaRisultatiReali(sessione) {
+  const risultati = risultatiOriginaliJet(sessione);
+  return !!(risultati && Object.values(risultati).some(jetValoreReale));
+}
+
+function metricheOriginaliJet(sessione, limite = Infinity) {
+  const risultati = risultatiOriginaliJet(sessione);
+  if (!risultati) return [];
+
+  const metriche = [];
+  Object.entries(risultati).forEach(([label, raw]) => {
+    if (!jetValoreReale(raw) || metriche.length >= limite) return;
+    let valore = raw;
+    if (Array.isArray(raw)) valore = raw.filter(jetValoreReale).join(' · ');
+    else if (raw && typeof raw === 'object') return;
+    metriche.push({ key: label, label, valore: String(valore), raw });
+  });
+  return metriche;
+}
+
 const JET_RAW_LABELS = {
   tempoReazioneMedio: ['Tempo di reazione medio'],
   tempoRilascioMedio: ['Tempo di rilascio medio'],
@@ -160,6 +199,8 @@ function nomeTestSessione(sessione) {
 function riepilogoSessione(sessione) {
   const metriche = typeof metrichePrincipaliSessione === 'function' ? metrichePrincipaliSessione(sessione) : [];
   if (metriche.length) return metriche.slice(0, 3).map((m) => `${m.label}: ${m.valore}`).join(' · ');
+  const originali = metricheOriginaliJet(sessione, 3);
+  if (originali.length) return originali.map((m) => `${m.label}: ${m.valore}`).join(' · ');
   if (haDatiJet(sessione)) return 'Dati originali Jet Program disponibili';
   const n = contaEserciziCompilati(sessione);
   return n ? `${n} test con dati · Apri il dettaglio` : 'Nessun risultato registrato';
