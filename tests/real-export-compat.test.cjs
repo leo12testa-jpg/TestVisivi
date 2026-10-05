@@ -64,3 +64,28 @@ test('un Jet non standardizzato conserva il nome originale', () => {
   assert.equal(run('nomeTestSessione(input)'), 'TEST/ORIGINALE');
   assert.match(run('riepilogoSessione(input)'), /Jet Program/);
 });
+
+
+test('regola reale x Test e altri Training', () => {
+  context.input = {
+    jetProgramNomeOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix',
+    jetProgramReportId: 1,
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix' } },
+    modalita: 'training',
+  };
+  assert.equal(run('modalitaSessioneEffettiva(input)'), 'test');
+
+  context.input = {
+    jetProgramNomeOriginale: '5E training di equilibrio 360°',
+    jetProgramReportId: 2,
+    esercizi: {
+      jetProgramOriginale: {
+        nomeTestOriginale: '5E training di equilibrio 360°',
+        risultatiOriginali: { 'Tempo totale': ['47.11'], Errori: ['0'] },
+      },
+    },
+    modalita: 'test',
+  };
+  assert.equal(run('modalitaSessioneEffettiva(input)'), 'training');
+  assert.equal(run('sessioneHaRisultatiVisibili(input)'), true);
+});
