@@ -73,6 +73,9 @@ function aggiornaTipoStorico() {
     : 'Sessioni di allenamento e monitoraggio frequente.';
   const atleta = qs('#titolo-pagina').dataset.atleta || '';
   qs('#titolo-pagina').textContent = `${testAttivo ? 'Test' : 'Training'} — ${atleta}`;
+  const url = new URL(window.location.href);
+  url.searchParams.set('tipo', _tipo);
+  history.replaceState(null, '', url);
   _limite = 50;
   renderLista();
 }
