@@ -529,7 +529,13 @@ function getSessioneConfig(mode) {
 }
 
 function isSessioneTraining(sessione) {
-  return !!(sessione && sessione.modalita === 'training');
+  if (!sessione) return false;
+  if (typeof modalitaSessioneEffettiva === 'function') return modalitaSessioneEffettiva(sessione) === 'training';
+  return sessione.modalita === 'training';
+}
+
+function isSessioneTest(sessione) {
+  return !isSessioneTraining(sessione);
 }
 
 function getValoreCampoRaw(sessione, esercizioKey, scKey, campoKey) {
