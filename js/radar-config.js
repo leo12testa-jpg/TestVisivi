@@ -93,3 +93,83 @@ function getTestNamesForCategoria(categoria) {
   });
   return nomi;
 }
+
+
+function radarValoriCampo(sessioni, esercizioKey, campoKey) {
+  const esercizio = getEsercizioConfig(esercizioKey);
+  if (!esercizio) return [];
+  const campo = esercizio.campi.find((x) => x.key === campoKey);
+  if (!campo) return [];
+  const valori = [];
+
+  (sessioni || []).forEach((sessione) => {
+    const dati = sessione.esercizi?.[esercizioKey];
+    if (!dati) return;
+
+    if (esercizio.sottoCondizioni) {
+      esercizio.sottoCondizioni.forEach((sc) => {
+        const raw = dati[sc.key]?.[campoKey];
+        if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+      });
+    } else {
+      const raw = dati[campoKey];
+      if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+    }
+  });
+  return valori;
+}
+
+function radarStatisticheGlobali(sessioni) {
+  const stats = new Map();
+  CATEGORIE_RADAR.forEach((categoria) => {
+    categoria.campi.forEach((config) => {
+      const key = `${config.esercizio}::${config.campo}`;
+      if (stats.has(key)) return;
+      let valori = radarValoriCampo(sessioni, config.esercizio, config.campo);
+      if (config.assoluto) valori = valori.map(Math.abs);
+      stats.set(key, valori.length ? { min: Math.min(...valori), max: Math.max(...valori) } : null);
+    });
+  });
+  return stats;
+}
+
+function radarNormalizzaValore(valore, stat, direzione) {
+  if (!stat) return null;
+  if (stat.max === stat.min) return 50;
+  const quota = direzione === 'alto'
+    ? (valore - stat.min) / (stat.max - stat.min)
+    : (stat.max - valore) / (stat.max - stat.min);
+  return Math.max(0, Math.min(100, quota * 100));
+}
+
+function radarPunteggioCategoria(categoria, sessioni, stats) {
+  const valoriNormalizzati = [];
+  categoria.campi.forEach((config) => {
+    const stat = stats.get(`${config.esercizio}::${config.campo}`);
+    if (!stat) return;
+    let valori = radarValoriCampo(sessioni, config.esercizio, config.campo);
+    if (config.assoluto) valori = valori.map(Math.abs);
+    valori.forEach((valore) => {
+      const score = radarNormalizzaValore(valore, stat, config.direzione);
+      if (score !== null) valoriNormalizzati.push(score);
+    });
+  });
+  if (!valoriNormalizzati.length) return null;
+  return valoriNormalizzati.reduce((tot, valore) => tot + valore, 0) / valoriNormalizzati.length;
+}
+
+function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
+  const testsAtleta = (sessioniAtleta || []).filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  const testsGlobali = (tutteSessioni || []).filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  const stats = radarStatisticheGlobali(testsGlobali);
+  const righe = CATEGORIE_RADAR.map((categoria) => ({
+    categoria,
+    valore: radarPunteggioCategoria(categoria, testsAtleta, stats),
+  })).filter((riga) => riga.valore !== null);
+
+  return {
+    labels: righe.map((riga) => riga.categoria.nome),
+    valori: righe.map((riga) => Math.round(riga.valore * 10) / 10),
+    testNames: righe.map((riga) => getTestNamesForCategoria(riga.categoria)),
+  };
+}
