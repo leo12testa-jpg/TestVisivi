@@ -62,7 +62,7 @@ test('un Jet non standardizzato conserva il nome originale', () => {
     },
   };
   assert.equal(run('nomeTestSessione(input)'), 'TEST/ORIGINALE');
-  assert.match(run('riepilogoSessione(input)'), /Jet Program/);
+  assert.match(run('riepilogoSessione(input)'), /Valore: 1/);
 });
 
 
