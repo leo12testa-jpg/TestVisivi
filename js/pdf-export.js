@@ -72,9 +72,18 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   }
 
   const sessioni = (sessioniRaw || [])
-    .filter((s) => !isSessioneTraining(s))
+    .filter(isSessioneTest)
     .filter((s) => typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
     .sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
+
+  let tutteSessioniPerRadar = [];
+  if (typeof dbGetAllSessioni === 'function') {
+    try {
+      tutteSessioniPerRadar = (await dbGetAllSessioni()).filter(isSessioneTest);
+    } catch (_) {
+      tutteSessioniPerRadar = sessioni;
+    }
+  }
 
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -301,6 +310,40 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
     setInk();
   }
 
+  async function disegnaRadarTest() {
+    if (typeof radarDatiSintesi !== 'function' || typeof radarChartConfig !== 'function') return;
+    const radar = radarDatiSintesi(sessioni, tutteSessioniPerRadar);
+    if (!radar.labels.length) return;
+
+    titoloSezione('Radar prestazioni test', 'Sintesi 0-100 calcolata esclusivamente sulle valutazioni Test. Le sessioni Training sono escluse.');
+
+    if (radar.labels.length >= 3) {
+      const config = radarChartConfig(
+        radar.labels,
+        [{ label: 'Profilo test', data: radar.valori }],
+        radar.testNames
+      );
+      const img = await renderChartOffscreen(config, 900, 720);
+      const imgWidth = Math.min(usableWidth, 150);
+      const imgHeight = imgWidth * (720 / 900);
+      assicuraSpazio(imgHeight + 8);
+      const x = marginX + (usableWidth - imgWidth) / 2;
+      doc.addImage(img, 'PNG', x, y, imgWidth, imgHeight);
+      y += imgHeight + 7;
+    }
+
+    const righe = radar.labels.map((label, index) => [
+      label,
+      String(radar.valori[index]),
+      (radar.testNames[index] || []).join(', '),
+    ]);
+    disegnaTabella(
+      ['Area', 'Punteggio', 'Test associati'],
+      righe,
+      [42, 26, usableWidth - 68]
+    );
+  }
+
   async function disegnaCampoVisivoAvanzato(sessioniCompilate) {
     for (const s of sessioniCompilate) {
       const dati = s.esercizi?.campoVisivoAvanzato;
@@ -368,7 +411,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   doc.text('Report prestazioni visive', marginX, 23);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text('Valutazione individuale e andamento nel tempo', marginX, 30);
+  doc.text('Valutazioni Test, andamento nel tempo e radar prestazionale', marginX, 30);
   y = 51;
 
   doc.setTextColor(...C.navyDark);
@@ -436,6 +479,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   }
 
   await disegnaAllegati();
+  await disegnaRadarTest();
 
   for (const esercizio of ESERCIZI_CONFIG) {
     const compilate = sessioni.filter((s) => esercizioCompilato(esercizio, s.esercizi?.[esercizio.key]));
