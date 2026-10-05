@@ -99,8 +99,10 @@ function fakeFirebase(seed) {
     await page.locator('#ricerca').fill('');
     await page.waitForTimeout(200);
     await page.locator('a[href="./atleta.html?id=demo"]').click();
-    await page.waitForSelector('#stat-sessioni:text("3")');
+    await page.waitForSelector('#stat-sessioni:text("6")');
     assert.equal(await page.locator('#stat-training').innerText(), '1');
+    assert.match(await page.locator('#stat-test').innerText(), /18\/08\/2026/);
+    assert.match(await page.locator('#stat-ultima').innerText(), /20\/08\/2026/);
     assert.equal(await page.locator('#sessioni-recenti a').count(), 5);
     await overflow();
     await page.locator('#note-compact > summary').click();
@@ -193,8 +195,12 @@ function fakeFirebase(seed) {
     await overflow();
 
     await go('radar.html?id=demo');
-    assert.ok(await page.locator('#anno-radar option').count() >= 2);
-    assert.match(await page.locator('#andamento-test-annuale').innerText(), /Pro Action and Reaction Time/);
+    assert.equal(await page.locator('#anno-radar').count(), 0);
+    assert.equal(await page.locator('#periodo-a-da').count(), 0);
+    assert.equal(await page.locator('#periodo-b-da').count(), 0);
+    const radarLabels = await page.evaluate(() => Object.values(Chart.instances).flatMap((chart) => chart.config.type === 'radar' ? chart.data.labels : []));
+    assert.ok(radarLabels.includes('Pro Action / Reaction'));
+    assert.ok(radarLabels.includes('Memoria'));
     await page.screenshot({ path: `${out}/radar-desktop.png`, fullPage: true });
     await overflow();
 
@@ -210,7 +216,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar annuale', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar per singolo test', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
