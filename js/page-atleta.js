@@ -443,7 +443,7 @@ qs('#pdf-period-export').addEventListener('click', async (e) => {
   btn.disabled = true;
   btn.textContent = 'Generazione PDF...';
   try {
-    await esportaReportPdf(_atleta, selezionati);
+    await esportaReportPdf(_atleta, selezionati, { periodoDa: da, periodoA: a });
     qs('#pdf-period-dialog').close();
   } finally {
     btn.disabled = false;
