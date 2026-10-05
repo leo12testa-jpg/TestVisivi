@@ -113,14 +113,19 @@ function fakeFirebase(seed) {
     assert.match(await page.locator('#lista-osservazioni').innerText(), /Osservazione sintetica di prova/);
     await page.screenshot({ path: `${out}/profile-desktop.png`, fullPage: true });
 
-    const pdfDownloadPromise = page.waitForEvent('download');
     await page.locator('#btn-export-pdf').click();
+    await page.waitForSelector('#pdf-period-dialog[open]');
+    await page.locator('#pdf-period-da').fill('2025-01-01');
+    await page.locator('#pdf-period-a').fill('2026-12-31');
+    assert.match(await page.locator('#pdf-period-summary').innerText(), /Test verr/);
+    const pdfDownloadPromise = page.waitForEvent('download');
+    await page.locator('#pdf-period-export').click();
     const pdfDownload = await pdfDownloadPromise;
     const pdfPath = `${out}/synthetic-report.pdf`;
     await pdfDownload.saveAs(pdfPath);
     const pdfBytes = fs.readFileSync(pdfPath);
     assert.ok(pdfBytes.length > 10000, 'PDF non vuoto');
-    assert.equal(pdfBytes.subarray(0, 4).toString(), '%PDF', 'PDF valido');
+    assert.equal(pdfBytes.subarray(0, 4).toString(), '%PDF', 'PDF valido e filtrato per periodo');
 
     await page.locator('#link-tutte-sessioni').click();
     await page.waitForSelector('#lista-sessioni a');
@@ -201,6 +206,8 @@ function fakeFirebase(seed) {
     const radarLabels = await page.evaluate(() => Object.values(Chart.instances).flatMap((chart) => chart.config.type === 'radar' ? chart.data.labels : []));
     assert.ok(radarLabels.includes('Pro Action / Reaction'));
     assert.ok(radarLabels.includes('Memoria'));
+    assert.ok(await page.locator('#radar-canvas').isVisible());
+    assert.ok(await page.locator('.radar-test-summary-item').count() >= 2);
     await page.screenshot({ path: `${out}/radar-desktop.png`, fullPage: true });
     await overflow();
 
