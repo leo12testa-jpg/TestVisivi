@@ -117,19 +117,46 @@ function radarValoriCampo(sessioni, esercizioKey, campoKey) {
   return valori;
 }
 
-function radarStatCampo(tutteSessioni, testKey, campoKey) {
-  const valori = radarValoriCampo(tutteSessioni, testKey, campoKey);
-  if (!valori.length) return null;
-  return { min: Math.min(...valori), max: Math.max(...valori) };
+function radarDistribuzioneCampo(tutteSessioni, testKey, campoKey) {
+  return radarValoriCampo(tutteSessioni, testKey, campoKey)
+    .filter((v) => Number.isFinite(v))
+    .sort((a, b) => a - b);
 }
 
-function radarNormalizzaValore(valore, stat, direzione) {
-  if (!stat) return null;
-  if (stat.max === stat.min) return 50;
+/*
+ * Indice relativo 0-100 basato sul percentile interno dell'archivio.
+ * 50 = circa mediana dei Test osservati; valori alti = prestazione migliore.
+ * Non è un punteggio clinico/normativo: serve per confrontare rapidamente il
+ * profilo dell'atleta con i risultati Test presenti nell'archivio.
+ */
+function radarPercentileValore(valore, distribuzione, direzione) {
+  if (!Array.isArray(distribuzione) || !distribuzione.length) return null;
+  if (distribuzione.length === 1) return 50;
+
+  let minori = 0;
+  let uguali = 0;
+  let maggiori = 0;
+  distribuzione.forEach((v) => {
+    if (v < valore) minori++;
+    else if (v > valore) maggiori++;
+    else uguali++;
+  });
+
+  const n = distribuzione.length;
   const quota = direzione === 'alto'
-    ? (valore - stat.min) / (stat.max - stat.min)
-    : (stat.max - valore) / (stat.max - stat.min);
+    ? (minori + uguali * 0.5) / n
+    : (maggiori + uguali * 0.5) / n;
+
   return Math.max(0, Math.min(100, quota * 100));
+}
+
+function radarLivello(score) {
+  if (!Number.isFinite(score)) return '';
+  if (score >= 80) return 'Molto forte';
+  if (score >= 65) return 'Buono';
+  if (score >= 45) return 'Nella media';
+  if (score >= 30) return 'Da migliorare';
+  return 'Debole';
 }
 
 function radarChiaveTestSessione(sessione) {
@@ -183,9 +210,9 @@ function radarPunteggioTest(testKey, sessione, tutteSessioni) {
       }
       if (!valori.length) return;
 
-      const stat = radarStatCampo(tutteSessioni, testKey, campoKey);
+      const distribuzione = radarDistribuzioneCampo(tutteSessioni, testKey, campoKey);
       valori.forEach((valore) => {
-        const score = radarNormalizzaValore(valore, stat, direzione);
+        const score = radarPercentileValore(valore, distribuzione, direzione);
         if (score !== null) punteggi.push(score);
       });
     });
@@ -214,10 +241,12 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
     const valore = radarPunteggioTest(testKey, sessione, testsGlobali);
     if (valore === null) return null;
 
+    const score = Math.round(valore);
     return {
       key: testKey,
       nome: TEST_STANDARD_LABELS[testKey] || getEsercizioConfig(testKey)?.label || testKey,
-      valore: Math.round(valore * 10) / 10,
+      valore: score,
+      livello: radarLivello(score),
       data: sessione.data || '',
       metriche: sessione.esercizi?.[testKey]
         ? metricheEsercizioSessione(sessione, getEsercizioConfig(testKey), false)
