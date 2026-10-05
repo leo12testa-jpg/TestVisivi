@@ -187,6 +187,8 @@ async function caricaSessioni() {
           el('strong', { text: m.valore }),
         ])
       )));
+    } else {
+      contenuto.push(el('p', { class: 'meta', text: riepilogoSessione(s) }));
     }
     recenti.appendChild(el('a', {
       class: 'list-item session-list-item', href: `./sessione.html?atletaId=${atletaId}&sessioneId=${s.id}`,
