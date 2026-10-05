@@ -1263,3 +1263,128 @@ th {
     width: 100%;
   }
 }
+
+
+/* Test / Training e diario atleta */
+.session-type-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.session-type-tabs button {
+  min-width: 130px;
+}
+
+.session-type-tabs span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
+  font-size: .78rem;
+}
+
+.athlete-observations {
+  margin-top: 18px;
+}
+
+.section-heading-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.observation-entry-grid {
+  grid-template-columns: minmax(150px, .35fr) minmax(0, 1.65fr);
+  align-items: end;
+}
+
+.observation-text-field textarea {
+  min-height: 86px;
+}
+
+.observation-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.observation-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--accent) 4%);
+}
+
+.observation-content {
+  min-width: 0;
+}
+
+.observation-content p {
+  margin: 5px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.observation-delete {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
+.radar-year-tests {
+  margin-top: 24px;
+}
+
+.radar-test-year-card {
+  margin-top: 12px;
+}
+
+.radar-test-year-card h3 {
+  margin: 0 0 10px;
+}
+
+.radar-test-date-row {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.radar-test-date-row:first-of-type {
+  border-top: 0;
+}
+
+@media (max-width: 680px) {
+  .session-type-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .session-type-tabs button {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .observation-entry-grid,
+  .radar-test-date-row {
+    grid-template-columns: 1fr;
+  }
+
+  .observation-item {
+    flex-direction: column;
+  }
+
+  .observation-delete {
+    align-self: flex-start;
+  }
+}
