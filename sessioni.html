@@ -16,7 +16,11 @@
     <h1 id="titolo-pagina">Tutte le sessioni</h1>
   </header>
   <main>
-    <section class="page-intro compact"><div><p class="eyebrow">STORICO VALUTAZIONI</p><h2>Ogni test racconta un progresso.</h2><p class="intro-description">Cerca un test, filtra per periodo e apri i risultati completi.</p></div></section>
+    <section class="page-intro compact"><div><p class="eyebrow">STORICO</p><h2 id="storico-heading">Test</h2><p class="intro-description" id="storico-description">Valutazioni periodiche ufficiali.</p></div></section>
+    <div class="session-type-tabs" role="group" aria-label="Tipo di sessione">
+      <button type="button" id="tab-test">Test <span id="count-test">0</span></button>
+      <button type="button" class="secondary" id="tab-training">Training <span id="count-training">0</span></button>
+    </div>
     <div class="card">
       <div class="field">
         <label for="filtro-titolo">Cerca per titolo</label>
