@@ -16,23 +16,16 @@
     <h1 id="titolo-pagina">Radar</h1>
   </header>
   <main>
-    <div class="card">
-      <div class="field">
-        <label for="anno-radar">Anno</label>
+    <section class="radar-toolbar">
+      <div>
+        <p class="eyebrow">RADAR ANNUALE</p>
+        <h2>Prestazioni dei test</h2>
+      </div>
+      <label class="radar-year-picker" for="anno-radar">
+        <span>Anno</span>
         <select id="anno-radar"></select>
-      </div>
-      <p class="section-label">Periodo A</p>
-      <div class="field-grid">
-        <div class="field"><label for="periodo-a-da">Da</label><input type="date" id="periodo-a-da" /></div>
-        <div class="field"><label for="periodo-a-a">A</label><input type="date" id="periodo-a-a" /></div>
-      </div>
-
-      <p class="section-label" style="margin-top:16px;">Periodo B (opzionale, per confronto)</p>
-      <div class="field-grid">
-        <div class="field"><label for="periodo-b-da">Da</label><input type="date" id="periodo-b-da" /></div>
-        <div class="field"><label for="periodo-b-a">A</label><input type="date" id="periodo-b-a" /></div>
-      </div>
-    </div>
+      </label>
+    </section>
 
     <div id="contenuto-radar"></div>
   </main>
