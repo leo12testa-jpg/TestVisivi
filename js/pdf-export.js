@@ -55,7 +55,7 @@ function renderChartOffscreen(config, widthPx, heightPx) {
   });
 }
 
-async function esportaReportPdf(atletaRaw, sessioniRaw) {
+async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
 
@@ -445,7 +445,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   doc.text('Report prestazioni visive', marginX, 23);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.text('Valutazioni Test, andamento nel tempo e radar prestazionale', marginX, 30);
+  doc.text('Solo Test - andamento nel tempo e radar prestazionale', marginX, 30);
   y = 51;
 
   doc.setTextColor(...C.navyDark);
@@ -458,6 +458,9 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
   doc.setFontSize(8.5);
   const sottotitoliAtleta = [
     squadraNome ? 'Squadra: ' + squadraNome : '',
+    opzioni.periodoDa && opzioni.periodoA
+      ? 'Periodo Test: ' + formatDataIt(opzioni.periodoDa) + ' - ' + formatDataIt(opzioni.periodoA)
+      : '',
     'Report generato il ' + formatDataIt(oggiIso()),
   ].filter(Boolean);
   sottotitoliAtleta.forEach((riga) => {
