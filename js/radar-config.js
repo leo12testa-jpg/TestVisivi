@@ -132,9 +132,28 @@ function radarNormalizzaValore(valore, stat, direzione) {
   return Math.max(0, Math.min(100, quota * 100));
 }
 
+function radarChiaveTestSessione(sessione) {
+  if (!sessione) return null;
+  if (sessione.jetProgramStandardKey && TEST_STANDARD_KEYS.includes(sessione.jetProgramStandardKey)) {
+    return sessione.jetProgramStandardKey;
+  }
+
+  const compilato = TEST_STANDARD_KEYS.find((key) =>
+    esercizioCompilato(getEsercizioConfig(key), sessione.esercizi?.[key])
+  );
+  if (compilato) return compilato;
+
+  if (typeof chiaveStandardDaNomeProtocollo === 'function') {
+    const daNome = chiaveStandardDaNomeProtocollo(sessione);
+    if (daNome && TEST_STANDARD_KEYS.includes(daNome)) return daNome;
+  }
+
+  return null;
+}
+
 function radarUltimaSessioneTest(sessioni, testKey) {
   return (sessioni || [])
-    .filter((s) => esercizioCompilato(getEsercizioConfig(testKey), s.esercizi?.[testKey]))
+    .filter((s) => radarChiaveTestSessione(s) === testKey)
     .sort((a, b) =>
       String(b.data || '').localeCompare(String(a.data || '')) ||
       String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))
@@ -145,34 +164,42 @@ function radarPunteggioTest(testKey, sessione, tutteSessioni) {
   const config = TEST_RADAR_CONFIG[testKey] || [];
   const esercizio = getEsercizioConfig(testKey);
   const dati = sessione?.esercizi?.[testKey];
-  if (!esercizio || !dati) return null;
-
   const punteggi = [];
-  config.forEach(({ campo: campoKey, direzione }) => {
-    const campo = esercizio.campi.find((x) => x.key === campoKey);
-    if (!campo) return;
 
-    const valori = [];
-    if (esercizio.sottoCondizioni) {
-      esercizio.sottoCondizioni.forEach((sc) => {
-        const raw = dati[sc.key]?.[campoKey];
+  if (esercizio && dati) {
+    config.forEach(({ campo: campoKey, direzione }) => {
+      const campo = esercizio.campi.find((x) => x.key === campoKey);
+      if (!campo) return;
+
+      const valori = [];
+      if (esercizio.sottoCondizioni) {
+        esercizio.sottoCondizioni.forEach((sc) => {
+          const raw = dati[sc.key]?.[campoKey];
+          if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+        });
+      } else {
+        const raw = dati[campoKey];
         if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+      }
+      if (!valori.length) return;
+
+      const stat = radarStatCampo(tutteSessioni, testKey, campoKey);
+      valori.forEach((valore) => {
+        const score = radarNormalizzaValore(valore, stat, direzione);
+        if (score !== null) punteggi.push(score);
       });
-    } else {
-      const raw = dati[campoKey];
-      if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
-    }
-    if (!valori.length) return;
-
-    const stat = radarStatCampo(tutteSessioni, testKey, campoKey);
-    valori.forEach((valore) => {
-      const score = radarNormalizzaValore(valore, stat, direzione);
-      if (score !== null) punteggi.push(score);
     });
-  });
+  }
 
-  if (!punteggi.length) return null;
-  return punteggi.reduce((tot, valore) => tot + valore, 0) / punteggi.length;
+  if (punteggi.length) {
+    return punteggi.reduce((tot, valore) => tot + valore, 0) / punteggi.length;
+  }
+
+  // Il test esiste e ha valori reali ma non dispone ancora di campi confrontabili:
+  // lo manteniamo visibile nel radar con un valore neutro, senza inventare misure.
+  const haDatiStandard = esercizio && esercizioCompilato(esercizio, dati);
+  const haDatiOriginali = typeof jetOriginaleHaRisultatiReali === 'function' && jetOriginaleHaRisultatiReali(sessione);
+  return (haDatiStandard || haDatiOriginali) ? 50 : null;
 }
 
 function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
@@ -192,7 +219,9 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
       nome: TEST_STANDARD_LABELS[testKey] || getEsercizioConfig(testKey)?.label || testKey,
       valore: Math.round(valore * 10) / 10,
       data: sessione.data || '',
-      metriche: metricheEsercizioSessione(sessione, getEsercizioConfig(testKey), false),
+      metriche: sessione.esercizi?.[testKey]
+        ? metricheEsercizioSessione(sessione, getEsercizioConfig(testKey), false)
+        : (typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(sessione, 4) : []),
     };
   }).filter(Boolean);
 
