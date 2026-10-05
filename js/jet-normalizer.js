@@ -205,8 +205,17 @@ function nomeTestSessione(sessione) {
  * marcatore storico che distingue i Test e non fa parte del nome visualizzato.
  */
 function nomeStoricoSessione(sessione) {
+  const test = typeof jetTest === 'function' ? jetTest(sessione) : null;
+  if (test) return test.label;
+
+  const compilati = ESERCIZI_CONFIG.filter((e) =>
+    esercizioCompilato(e, sessione?.esercizi?.[e.key])
+  );
+  if (compilati.length) return compilati.map((e) => e.label).join(' · ');
+
   const originale = nomeOriginaleSessioneJet(sessione);
   if (originale) return originale.replace(/^[xX]\/?/u, '');
+
   return nomeTestSessione(sessione);
 }
 
