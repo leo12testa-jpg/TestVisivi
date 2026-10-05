@@ -80,13 +80,21 @@ function aggiornaTipoStorico() {
   renderLista();
 }
 
+function azzeraFiltriStorico() {
+  qs('#filtro-titolo').value = '';
+  qs('#filtro-da').value = '';
+  qs('#filtro-a').value = '';
+}
+
 qs('#tab-test').addEventListener('click', () => {
   _tipo = 'test';
+  azzeraFiltriStorico();
   aggiornaTipoStorico();
 });
 
 qs('#tab-training').addEventListener('click', () => {
   _tipo = 'training';
+  azzeraFiltriStorico();
   aggiornaTipoStorico();
 });
 
