@@ -312,10 +312,19 @@ async function esportaReportPdf(atletaRaw, sessioniRaw) {
 
   async function disegnaRadarTest() {
     if (typeof radarDatiSintesi !== 'function' || typeof radarChartConfig !== 'function') return;
-    const radar = radarDatiSintesi(sessioni, tutteSessioniPerRadar);
+    const anni = sessioni.map((s) => String(s.data || '').slice(0, 4)).filter((a) => /^\d{4}$/.test(a)).sort();
+    const anno = anni.length ? anni[anni.length - 1] : '';
+    const sessioniAnno = anno ? sessioni.filter((s) => String(s.data || '').startsWith(anno + '-')) : sessioni;
+    const globaliAnno = anno
+      ? tutteSessioniPerRadar.filter((s) => String(s.data || '').startsWith(anno + '-'))
+      : tutteSessioniPerRadar;
+    const radar = radarDatiSintesi(sessioniAnno, globaliAnno.length ? globaliAnno : tutteSessioniPerRadar);
     if (!radar.labels.length) return;
 
-    titoloSezione('Radar prestazioni test', 'Sintesi 0-100 calcolata esclusivamente sulle valutazioni Test. Le sessioni Training sono escluse.');
+    titoloSezione(
+      anno ? `Radar prestazioni test - ${anno}` : 'Radar prestazioni test',
+      'Sintesi 0-100 calcolata esclusivamente sulle valutazioni Test. Le sessioni Training sono escluse.'
+    );
 
     if (radar.labels.length >= 3) {
       const config = radarChartConfig(
