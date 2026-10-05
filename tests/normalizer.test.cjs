@@ -105,3 +105,40 @@ test('stringhe vuote o spazi non rendono un test compilato', () => {
   context.input = { esercizi: { velocitaRiconoscimento: { tempoTotale: '   ', quantitaNumeri: '' } } };
   assert.equal(run('sessioneHaRisultatiVisibili(input)'), false);
 });
+
+
+test('classifica i report Jet x come test e tutti gli altri come training', () => {
+  context.input = {
+    jetProgramReportId: 1,
+    jetProgramNomeOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix' } },
+    modalita: 'training',
+  };
+  assert.equal(run('modalitaSessioneEffettiva(input)'), 'test');
+
+  context.input = {
+    jetProgramReportId: 2,
+    jetProgramNomeOriginale: '5E training di equilibrio 360°',
+    esercizi: { jetProgramOriginale: { nomeTestOriginale: '5E training di equilibrio 360°' } },
+    modalita: 'test',
+  };
+  assert.equal(run('modalitaSessioneEffettiva(input)'), 'training');
+
+  context.input = { modalita: 'training', esercizi: { proActionReaction: { errori: 0 } } };
+  assert.equal(run('modalitaSessioneEffettiva(input)'), 'training');
+});
+
+test('risultati originali Jet reali rendono visibile la sessione anche senza mapping standard', () => {
+  context.input = {
+    jetProgramNomeOriginale: '5E training',
+    esercizi: {
+      jetProgramOriginale: {
+        nomeTestOriginale: '5E training',
+        risultatiOriginali: { Errori: ['0'], 'Tempo totale': ['47.11'] },
+      },
+    },
+  };
+  assert.equal(run('jetOriginaleHaRisultatiReali(input)'), true);
+  assert.equal(run('sessioneHaRisultatiVisibili(input)'), true);
+  assert.match(run('riepilogoSessione(input)'), /Errori: 0/);
+});
