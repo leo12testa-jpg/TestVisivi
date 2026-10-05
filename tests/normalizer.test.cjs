@@ -144,13 +144,17 @@ test('risultati originali Jet reali rendono visibile la sessione anche senza map
 });
 
 
-test('usa lo stesso nome di protocollo nello storico e rimuove solo il marcatore x', () => {
+test('usa i nomi standard nello storico Test e Training quando il test è riconosciuto', () => {
   context.input = {
     jetProgramReportId: 1,
+    jetProgramStandardKey: 'localizzazioneSpaziale',
     jetProgramNomeOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix',
-    esercizi: { jetProgramOriginale: { nomeTestOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix', risultatiOriginali: { Errori: ['0'] } } },
+    esercizi: {
+      localizzazioneSpaziale: { tempoReazioneMedio: 500 },
+      jetProgramOriginale: { nomeTestOriginale: 'xS/PAT/60s/120spot/5cm/0,7s/Fix', risultatiOriginali: { Errori: ['0'] } },
+    },
   };
-  assert.equal(run('nomeStoricoSessione(input)'), 'S/PAT/60s/120spot/5cm/0,7s/Fix');
+  assert.equal(run('nomeStoricoSessione(input)'), 'Localizzazione spaziale (Equilibrio statico)');
 
   context.input = {
     jetProgramReportId: 2,
