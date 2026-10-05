@@ -1388,3 +1388,164 @@ th {
     align-self: flex-start;
   }
 }
+
+
+/* Profilo atleta: note compatte accanto al nome */
+.athlete-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.athlete-title-row h2 {
+  margin-bottom: 8px;
+}
+
+.athlete-notes-compact {
+  position: relative;
+}
+
+.athlete-notes-compact > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: .76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.athlete-notes-compact > summary::-webkit-details-marker {
+  display: none;
+}
+
+.athlete-notes-compact[open] > summary {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--accent-soft);
+}
+
+.athlete-notes-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  width: min(560px, calc(100vw - 48px));
+  max-height: 520px;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgba(20, 48, 65, .18);
+}
+
+.athlete-notes-popover .observation-entry-grid {
+  grid-template-columns: 120px minmax(260px, 1fr);
+  gap: 10px;
+}
+
+.athlete-notes-popover .observation-text-field textarea {
+  min-height: 64px;
+}
+
+.observation-list.compact {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.observation-list.compact .observation-item {
+  padding: 10px 12px;
+}
+
+.observation-list.compact .observation-content p {
+  margin-top: 3px;
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.observation-list.compact .observation-delete {
+  padding: 7px 10px;
+  font-size: .72rem;
+}
+
+/* Storico raggruppato per nome protocollo */
+.history-name-group {
+  margin: 0 0 24px;
+}
+
+.history-name-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 9px;
+  padding: 0 4px;
+}
+
+.history-name-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.history-name-count {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.history-group-list {
+  display: grid;
+  gap: 8px;
+}
+
+.history-value-row {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.history-value-row .mini-metrics {
+  margin-top: 7px;
+}
+
+.duplicate-count-badge {
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  color: var(--accent);
+}
+
+@media (max-width: 680px) {
+  .athlete-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .athlete-notes-popover {
+    position: fixed;
+    top: 84px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100vh - 110px);
+  }
+
+  .athlete-notes-popover .observation-entry-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .history-name-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+}
