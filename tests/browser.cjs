@@ -206,6 +206,15 @@ function fakeFirebase(seed) {
     const radarLabels = await page.evaluate(() => Object.values(Chart.instances).flatMap((chart) => chart.config.type === 'radar' ? chart.data.labels : []));
     assert.ok(radarLabels.some((label) => String(label).startsWith('Pro Action / Reaction · ')));
     assert.ok(radarLabels.some((label) => String(label).startsWith('Memoria · ')));
+    const radarNames = radarLabels.map((label) => String(label).split(' · ')[0]);
+    assert.ok(radarNames.every((name) => [
+      'Attenzione separata',
+      'Localizzazione spaziale',
+      'Memoria',
+      'Velocità e precisione in affollamento',
+      'Pro Action / Reaction',
+    ].includes(name)));
+    assert.ok(radarNames.length <= 5);
     assert.match(await page.locator('.radar-score-pill').first().innerText(), /^\d+\/100$/);
     assert.ok(await page.locator('#radar-canvas').isVisible());
     assert.ok(await page.locator('.radar-test-summary-item').count() >= 2);
