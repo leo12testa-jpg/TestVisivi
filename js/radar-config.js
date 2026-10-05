@@ -170,6 +170,15 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
   return {
     labels: righe.map((riga) => riga.categoria.nome),
     valori: righe.map((riga) => Math.round(riga.valore * 10) / 10),
-    testNames: righe.map((riga) => getTestNamesForCategoria(riga.categoria)),
+    testNames: righe.map((riga) => {
+      const nomi = [];
+      riga.categoria.campi.forEach((config) => {
+        if (!radarValoriCampo(testsAtleta, config.esercizio, config.campo).length) return;
+        const esercizio = getEsercizioConfig(config.esercizio);
+        const nome = esercizio ? esercizio.label : config.esercizio;
+        if (!nomi.includes(nome)) nomi.push(nome);
+      });
+      return nomi;
+    }),
   };
 }
