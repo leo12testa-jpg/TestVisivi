@@ -211,6 +211,56 @@ function montaIndicatoreConnessione() {
 }
 montaIndicatoreConnessione();
 
+function montaPulsanteAggiornaApp() {
+  const header = document.querySelector('header.app-header');
+  if (!header || document.querySelector('#btn-aggiorna-app')) return;
+
+  const btn = el('button', {
+    type: 'button',
+    id: 'btn-aggiorna-app',
+    class: 'header-update-btn',
+    text: '↻ Aggiorna',
+    title: 'Scarica l’ultima versione dell’app',
+  });
+
+  btn.addEventListener('click', async () => {
+    if (!navigator.onLine) {
+      alert('Per aggiornare l’app serve una connessione internet.');
+      return;
+    }
+
+    const testoOriginale = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Aggiornamento…';
+
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.update().catch(() => {})));
+      }
+
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys
+            .filter((key) => key.startsWith('jetprogram-cache-'))
+            .map((key) => caches.delete(key))
+        );
+      }
+
+      window.location.reload();
+    } catch (err) {
+      console.warn('Aggiornamento app non completato:', err);
+      btn.disabled = false;
+      btn.textContent = testoOriginale;
+      alert('Aggiornamento non riuscito. Riprova tra qualche secondo.');
+    }
+  });
+
+  header.appendChild(btn);
+}
+montaPulsanteAggiornaApp();
+
 function slug(str) {
   return (str || '')
     .toString()
