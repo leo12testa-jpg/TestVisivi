@@ -255,28 +255,34 @@ async function dbRiclassificaSessioniJet() {
   }
 
   const snap = await _sessioniCol().get();
-  let aggiornate = 0;
+  const modifiche = [];
   let test = 0;
   let training = 0;
 
-  for (const doc of snap.docs) {
+  snap.docs.forEach((doc) => {
     const sessione = { ...doc.data(), id: doc.id };
-    if (!haDatiJet(sessione)) continue;
+    if (!haDatiJet(sessione)) return;
 
     const modalita = modalitaSessioneEffettiva(sessione);
     if (modalita === 'training') training++;
     else test++;
 
-    if (sessione.modalita !== modalita) {
-      await _sessioniCol().doc(doc.id).set({
+    if (sessione.modalita !== modalita) modifiche.push({ id: doc.id, modalita });
+  });
+
+  const dimensioneLotto = 400;
+  for (let i = 0; i < modifiche.length; i += dimensioneLotto) {
+    const batch = firebase.firestore().batch();
+    modifiche.slice(i, i + dimensioneLotto).forEach(({ id, modalita }) => {
+      batch.set(_sessioniCol().doc(id), {
         modalita,
         updatedAt: new Date().toISOString(),
       }, { merge: true });
-      aggiornate++;
-    }
+    });
+    await batch.commit();
   }
 
-  return { aggiornate, test, training };
+  return { aggiornate: modifiche.length, test, training };
 }
 
 async function dbPulisciTestVuoti() {
