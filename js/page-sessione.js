@@ -132,7 +132,9 @@ function mostraOriginali(sessione) {
   container.appendChild(el('p', { class: 'eyebrow', text: 'RISULTATI SESSIONE' }));
   container.appendChild(el('h2', {
     class: 'result-title',
-    text: compilati.length === 1 ? compilati[0].label : (compilati.length ? 'Risultati dei test' : nomeTestSessione(sessione)),
+    text: haDatiJet(sessione)
+      ? nomeStoricoSessione(sessione)
+      : (compilati.length === 1 ? compilati[0].label : (compilati.length ? 'Risultati dei test' : nomeTestSessione(sessione))),
   }));
   container.appendChild(el('p', {
     class: 'result-description',
