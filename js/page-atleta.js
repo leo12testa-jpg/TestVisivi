@@ -181,16 +181,16 @@ async function caricaSessioni() {
 
   qs('#stat-sessioni').textContent = String(new Set(testAnno.map((s) => s.data).filter(Boolean)).size);
   qs('#stat-training').textContent = String(new Set(trainingAnno.map((s) => s.data).filter(Boolean)).size);
-  qs('#stat-test').textContent = String(new Set(testAnno.map((s) => nomeTestSessione(s))).size);
+  qs('#stat-test').textContent = String(new Set(testAnno.map((s) => nomeStoricoSessione(s))).size);
   qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
 
   const recenti = qs('#sessioni-recenti');
   recenti.innerHTML = '';
   [..._sessioni].reverse().slice(0, 5).forEach((s) => {
-    const metriche = metrichePrincipaliSessione(s).slice(0, 3);
+    const metriche = metricheStoricoSessione(s, 3);
     const contenuto = [
       el('span', { class: 'eyebrow', text: formatDataIt(s.data) }),
-      el('div', { class: 'session-title', text: nomeTestSessione(s) }),
+      el('div', { class: 'session-title', text: nomeStoricoSessione(s) }),
     ];
     if (metriche.length) {
       contenuto.push(el('div', { class: 'mini-metrics compact' }, metriche.map((m) =>
@@ -221,6 +221,8 @@ function renderOsservazioni() {
     String(b.data || '').localeCompare(String(a.data || '')) ||
     String(b.createdAt || '').localeCompare(String(a.createdAt || ''))
   );
+  const count = qs('#note-count');
+  if (count) count.textContent = String(items.length);
 
   if (!items.length) {
     container.appendChild(el('p', { class: 'empty-state compact', text: 'Nessuna osservazione annotata.' }));
