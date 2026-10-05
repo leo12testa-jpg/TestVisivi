@@ -36,7 +36,7 @@ function renderLista() {
   filtrate.slice(0, _limite).forEach((s) => {
     const metriche = metrichePrincipaliSessione(s).slice(0, 3);
     const top = [el('time', { class: 'session-date', text: formatDataIt(s.data) })];
-    if (isSessioneTraining(s)) top.push(el('span', { class: 'badge', text: 'Allenamento' }));
+    if (isSessioneTraining(s)) top.push(el('span', { class: 'badge', text: 'Training' }));
 
     const contenuto = [
       el('div', { class: 'session-list-top' }, top),
