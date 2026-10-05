@@ -191,7 +191,12 @@ async function caricaSessioni() {
 
   const recenti = qs('#sessioni-recenti');
   recenti.innerHTML = '';
-  [..._sessioni].reverse().slice(0, 5).forEach((s) => {
+  const viste = new Map();
+  [..._sessioni].reverse().forEach((s) => {
+    const chiave = [s.data || '', nomeStoricoSessione(s).toLowerCase(), firmaValoriStorico(s)].join('||');
+    if (!viste.has(chiave)) viste.set(chiave, s);
+  });
+  [...viste.values()].slice(0, 5).forEach((s) => {
     const metriche = metricheStoricoSessione(s, 3);
     const contenuto = [
       el('span', { class: 'eyebrow', text: formatDataIt(s.data) }),
