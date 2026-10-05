@@ -197,6 +197,48 @@ function nomeTestSessione(sessione) {
     (originale && originale.tipoTest) || sessione.titolo || 'Sessione';
 }
 
+
+/*
+ * Nome uniforme usato negli storici Test/Training.
+ * Per Jet Program mostriamo sempre il nome originale del protocollo, così Test e
+ * Training seguono la stessa logica di denominazione. La "x" iniziale è solo il
+ * marcatore storico che distingue i Test e non fa parte del nome visualizzato.
+ */
+function nomeStoricoSessione(sessione) {
+  const originale = nomeOriginaleSessioneJet(sessione);
+  if (originale) return originale.replace(/^[xX](?=[A-Za-z0-9])/u, '');
+  return nomeTestSessione(sessione);
+}
+
+function metricheStoricoSessione(sessione, limite = 6) {
+  let metriche = typeof metrichePrincipaliSessione === 'function'
+    ? metrichePrincipaliSessione(sessione)
+    : [];
+  if (!metriche.length) metriche = metricheOriginaliJet(sessione, limite);
+  return metriche.slice(0, limite);
+}
+
+function jsonStabileStorico(value) {
+  if (Array.isArray(value)) return '[' + value.map(jsonStabileStorico).join(',') + ']';
+  if (value && typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map((key) =>
+      JSON.stringify(key) + ':' + jsonStabileStorico(value[key])
+    ).join(',') + '}';
+  }
+  return JSON.stringify(value);
+}
+
+function firmaValoriStorico(sessione) {
+  const originali = risultatiOriginaliJet(sessione);
+  if (originali && Object.values(originali).some(jetValoreReale)) return jsonStabileStorico(originali);
+
+  const esercizi = sessione?.esercizi && typeof sessione.esercizi === 'object'
+    ? { ...sessione.esercizi }
+    : {};
+  delete esercizi.jetProgramOriginale;
+  return jsonStabileStorico(esercizi);
+}
+
 function riepilogoSessione(sessione) {
   const metriche = typeof metrichePrincipaliSessione === 'function' ? metrichePrincipaliSessione(sessione) : [];
   if (metriche.length) return metriche.slice(0, 3).map((m) => `${m.label}: ${m.valore}`).join(' · ');
