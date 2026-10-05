@@ -167,9 +167,21 @@ async function caricaSessioni() {
   _sessioni = tutte.filter(isSessioneTest);
   _training = tutte.filter(isSessioneTraining);
 
-  qs('#stat-sessioni').textContent = String(_sessioni.length);
-  qs('#stat-training').textContent = String(_training.length);
-  qs('#stat-test').textContent = String(new Set(_sessioni.map((s) => nomeTestSessione(s))).size);
+  const anni = tutte
+    .map((s) => String(s.data || '').slice(0, 4))
+    .filter((anno) => /^\d{4}$/.test(anno))
+    .sort();
+  const annoRiferimento = anni.length ? anni[anni.length - 1] : '';
+  const testAnno = annoRiferimento ? _sessioni.filter((s) => String(s.data || '').startsWith(annoRiferimento + '-')) : _sessioni;
+  const trainingAnno = annoRiferimento ? _training.filter((s) => String(s.data || '').startsWith(annoRiferimento + '-')) : _training;
+
+  qs('#label-stat-sessioni').textContent = annoRiferimento ? `Giornate test ${annoRiferimento}` : 'Giornate test';
+  qs('#label-stat-training').textContent = annoRiferimento ? `Giornate training ${annoRiferimento}` : 'Giornate training';
+  qs('#label-stat-test').textContent = annoRiferimento ? `Test diversi ${annoRiferimento}` : 'Test diversi';
+
+  qs('#stat-sessioni').textContent = String(new Set(testAnno.map((s) => s.data).filter(Boolean)).size);
+  qs('#stat-training').textContent = String(new Set(trainingAnno.map((s) => s.data).filter(Boolean)).size);
+  qs('#stat-test').textContent = String(new Set(testAnno.map((s) => nomeTestSessione(s))).size);
   qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
 
   const recenti = qs('#sessioni-recenti');
