@@ -169,9 +169,7 @@ async function caricaSessioni() {
 
   qs('#stat-sessioni').textContent = String(_sessioni.length);
   qs('#stat-training').textContent = String(_training.length);
-  qs('#stat-test').textContent = String(new Set(_sessioni.flatMap((s) =>
-    ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, s.esercizi?.[e.key])).map((e) => e.key)
-  )).size);
+  qs('#stat-test').textContent = String(new Set(_sessioni.map((s) => nomeTestSessione(s))).size);
   qs('#stat-ultima').textContent = _sessioni.length ? formatDataIt(_sessioni[_sessioni.length - 1].data) : '—';
 
   const recenti = qs('#sessioni-recenti');
