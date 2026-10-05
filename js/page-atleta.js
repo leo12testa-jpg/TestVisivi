@@ -167,17 +167,22 @@ async function caricaSessioni() {
   _sessioni = tutte.filter(isSessioneTest);
   _training = tutte.filter(isSessioneTraining);
 
-  const anni = tutte
-    .map((s) => String(s.data || '').slice(0, 4))
-    .filter((anno) => /^\d{4}$/.test(anno))
-    .sort();
-  const annoRiferimento = anni.length ? anni[anni.length - 1] : '';
-  const testAnno = annoRiferimento ? _sessioni.filter((s) => String(s.data || '').startsWith(annoRiferimento + '-')) : _sessioni;
-  const trainingAnno = annoRiferimento ? _training.filter((s) => String(s.data || '').startsWith(annoRiferimento + '-')) : _training;
+  const ultimoAnno = (sessioni) => {
+    const anni = sessioni
+      .map((s) => String(s.data || '').slice(0, 4))
+      .filter((anno) => /^\d{4}$/.test(anno))
+      .sort();
+    return anni.length ? anni[anni.length - 1] : '';
+  };
 
-  qs('#label-stat-sessioni').textContent = annoRiferimento ? `Giornate test ${annoRiferimento}` : 'Giornate test';
-  qs('#label-stat-training').textContent = annoRiferimento ? `Giornate training ${annoRiferimento}` : 'Giornate training';
-  qs('#label-stat-test').textContent = annoRiferimento ? `Test diversi ${annoRiferimento}` : 'Test diversi';
+  const annoTest = ultimoAnno(_sessioni);
+  const annoTraining = ultimoAnno(_training);
+  const testAnno = annoTest ? _sessioni.filter((s) => String(s.data || '').startsWith(annoTest + '-')) : _sessioni;
+  const trainingAnno = annoTraining ? _training.filter((s) => String(s.data || '').startsWith(annoTraining + '-')) : _training;
+
+  qs('#label-stat-sessioni').textContent = annoTest ? `Giornate test ${annoTest}` : 'Giornate test';
+  qs('#label-stat-training').textContent = annoTraining ? `Giornate training ${annoTraining}` : 'Giornate training';
+  qs('#label-stat-test').textContent = annoTest ? `Test diversi ${annoTest}` : 'Test diversi';
 
   qs('#stat-sessioni').textContent = String(new Set(testAnno.map((s) => s.data).filter(Boolean)).size);
   qs('#stat-training').textContent = String(new Set(trainingAnno.map((s) => s.data).filter(Boolean)).size);
