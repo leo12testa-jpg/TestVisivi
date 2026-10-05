@@ -65,7 +65,9 @@ function getValoreCampoGruppo(sessione, group, campo) {
   if (!scope) return null;
   const v = scope[campo.key];
   if (v === undefined || v === null || v === '' || !valoreCampoValido(campo, v)) return null;
-  return jetNumero(v);
+  const n = jetNumero(v);
+  if (n === null) return null;
+  return campo.unit === 'ms' ? n / 1000 : n;
 }
 
 /** Sessioni (gia' ordinate per data) che hanno almeno un valore per il gruppo dato. */
