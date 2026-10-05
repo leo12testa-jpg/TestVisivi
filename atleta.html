@@ -21,17 +21,42 @@
       <a class="btn secondary" id="link-grafici" href="#" style="text-decoration:none;">📈 Grafici</a>
       <a class="btn secondary" id="link-radar" href="#" style="text-decoration:none;">🎯 Radar</a>
       <button type="button" id="btn-test">+ Nuovo test</button>
-      <a class="btn link" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Vedi sessioni passate</a>
-      <button type="button" class="secondary" id="btn-training">Training</button>
+      <a class="btn link" id="link-tutte-sessioni" href="#" style="text-decoration:none;">Storico test</a>
+      <a class="btn link" id="link-training-storico" href="#" style="text-decoration:none;">Storico training</a>
+      <button type="button" class="secondary" id="btn-training">+ Nuovo training</button>
       <button type="button" class="secondary" id="btn-export-pdf">⬇ Esporta PDF</button>
     </div>
 
     <div class="stats-grid">
-      <div class="stat-card"><span>Sessioni test</span><strong id="stat-sessioni">—</strong></div>
-      <div class="stat-card"><span>Test con risultati</span><strong id="stat-test">—</strong></div>
-      <div class="stat-card"><span>Ultima valutazione</span><strong id="stat-ultima">—</strong></div>
+      <div class="stat-card"><span>Test eseguiti</span><strong id="stat-sessioni">—</strong></div>
+      <div class="stat-card"><span>Training</span><strong id="stat-training">—</strong></div>
+      <div class="stat-card"><span>Tipi di test</span><strong id="stat-test">—</strong></div>
+      <div class="stat-card"><span>Ultimo test</span><strong id="stat-ultima">—</strong></div>
     </div>
-    <section class="recent-section"><h2>Ultime valutazioni</h2><div id="sessioni-recenti" class="list"><p class="meta">Caricamento risultati…</p></div></section>
+
+    <section class="card athlete-observations">
+      <div class="section-heading-row">
+        <div>
+          <p class="eyebrow">OSSERVAZIONI</p>
+          <h2>Note sul giocatore</h2>
+          <p class="meta">Annota ciò che osservi nel tempo, con una data precisa.</p>
+        </div>
+      </div>
+      <div class="field-grid observation-entry-grid">
+        <div class="field">
+          <label for="osservazione-data">Data</label>
+          <input type="date" id="osservazione-data" />
+        </div>
+        <div class="field observation-text-field">
+          <label for="osservazione-testo">Nota</label>
+          <textarea id="osservazione-testo" rows="3" placeholder="Es. lo vedo più lento nelle reazioni rispetto alla valutazione precedente"></textarea>
+        </div>
+      </div>
+      <div class="row"><button type="button" id="btn-aggiungi-osservazione">Aggiungi nota</button></div>
+      <div id="lista-osservazioni" class="observation-list"></div>
+    </section>
+
+    <section class="recent-section"><h2>Ultimi test</h2><div id="sessioni-recenti" class="list"><p class="meta">Caricamento risultati…</p></div></section>
 
     <details class="profile-details"><summary>Anagrafica e dati clinici</summary>
     <form id="form-clinici">
@@ -144,6 +169,7 @@
   <script src="./vendor/chart.umd.js"></script>
   <script src="./vendor/jspdf.umd.min.js"></script>
   <script src="./js/charts.js"></script>
+  <script src="./js/radar-config.js"></script>
   <script src="./js/pdf-export.js"></script>
   <script src="./js/page-atleta.js"></script>
 </body>
