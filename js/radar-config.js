@@ -1,107 +1,104 @@
 /*
- * Mappatura esercizi -> 6 categorie di skill per il radar chart (radar.html).
- * Ogni voce indica: esercizio (chiave di ESERCIZI_CONFIG), campo, e direzione
- * ('alto' = più alto è meglio, 'basso' = più basso è meglio). Per i campi con
- * sottoCondizioni (VVS) tutte le sotto-condizioni vengono sommate insieme.
- * assoluto:true significa che va normalizzato sul valore assoluto (la
- * direzione della deviazione non conta, solo la sua ampiezza).
+ * Radar per singolo TEST.
+ * Ogni asse del radar corrisponde direttamente a uno dei 13 test standard.
+ * Le sessioni Training sono sempre escluse.
  *
- * Campi volutamente esclusi perché sono parametri fissi del test e non
- * misure di prestazione (confermato: vedi conversazione di progetto):
- *  - proActionReaction.tempoTotale, attenzioneSeparata.tempoTotale,
- *    velocitaRiconoscimento.tempoTotale (durata del test, non un risultato)
- *  - movimentiOculari.tempo (idem)
- *  - sincronizzazioneRitmica.nTarget (numero di prove, non una prestazione)
+ * Il punteggio 0-100 di ciascun test usa l'ultima valutazione disponibile
+ * dell'atleta e normalizza solo le misure di prestazione realmente presenti
+ * rispetto ai valori osservati nello storico Test globale.
  */
 
-const CATEGORIE_RADAR = [
-  {
-    nome: 'Equilibrio',
-    campi: [
-      { esercizio: 'localizzazioneSpaziale', campo: 'tempoReazioneMedio', direzione: 'basso' },
-      { esercizio: 'localizzazioneSpaziale', campo: 'immaginiAlSec', direzione: 'alto' },
-      { esercizio: 'localizzazioneSpaziale', campo: 'immaginiColpite', direzione: 'alto' },
-      { esercizio: 'pedana360', campo: 'tempoReazioneMedio', direzione: 'basso' },
-      { esercizio: 'pedana360', campo: 'immaginiAlSec', direzione: 'alto' },
-      { esercizio: 'pedana360', campo: 'immaginiColpite', direzione: 'alto' },
-      { esercizio: 'pedana360', campo: 'recuperi', direzione: 'basso' },
-      { esercizio: 'pedana360', campo: 'tempoArea5', direzione: 'alto' },
-      { esercizio: 'pedana360', campo: 'tempoAreaEsterna', direzione: 'basso' },
-      { esercizio: 'sincronizzazioneRitmica', campo: 'percentualeSuccesso', direzione: 'alto' },
-      { esercizio: 'sincronizzazioneRitmica', campo: 'tempoReazioneMedio', direzione: 'basso' },
-      { esercizio: 'sincronizzazioneRitmica', campo: 'errori', direzione: 'basso' },
-    ],
-  },
-  {
-    nome: 'Attenzione',
-    campi: [
-      { esercizio: 'attenzioneSeparata', campo: 'tempoReazioneMedio', direzione: 'basso' },
-      { esercizio: 'attenzioneSeparata', campo: 'immaginiColpite', direzione: 'alto' },
-      { esercizio: 'attenzioneSeparata', campo: 'centrale', direzione: 'alto' },
-      { esercizio: 'attenzioneSeparata', campo: 'periferica', direzione: 'alto' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v5', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v10', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v15', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v20', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v25', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v30', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v35', direzione: 'basso' },
-      { esercizio: 'percezioneCampoVisivo', campo: 'v40', direzione: 'basso' },
-    ],
-  },
-  {
-    nome: 'Velocità di reazione',
-    campi: [
-      { esercizio: 'proActionReaction', campo: 'tempoRilascioMedio', direzione: 'basso' },
-      { esercizio: 'proActionReaction', campo: 'tempoClickMedio', direzione: 'basso' },
-      { esercizio: 'proActionReaction', campo: 'errori', direzione: 'basso' },
-      { esercizio: 'velocitaRiconoscimento', campo: 'quantitaNumeri', direzione: 'alto' },
-    ],
-  },
-  {
-    nome: 'Percezione spaziale',
-    campi: [
-      { esercizio: 'vvs', campo: 'primaDeviazione', direzione: 'basso', assoluto: true },
-      { esercizio: 'vvs', campo: 'secondaDeviazione', direzione: 'basso', assoluto: true },
-      { esercizio: 'vvs', campo: 'angoloAssoluto', direzione: 'basso', assoluto: true },
-    ],
-  },
-  {
-    nome: 'Movimenti oculari',
-    campi: [{ esercizio: 'movimentiOculari', campo: 'numTotale', direzione: 'alto' }],
-  },
-  {
-    nome: 'Memoria',
-    campi: [
-      { esercizio: 'memorizzazioneSequenze', campo: 'totale', direzione: 'alto' },
-      { esercizio: 'memorizzazioneSequenze', campo: 'livelloMassimo', direzione: 'alto' },
-      { esercizio: 'memorizzazioneSequenze', campo: 'errori', direzione: 'basso' },
-    ],
-  },
-];
-
-/**
- * Nomi reali dei test (label da ESERCIZI_CONFIG) che concorrono a una categoria del
- * radar, senza duplicati anche quando la categoria usa più campi dello stesso test.
- */
-function getTestNamesForCategoria(categoria) {
-  const nomi = [];
-  categoria.campi.forEach((c) => {
-    const esercizio = getEsercizioConfig(c.esercizio);
-    const nome = esercizio ? esercizio.label : c.esercizio;
-    if (!nomi.includes(nome)) nomi.push(nome);
-  });
-  return nomi;
-}
-
+const TEST_RADAR_CONFIG = {
+  localizzazioneSpaziale: [
+    { campo: 'tempoReazioneMedio', direzione: 'basso' },
+    { campo: 'immaginiAlSec', direzione: 'alto' },
+    { campo: 'immaginiColpite', direzione: 'alto' },
+    { campo: 'errori', direzione: 'basso' },
+  ],
+  pedana360: [
+    { campo: 'tempoReazioneMedio', direzione: 'basso' },
+    { campo: 'immaginiAlSec', direzione: 'alto' },
+    { campo: 'immaginiColpite', direzione: 'alto' },
+    { campo: 'recuperi', direzione: 'basso' },
+    { campo: 'tempoArea5', direzione: 'alto' },
+    { campo: 'tempoAreaEsterna', direzione: 'basso' },
+    { campo: 'errori', direzione: 'basso' },
+  ],
+  proActionReaction: [
+    { campo: 'tempoRilascioMedio', direzione: 'basso' },
+    { campo: 'tempoClickMedio', direzione: 'basso' },
+    { campo: 'errori', direzione: 'basso' },
+  ],
+  attenzioneSeparata: [
+    { campo: 'tempoReazioneMedio', direzione: 'basso' },
+    { campo: 'immaginiColpite', direzione: 'alto' },
+    { campo: 'immaginiAlSec', direzione: 'alto' },
+    { campo: 'errori', direzione: 'basso' },
+    { campo: 'recuperi', direzione: 'basso' },
+    { campo: 'tempoArea5', direzione: 'alto' },
+    { campo: 'tempoAreaEsterna', direzione: 'basso' },
+  ],
+  velocitaPrecisioneAffollamento: [
+    { campo: 'clickErrati', direzione: 'basso' },
+    { campo: 'immaginiColpite', direzione: 'alto' },
+    { campo: 'velocita', direzione: 'alto' },
+  ],
+  velocitaRiconoscimento: [
+    { campo: 'quantitaNumeri', direzione: 'alto' },
+    { campo: 'tempoStimolo', direzione: 'basso' },
+  ],
+  percezioneCampoVisivo: [
+    { campo: 'angoloMassimo', direzione: 'alto' },
+    { campo: 'errori', direzione: 'basso' },
+    { campo: 'v5', direzione: 'basso' },
+    { campo: 'v10', direzione: 'basso' },
+    { campo: 'v15', direzione: 'basso' },
+    { campo: 'v20', direzione: 'basso' },
+    { campo: 'v25', direzione: 'basso' },
+    { campo: 'v30', direzione: 'basso' },
+    { campo: 'v35', direzione: 'basso' },
+    { campo: 'v40', direzione: 'basso' },
+  ],
+  localizzazioneAffollamentoOculare: [
+    { campo: 'tempoTotale', direzione: 'basso' },
+    { campo: 'metronomo', direzione: 'alto' },
+  ],
+  memorizzazioneSequenze: [
+    { campo: 'livelloMassimo', direzione: 'alto' },
+    { campo: 'totale', direzione: 'alto' },
+    { campo: 'errori', direzione: 'basso' },
+  ],
+  ordinamentoStrategico: [
+    { campo: 'clickErrati', direzione: 'basso' },
+    { campo: 'immaginiColpite', direzione: 'alto' },
+    { campo: 'velocita', direzione: 'alto' },
+    { campo: 'tempoTotale', direzione: 'basso' },
+  ],
+  visualizzazioneTraiettorie: [
+    { campo: 'immaginiColpite', direzione: 'alto' },
+    { campo: 'clickErrati', direzione: 'basso' },
+    { campo: 'velocita', direzione: 'alto' },
+    { campo: 'tempoTotale', direzione: 'basso' },
+  ],
+  riconoscimentoNumeri: [
+    { campo: 'quantitaNumeri', direzione: 'alto' },
+    { campo: 'tempoStimolo', direzione: 'basso' },
+  ],
+  reazioneVisuoMotoriaSceltaMultipla: [
+    { campo: 'tempoReazioneMedio', direzione: 'basso' },
+    { campo: 'corretti', direzione: 'alto' },
+    { campo: 'errori', direzione: 'basso' },
+    { campo: 'metronomo', direzione: 'alto' },
+  ],
+};
 
 function radarValoriCampo(sessioni, esercizioKey, campoKey) {
   const esercizio = getEsercizioConfig(esercizioKey);
   if (!esercizio) return [];
   const campo = esercizio.campi.find((x) => x.key === campoKey);
   if (!campo) return [];
-  const valori = [];
 
+  const valori = [];
   (sessioni || []).forEach((sessione) => {
     const dati = sessione.esercizi?.[esercizioKey];
     if (!dati) return;
@@ -111,26 +108,19 @@ function radarValoriCampo(sessioni, esercizioKey, campoKey) {
         const raw = dati[sc.key]?.[campoKey];
         if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
       });
-    } else {
-      const raw = dati[campoKey];
-      if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+      return;
     }
+
+    const raw = dati[campoKey];
+    if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
   });
   return valori;
 }
 
-function radarStatisticheGlobali(sessioni) {
-  const stats = new Map();
-  CATEGORIE_RADAR.forEach((categoria) => {
-    categoria.campi.forEach((config) => {
-      const key = `${config.esercizio}::${config.campo}`;
-      if (stats.has(key)) return;
-      let valori = radarValoriCampo(sessioni, config.esercizio, config.campo);
-      if (config.assoluto) valori = valori.map(Math.abs);
-      stats.set(key, valori.length ? { min: Math.min(...valori), max: Math.max(...valori) } : null);
-    });
-  });
-  return stats;
+function radarStatCampo(tutteSessioni, testKey, campoKey) {
+  const valori = radarValoriCampo(tutteSessioni, testKey, campoKey);
+  if (!valori.length) return null;
+  return { min: Math.min(...valori), max: Math.max(...valori) };
 }
 
 function radarNormalizzaValore(valore, stat, direzione) {
@@ -142,43 +132,74 @@ function radarNormalizzaValore(valore, stat, direzione) {
   return Math.max(0, Math.min(100, quota * 100));
 }
 
-function radarPunteggioCategoria(categoria, sessioni, stats) {
-  const valoriNormalizzati = [];
-  categoria.campi.forEach((config) => {
-    const stat = stats.get(`${config.esercizio}::${config.campo}`);
-    if (!stat) return;
-    let valori = radarValoriCampo(sessioni, config.esercizio, config.campo);
-    if (config.assoluto) valori = valori.map(Math.abs);
+function radarUltimaSessioneTest(sessioni, testKey) {
+  return (sessioni || [])
+    .filter((s) => esercizioCompilato(getEsercizioConfig(testKey), s.esercizi?.[testKey]))
+    .sort((a, b) =>
+      String(b.data || '').localeCompare(String(a.data || '')) ||
+      String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || ''))
+    )[0] || null;
+}
+
+function radarPunteggioTest(testKey, sessione, tutteSessioni) {
+  const config = TEST_RADAR_CONFIG[testKey] || [];
+  const esercizio = getEsercizioConfig(testKey);
+  const dati = sessione?.esercizi?.[testKey];
+  if (!esercizio || !dati) return null;
+
+  const punteggi = [];
+  config.forEach(({ campo: campoKey, direzione }) => {
+    const campo = esercizio.campi.find((x) => x.key === campoKey);
+    if (!campo) return;
+
+    const valori = [];
+    if (esercizio.sottoCondizioni) {
+      esercizio.sottoCondizioni.forEach((sc) => {
+        const raw = dati[sc.key]?.[campoKey];
+        if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+      });
+    } else {
+      const raw = dati[campoKey];
+      if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+    }
+    if (!valori.length) return;
+
+    const stat = radarStatCampo(tutteSessioni, testKey, campoKey);
     valori.forEach((valore) => {
-      const score = radarNormalizzaValore(valore, stat, config.direzione);
-      if (score !== null) valoriNormalizzati.push(score);
+      const score = radarNormalizzaValore(valore, stat, direzione);
+      if (score !== null) punteggi.push(score);
     });
   });
-  if (!valoriNormalizzati.length) return null;
-  return valoriNormalizzati.reduce((tot, valore) => tot + valore, 0) / valoriNormalizzati.length;
+
+  if (!punteggi.length) return null;
+  return punteggi.reduce((tot, valore) => tot + valore, 0) / punteggi.length;
 }
 
 function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
-  const testsAtleta = (sessioniAtleta || []).filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
-  const testsGlobali = (tutteSessioni || []).filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
-  const stats = radarStatisticheGlobali(testsGlobali);
-  const righe = CATEGORIE_RADAR.map((categoria) => ({
-    categoria,
-    valore: radarPunteggioCategoria(categoria, testsAtleta, stats),
-  })).filter((riga) => riga.valore !== null);
+  const testsAtleta = (sessioniAtleta || [])
+    .filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  const testsGlobali = (tutteSessioni || [])
+    .filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+
+  const righe = TEST_STANDARD_KEYS.map((testKey) => {
+    const sessione = radarUltimaSessioneTest(testsAtleta, testKey);
+    if (!sessione) return null;
+    const valore = radarPunteggioTest(testKey, sessione, testsGlobali);
+    if (valore === null) return null;
+
+    return {
+      key: testKey,
+      nome: TEST_STANDARD_LABELS[testKey] || getEsercizioConfig(testKey)?.label || testKey,
+      valore: Math.round(valore * 10) / 10,
+      data: sessione.data || '',
+      metriche: metricheEsercizioSessione(sessione, getEsercizioConfig(testKey), false),
+    };
+  }).filter(Boolean);
 
   return {
-    labels: righe.map((riga) => riga.categoria.nome),
-    valori: righe.map((riga) => Math.round(riga.valore * 10) / 10),
-    testNames: righe.map((riga) => {
-      const nomi = [];
-      riga.categoria.campi.forEach((config) => {
-        if (!radarValoriCampo(testsAtleta, config.esercizio, config.campo).length) return;
-        const esercizio = getEsercizioConfig(config.esercizio);
-        const nome = esercizio ? esercizio.label : config.esercizio;
-        if (!nomi.includes(nome)) nomi.push(nome);
-      });
-      return nomi;
-    }),
+    labels: righe.map((riga) => riga.nome),
+    valori: righe.map((riga) => riga.valore),
+    testNames: righe.map((riga) => [riga.nome]),
+    righe,
   };
 }
