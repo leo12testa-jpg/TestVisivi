@@ -15,8 +15,8 @@ const fixture = {
     demo: { nome: 'Andrea', cognome: 'Atleta demo', note: 'Dati sintetici' },
     secondo: { nome: 'Giulia', cognome: 'Esempio', datiClinici: {} },
   }, squadre: {}, sessioni: {
-    jet: { atletaId: 'demo', data: '2026-08-01', nomeTestOriginale: 'x/Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 45, 'Tempo reazione medio (ms)': 350, errori: 0, sconosciuto: 'conservare' }, esercizi: { testEsterno: { valore: 22 } } },
-    jet2: { atletaId: 'demo', data: '2026-08-12', nomeTestOriginale: 'x/Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 40, 'Tempo reazione medio (ms)': 320, errori: 1 } },
+    jet: { atletaId: 'demo', data: '2026-08-01', nomeTestOriginale: 'x/Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 45, 'Tempo medio di rilascio (ms)': 350, errori: 0, sconosciuto: 'conservare' }, esercizi: { testEsterno: { valore: 22 } } },
+    jet2: { atletaId: 'demo', data: '2026-08-12', nomeTestOriginale: 'x/Pro Action and Reaction Time', tipoTest: 'proActionReaction', datiOriginali: { 'Tempo totale (s)': 40, 'Tempo medio di rilascio (ms)': 320, errori: 1 } },
     unknown: { atletaId: 'demo', data: '2026-08-20', nomeTestOriginale: 'Protocollo non riconosciuto', tipoTest: 999, datiOriginali: { misura: 'nessuna unità' } },
     legacy: { atletaId: 'demo', data: '2026-08-18', esercizi: { vvs: { gioco: { primaDeviazione: 2, parametroEsterno: 77 } }, campoVisivoAvanzato: { durataSecondi: 5, percentualiSettori: [{ settore: 1, fasciaAngoli: '5-10', percentualeCorretta: 90 }] } } },
   },
