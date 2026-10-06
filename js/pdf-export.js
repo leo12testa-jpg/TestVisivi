@@ -852,12 +852,19 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       const esercizio = getEsercizioConfig(key);
       if (!esercizio || esercizio.custom) continue;
 
-      const compilate = sessioni.filter((s) => sessioneDelTest(s, key) && esercizioCompilato(esercizio, s.esercizi?.[key]));
-      if (!compilate.length) continue;
+      const delTest = sessioni.filter((s) => sessioneDelTest(s, key));
+      const compilate = delTest.filter((s) => esercizioCompilato(esercizio, s.esercizi?.[key]));
+      const originali = delTest.filter((s) =>
+        !esercizioCompilato(esercizio, s.esercizi?.[key]) &&
+        typeof metricheOriginaliJet === 'function' &&
+        metricheOriginaliJet(s).length > 0
+      );
+      if (!compilate.length && !originali.length) continue;
 
+      const totaleValutazioni = compilate.length + originali.length;
       titoloSezione(
         TEST_STANDARD_LABELS[key] || esercizio.label,
-        compilate.length === 1 ? '1 valutazione nel periodo selezionato' : compilate.length + ' valutazioni nel periodo selezionato'
+        totaleValutazioni === 1 ? '1 valutazione nel periodo selezionato' : totaleValutazioni + ' valutazioni nel periodo selezionato'
       );
 
       const cols = colonneConDati(esercizio, compilate);
@@ -870,6 +877,21 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         const dataWidth = 24;
         const other = cols.length ? (usableWidth - dataWidth) / cols.length : usableWidth - dataWidth;
         disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
+      }
+
+      for (const s of originali) {
+        assicuraSpazio(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...C.navyDark);
+        doc.text(formatDataIt(s.data), marginX, y);
+        y += 4.5;
+        const righeOriginali = metricheOriginaliJet(s).map((m) => [m.label, m.valore]);
+        disegnaTabella(
+          ['Parametro', 'Valore'],
+          righeOriginali,
+          [usableWidth * 0.62, usableWidth * 0.38]
+        );
       }
 
       if (compilate.length >= 2) {
