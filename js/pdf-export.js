@@ -935,5 +935,15 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     }
   }
 
-  doc.save('report_multiplo_test_visivi_' + oggiIso() + '.pdf');
+  const nomeFile = 'report_multiplo_test_visivi_' + oggiIso() + '.pdf';
+  if (opzioni.scarica === false) {
+    return {
+      blob: doc.output('blob'),
+      nomeFile,
+      pagine: totalePagine,
+    };
+  }
+
+  doc.save(nomeFile);
+  return { nomeFile, pagine: totalePagine };
 }
