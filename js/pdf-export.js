@@ -218,6 +218,17 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
     y += 2;
   }
 
+  const selezioniConDati = selezioniRaw.map((selezione) => {
+    const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
+      ? normalizzaAnagraficaCalciatore(selezione?.atleta || {})
+      : (selezione?.atleta || {});
+    return { atleta, sessioni: sessioniSelezionate(selezione?.sessioni) };
+  }).filter((item) => item.sessioni.length > 0);
+
+  if (!selezioniConDati.length) {
+    throw new Error('Nessuno dei giocatori selezionati ha i Test scelti nel periodo indicato.');
+  }
+
   function colonneConDati(esercizio, sessioniCompilate) {
     return colonneEsercizio(esercizio).filter((col) =>
       sessioniCompilate.some((s) => {
@@ -814,17 +825,6 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.setFontSize(7.5);
   doc.setTextColor(...C.muted);
   doc.text('I Training sono esclusi. Ogni atleta inizia su una nuova pagina.', marginX, y);
-
-  const selezioniConDati = selezioniRaw.map((selezione) => {
-    const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
-      ? normalizzaAnagraficaCalciatore(selezione?.atleta || {})
-      : (selezione?.atleta || {});
-    return { atleta, sessioni: sessioniSelezionate(selezione?.sessioni) };
-  }).filter((item) => item.sessioni.length > 0);
-
-  if (!selezioniConDati.length) {
-    throw new Error('Nessuno dei giocatori selezionati ha i Test scelti nel periodo indicato.');
-  }
 
   for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
     const { atleta, sessioni } = selezioniConDati[atletaIndex];
