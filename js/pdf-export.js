@@ -735,7 +735,11 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     const jet = typeof jetTest === 'function' ? jetTest(sessione) : null;
     if (jet?.key === key) return true;
     if (sessione.testStandard === key || sessione.jetProgramStandardKey === key) return true;
-    return esercizioCompilato(config, sessione.esercizi?.[key]);
+    if (esercizioCompilato(config, sessione.esercizi?.[key])) return true;
+    if (typeof chiaveStandardDaNomeProtocollo === 'function') {
+      return chiaveStandardDaNomeProtocollo(sessione) === key;
+    }
+    return false;
   }
 
   function sessioniSelezionate(sessioni) {
@@ -800,7 +804,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...C.ink);
-  doc.text('Giocatori: ' + selezioniRaw.length, marginX, y);
+  doc.text('Giocatori inclusi: ' + selezioniConDati.length + ' / ' + selezioniRaw.length, marginX, y);
   y += 6;
   doc.text('Periodo: ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, y);
   y += 6;
@@ -811,12 +815,19 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.setTextColor(...C.muted);
   doc.text('I Training sono esclusi. Ogni atleta inizia su una nuova pagina.', marginX, y);
 
-  for (let atletaIndex = 0; atletaIndex < selezioniRaw.length; atletaIndex++) {
-    const selezione = selezioniRaw[atletaIndex] || {};
+  const selezioniConDati = selezioniRaw.map((selezione) => {
     const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
-      ? normalizzaAnagraficaCalciatore(selezione.atleta || {})
-      : (selezione.atleta || {});
-    const sessioni = sessioniSelezionate(selezione.sessioni);
+      ? normalizzaAnagraficaCalciatore(selezione?.atleta || {})
+      : (selezione?.atleta || {});
+    return { atleta, sessioni: sessioniSelezionate(selezione?.sessioni) };
+  }).filter((item) => item.sessioni.length > 0);
+
+  if (!selezioniConDati.length) {
+    throw new Error('Nessuno dei giocatori selezionati ha i Test scelti nel periodo indicato.');
+  }
+
+  for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
+    const { atleta, sessioni } = selezioniConDati[atletaIndex];
 
     paginaNuova();
 
