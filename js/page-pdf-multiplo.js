@@ -1,8 +1,10 @@
 registerServiceWorker();
 
 let _bulkAtleti = [];
+const _bulkAtletiSelezionati = new Set();
 
 function bulkSelected(selector) {
+  if (selector === '.bulk-atleta-check') return [..._bulkAtletiSelezionati];
   return qsa(selector).filter((x) => x.checked).map((x) => x.value);
 }
 
@@ -11,7 +13,7 @@ function bulkAggiornaRiepilogo() {
   const test = bulkSelected('.bulk-test-check');
   const summary = qs('#bulk-summary');
   summary.textContent = atleti.length + (atleti.length === 1 ? ' giocatore' : ' giocatori') +
-    ' · ' + test.length + (test.length === 1 ? ' Test' : ' Test');
+    ' · ' + test.length + ' Test';
 
   const da = qs('#bulk-da').value;
   const a = qs('#bulk-a').value;
@@ -32,12 +34,22 @@ function bulkRenderAtleti(filtro = '') {
   lista.forEach((a) => {
     const id = 'bulk-atleta-' + a.id;
     box.appendChild(el('label', { class: 'bulk-choice-item', for: id }, [
-      el('input', { type: 'checkbox', id, value: a.id, class: 'bulk-atleta-check' }),
+      el('input', {
+        type: 'checkbox',
+        id,
+        value: a.id,
+        class: 'bulk-atleta-check',
+        checked: _bulkAtletiSelezionati.has(a.id),
+      }),
       el('span', { text: nomeCompleto(a) }),
     ]));
   });
 
-  qsa('.bulk-atleta-check', box).forEach((x) => x.addEventListener('change', bulkAggiornaRiepilogo));
+  qsa('.bulk-atleta-check', box).forEach((x) => x.addEventListener('change', () => {
+    if (x.checked) _bulkAtletiSelezionati.add(x.value);
+    else _bulkAtletiSelezionati.delete(x.value);
+    bulkAggiornaRiepilogo();
+  }));
 }
 
 function bulkRenderTest() {
@@ -53,15 +65,22 @@ function bulkRenderTest() {
   qsa('.bulk-test-check', box).forEach((x) => x.addEventListener('change', bulkAggiornaRiepilogo));
 }
 
-function bulkSet(selector, checked) {
-  qsa(selector).forEach((x) => { x.checked = checked; });
+function bulkSetAtleti(checked) {
+  if (checked) _bulkAtleti.forEach((a) => _bulkAtletiSelezionati.add(a.id));
+  else _bulkAtletiSelezionati.clear();
+  qsa('.bulk-atleta-check').forEach((x) => { x.checked = checked; });
   bulkAggiornaRiepilogo();
 }
 
-qs('#bulk-atleti-tutti').addEventListener('click', () => bulkSet('.bulk-atleta-check', true));
-qs('#bulk-atleti-nessuno').addEventListener('click', () => bulkSet('.bulk-atleta-check', false));
-qs('#bulk-test-tutti').addEventListener('click', () => bulkSet('.bulk-test-check', true));
-qs('#bulk-test-nessuno').addEventListener('click', () => bulkSet('.bulk-test-check', false));
+function bulkSetTest(checked) {
+  qsa('.bulk-test-check').forEach((x) => { x.checked = checked; });
+  bulkAggiornaRiepilogo();
+}
+
+qs('#bulk-atleti-tutti').addEventListener('click', () => bulkSetAtleti(true));
+qs('#bulk-atleti-nessuno').addEventListener('click', () => bulkSetAtleti(false));
+qs('#bulk-test-tutti').addEventListener('click', () => bulkSetTest(true));
+qs('#bulk-test-nessuno').addEventListener('click', () => bulkSetTest(false));
 qs('#bulk-ricerca').addEventListener('input', debounce((e) => bulkRenderAtleti(e.target.value), 120));
 qs('#bulk-da').addEventListener('change', bulkAggiornaRiepilogo);
 qs('#bulk-a').addEventListener('change', bulkAggiornaRiepilogo);
