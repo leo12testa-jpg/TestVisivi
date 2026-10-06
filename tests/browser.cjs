@@ -222,6 +222,23 @@ function fakeFirebase(seed) {
     await page.screenshot({ path: `${out}/radar-desktop.png`, fullPage: true });
     await overflow();
 
+    await go('pdf-multiplo.html');
+    await page.locator('.bulk-atleta-check[value="demo"]').check();
+    await page.locator('.bulk-test-check[value="proActionReaction"]').check();
+    await page.locator('#bulk-da').fill('2026-08-01');
+    await page.locator('#bulk-a').fill('2026-12-31');
+    assert.match(await page.locator('#bulk-summary').innerText(), /1 giocatore · 1 Test/);
+    const multiDownloadPromise = page.waitForEvent('download');
+    await page.locator('#bulk-genera').click();
+    const multiDownload = await multiDownloadPromise;
+    const multiPdfPath = `${out}/synthetic-multi-report.pdf`;
+    await multiDownload.saveAs(multiPdfPath);
+    const multiPdfBytes = fs.readFileSync(multiPdfPath);
+    assert.ok(multiPdfBytes.length > 10000, 'PDF multiplo non vuoto');
+    assert.equal(multiPdfBytes.subarray(0, 4).toString(), '%PDF', 'PDF multiplo valido');
+    await page.screenshot({ path: `${out}/pdf-multiplo-desktop.png`, fullPage: true });
+    await overflow();
+
     for (const theme of ['light', 'dark']) {
       await page.emulateMedia({ colorScheme: theme });
       await page.setViewportSize({ width: 390, height: 844 });
@@ -234,7 +251,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar per singolo test', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar per singolo test', 'PDF multiplo giocatori + Test selezionati', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
