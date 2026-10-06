@@ -75,9 +75,29 @@
         <strong id="bulk-summary">0 giocatori · 0 Test</strong>
         <p class="meta">Il PDF userà solo le sessioni Test comprese nel periodo scelto.</p>
       </div>
-      <button type="button" id="bulk-genera" disabled>Genera PDF unico</button>
+      <button type="button" id="bulk-genera" disabled>Anteprima PDF</button>
     </section>
   </main>
+
+  <dialog id="bulk-preview-dialog" class="bulk-preview-dialog" aria-labelledby="bulk-preview-title">
+    <div class="bulk-preview-card">
+      <div class="bulk-preview-head">
+        <div>
+          <p class="eyebrow">ANTEPRIMA PDF</p>
+          <h2 id="bulk-preview-title">Controlla il report prima di scaricarlo</h2>
+          <p class="meta" id="bulk-preview-meta"></p>
+        </div>
+        <button type="button" class="secondary bulk-preview-close" id="bulk-preview-x" aria-label="Chiudi anteprima">×</button>
+      </div>
+      <div class="bulk-preview-viewer">
+        <iframe id="bulk-preview-frame" title="Anteprima PDF multiplo"></iframe>
+      </div>
+      <div class="row wrap bulk-preview-actions">
+        <button type="button" class="secondary" id="bulk-preview-close">Chiudi</button>
+        <button type="button" id="bulk-preview-download">Scarica PDF</button>
+      </div>
+    </div>
+  </dialog>
 
   <script src="./vendor/firebase/firebase-app-compat.js"></script>
   <script src="./vendor/firebase/firebase-auth-compat.js"></script>
