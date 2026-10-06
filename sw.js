@@ -1,6 +1,6 @@
 /* App shell network-first, fallback offline; nessun dato Firestore in CacheStorage. */
 
-const CACHE_NAME = 'jetprogram-cache-v56';
+const CACHE_NAME = 'jetprogram-cache-v57';
 
 const PRECACHE_URLS = [
   './',
@@ -15,6 +15,7 @@ const PRECACHE_URLS = [
   './login.html',
   './sincronizza-jet.html',
   './sincronizza-anagrafiche.html',
+  './pdf-multiplo.html',
   './manifest.webmanifest',
   './css/style.css',
   './js/utils.js',
@@ -39,6 +40,7 @@ const PRECACHE_URLS = [
   './js/page-login.js',
   './js/page-sincronizza-jet.js',
   './js/page-sincronizza-anagrafiche.js',
+  './js/page-pdf-multiplo.js',
   './vendor/chart.umd.js',
   './vendor/jspdf.umd.min.js',
   './vendor/firebase/firebase-app-compat.js',
