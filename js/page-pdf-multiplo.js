@@ -2,6 +2,8 @@ registerServiceWorker();
 
 let _bulkAtleti = [];
 const _bulkAtletiSelezionati = new Set();
+let _bulkPreviewUrl = '';
+let _bulkPreviewNomeFile = '';
 
 function bulkSelected(selector) {
   if (selector === '.bulk-atleta-check') return [..._bulkAtletiSelezionati];
@@ -77,6 +79,44 @@ function bulkSetTest(checked) {
   bulkAggiornaRiepilogo();
 }
 
+function bulkChiudiAnteprima() {
+  const dialog = qs('#bulk-preview-dialog');
+  const frame = qs('#bulk-preview-frame');
+  if (dialog.open) dialog.close();
+  frame.removeAttribute('src');
+  if (_bulkPreviewUrl) {
+    URL.revokeObjectURL(_bulkPreviewUrl);
+    _bulkPreviewUrl = '';
+  }
+  _bulkPreviewNomeFile = '';
+}
+
+function bulkApriAnteprima(report) {
+  if (!report?.blob) throw new Error('Anteprima PDF non disponibile.');
+
+  if (_bulkPreviewUrl) URL.revokeObjectURL(_bulkPreviewUrl);
+  _bulkPreviewUrl = URL.createObjectURL(report.blob);
+  _bulkPreviewNomeFile = report.nomeFile || ('report_multiplo_test_visivi_' + oggiIso() + '.pdf');
+
+  qs('#bulk-preview-frame').src = _bulkPreviewUrl;
+  qs('#bulk-preview-meta').textContent =
+    (report.pagine || 1) + ((report.pagine || 1) === 1 ? ' pagina' : ' pagine') +
+    ' · controlla il contenuto e poi scegli se scaricarlo.';
+
+  const dialog = qs('#bulk-preview-dialog');
+  if (!dialog.open) dialog.showModal();
+}
+
+function bulkScaricaAnteprima() {
+  if (!_bulkPreviewUrl) return;
+  const link = document.createElement('a');
+  link.href = _bulkPreviewUrl;
+  link.download = _bulkPreviewNomeFile || ('report_multiplo_test_visivi_' + oggiIso() + '.pdf');
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 qs('#bulk-atleti-tutti').addEventListener('click', () => bulkSetAtleti(true));
 qs('#bulk-atleti-nessuno').addEventListener('click', () => bulkSetAtleti(false));
 qs('#bulk-test-tutti').addEventListener('click', () => bulkSetTest(true));
@@ -84,6 +124,16 @@ qs('#bulk-test-nessuno').addEventListener('click', () => bulkSetTest(false));
 qs('#bulk-ricerca').addEventListener('input', debounce((e) => bulkRenderAtleti(e.target.value), 120));
 qs('#bulk-da').addEventListener('change', bulkAggiornaRiepilogo);
 qs('#bulk-a').addEventListener('change', bulkAggiornaRiepilogo);
+qs('#bulk-preview-x').addEventListener('click', bulkChiudiAnteprima);
+qs('#bulk-preview-close').addEventListener('click', bulkChiudiAnteprima);
+qs('#bulk-preview-download').addEventListener('click', bulkScaricaAnteprima);
+qs('#bulk-preview-dialog').addEventListener('cancel', (e) => {
+  e.preventDefault();
+  bulkChiudiAnteprima();
+});
+window.addEventListener('beforeunload', () => {
+  if (_bulkPreviewUrl) URL.revokeObjectURL(_bulkPreviewUrl);
+});
 
 qs('#bulk-genera').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
@@ -98,7 +148,7 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
   }
 
   btn.disabled = true;
-  btn.textContent = 'Preparazione PDF…';
+  btn.textContent = 'Preparazione anteprima…';
 
   try {
     const selezioni = [];
@@ -110,17 +160,19 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
       selezioni.push({ atleta, sessioni });
     }
 
-    btn.textContent = 'Generazione PDF…';
-    await esportaReportMultiploPdf(selezioni, {
+    btn.textContent = 'Generazione anteprima…';
+    const report = await esportaReportMultiploPdf(selezioni, {
       testKeys,
       periodoDa,
       periodoA,
+      scarica: false,
     });
+    bulkApriAnteprima(report);
   } catch (err) {
     mostraErrorePagina(err);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Genera PDF unico';
+    btn.textContent = 'Anteprima PDF';
     bulkAggiornaRiepilogo();
   }
 });
