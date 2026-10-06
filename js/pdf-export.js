@@ -898,7 +898,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
     if (page === totalePagine) {
       doc.setFontSize(6.3);
-      doc.text('Il report riporta esclusivamente i dati registrati nell\\'app e non costituisce una diagnosi clinica.', marginX, pageHeight - 5);
+      doc.text("Il report riporta esclusivamente i dati registrati nell'app e non costituisce una diagnosi clinica.", marginX, pageHeight - 5);
     }
   }
 
