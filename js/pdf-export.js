@@ -218,17 +218,6 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
     y += 2;
   }
 
-  const selezioniConDati = selezioniRaw.map((selezione) => {
-    const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
-      ? normalizzaAnagraficaCalciatore(selezione?.atleta || {})
-      : (selezione?.atleta || {});
-    return { atleta, sessioni: sessioniSelezionate(selezione?.sessioni) };
-  }).filter((item) => item.sessioni.length > 0);
-
-  if (!selezioniConDati.length) {
-    throw new Error('Nessuno dei giocatori selezionati ha i Test scelti nel periodo indicato.');
-  }
-
   function colonneConDati(esercizio, sessioniCompilate) {
     return colonneEsercizio(esercizio).filter((col) =>
       sessioniCompilate.some((s) => {
@@ -760,6 +749,17 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       .filter((s) => String(s.data || '') >= periodoDa && String(s.data || '') <= periodoA)
       .filter((s) => testKeys.some((key) => sessioneDelTest(s, key)))
       .sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
+  }
+
+  const selezioniConDati = selezioniRaw.map((selezione) => {
+    const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
+      ? normalizzaAnagraficaCalciatore(selezione?.atleta || {})
+      : (selezione?.atleta || {});
+    return { atleta, sessioni: sessioniSelezionate(selezione?.sessioni) };
+  }).filter((item) => item.sessioni.length > 0);
+
+  if (!selezioniConDati.length) {
+    throw new Error('Nessuno dei giocatori selezionati ha i Test scelti nel periodo indicato.');
   }
 
   function colonneConDati(esercizio, sessioniCompilate) {
