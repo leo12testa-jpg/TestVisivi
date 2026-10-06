@@ -211,7 +211,7 @@ function montaIndicatoreConnessione() {
 }
 montaIndicatoreConnessione();
 
-const APP_BUILD_VERSION = '59';
+const APP_BUILD_VERSION = '63';
 
 async function leggiVersionePubblicata() {
   if (!navigator.onLine) return null;
@@ -251,8 +251,13 @@ function montaPulsanteAggiornaApp() {
 
     btn.addEventListener('click', async () => {
       if (!navigator.onLine) return;
-      btn.disabled = true;
-      btn.textContent = 'Aggiornamento…';
+
+      const pubblicata = await leggiVersionePubblicata();
+      if (pubblicata) segnaVersioneGestita(pubblicata);
+
+      const clickedBtn = btn;
+      clickedBtn.disabled = true;
+      clickedBtn.textContent = 'Aggiornamento…';
 
       try {
         if ('serviceWorker' in navigator) {
@@ -272,17 +277,42 @@ function montaPulsanteAggiornaApp() {
         window.location.reload();
       } catch (err) {
         console.warn('Aggiornamento app non completato:', err);
-        btn.disabled = false;
-        btn.textContent = '↻ Aggiorna';
+        if (pubblicata) {
+          try { sessionStorage.removeItem(UPDATE_ACK_KEY); } catch (_) {}
+        }
+        if (clickedBtn?.isConnected) {
+          clickedBtn.disabled = false;
+          clickedBtn.textContent = '↻ Aggiorna';
+        }
       }
     });
 
     header.appendChild(btn);
   }
 
+  const UPDATE_ACK_KEY = 'jetprogram-update-ack';
+
+  function versioneGiaGestita(versione) {
+    try {
+      return sessionStorage.getItem(UPDATE_ACK_KEY) === String(versione || '');
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function segnaVersioneGestita(versione) {
+    try {
+      sessionStorage.setItem(UPDATE_ACK_KEY, String(versione || ''));
+    } catch (_) {}
+  }
+
   async function verifica() {
     const pubblicata = await leggiVersionePubblicata();
-    if (pubblicata && pubblicata !== APP_BUILD_VERSION) mostra();
+    if (
+      pubblicata &&
+      pubblicata !== APP_BUILD_VERSION &&
+      !versioneGiaGestita(pubblicata)
+    ) mostra();
     else nascondi();
   }
 
