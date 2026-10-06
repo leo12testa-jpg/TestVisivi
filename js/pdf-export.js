@@ -587,3 +587,320 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
   const nomeFile = 'report_test_visivi_' + slug(atleta.cognome) + '_' + oggiIso() + '.pdf';
   doc.save(nomeFile);
 }
+
+
+/**
+ * PDF unico per più atleti.
+ * Contiene esclusivamente le sessioni Test, limitate al periodo e ai tipi di
+ * Test scelti dall'utente. Ogni atleta inizia su una nuova pagina.
+ */
+async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+  const testKeys = (opzioni.testKeys || []).filter((key) => TEST_STANDARD_KEYS.includes(key));
+  const periodoDa = String(opzioni.periodoDa || '');
+  const periodoA = String(opzioni.periodoA || '');
+
+  if (!Array.isArray(selezioniRaw) || !selezioniRaw.length) throw new Error('Seleziona almeno un giocatore.');
+  if (!testKeys.length) throw new Error('Seleziona almeno un Test.');
+  if (!periodoDa || !periodoA || periodoDa > periodoA) throw new Error('Controlla il periodo selezionato.');
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 15;
+  const usableWidth = pageWidth - marginX * 2;
+  const footerY = pageHeight - 9;
+  let y = 18;
+
+  const C = {
+    navy: [21, 62, 105],
+    navyDark: [12, 38, 65],
+    blueSoft: [237, 244, 250],
+    ink: [24, 31, 38],
+    muted: [99, 112, 125],
+    line: [220, 226, 232],
+    paper: [250, 251, 252],
+    white: [255, 255, 255],
+  };
+
+  function paginaNuova() {
+    doc.addPage();
+    y = 18;
+  }
+
+  function assicuraSpazio(mm) {
+    if (y + mm > footerY - 6) paginaNuova();
+  }
+
+  function linea(yPos = y) {
+    doc.setDrawColor(...C.line);
+    doc.setLineWidth(0.25);
+    doc.line(marginX, yPos, marginX + usableWidth, yPos);
+  }
+
+  function titoloSezione(titolo, sottotitolo = '') {
+    assicuraSpazio(sottotitolo ? 16 : 11);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    doc.setTextColor(...C.navyDark);
+    doc.text(titolo, marginX, y);
+    y += 5;
+    if (sottotitolo) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.muted);
+      const lines = doc.splitTextToSize(sottotitolo, usableWidth);
+      doc.text(lines, marginX, y);
+      y += lines.length * 3.7 + 1.5;
+    }
+    linea(y);
+    y += 5;
+    doc.setTextColor(...C.ink);
+  }
+
+  function cardKpi(x, yPos, width, label, value) {
+    doc.setFillColor(...C.paper);
+    doc.setDrawColor(...C.line);
+    doc.roundedRect(x, yPos, width, 20, 2.5, 2.5, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.2);
+    doc.setTextColor(...C.muted);
+    doc.text(label, x + 4, yPos + 6);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(...C.navyDark);
+    doc.text(String(value), x + 4, yPos + 14);
+  }
+
+  function disegnaTabella(headers, rows, widths) {
+    if (!rows.length) return;
+    const colWidths = widths || Array(headers.length).fill(usableWidth / headers.length);
+    const fontSize = headers.length > 8 ? 6.2 : headers.length > 5 ? 7 : 7.7;
+    const paddingX = 1.4;
+    const lineHeight = 3.2;
+    const splitCell = (text, width) => doc.splitTextToSize(String(text), Math.max(4, width - paddingX * 2));
+
+    function rowHeight(cells, bold = false) {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
+      doc.setFontSize(fontSize);
+      return Math.max(...cells.map((cell, i) => splitCell(cell, colWidths[i]).length)) * lineHeight + 3;
+    }
+
+    function header() {
+      const h = rowHeight(headers, true);
+      assicuraSpazio(h + 5);
+      doc.setFillColor(...C.blueSoft);
+      doc.setDrawColor(...C.line);
+      doc.rect(marginX, y, usableWidth, h, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...C.navyDark);
+      let x = marginX;
+      headers.forEach((cell, i) => {
+        doc.text(splitCell(cell, colWidths[i]), x + paddingX, y + 3.5);
+        x += colWidths[i];
+      });
+      y += h;
+    }
+
+    header();
+    rows.forEach((row, rowIndex) => {
+      const h = rowHeight(row);
+      if (y + h > footerY - 5) {
+        paginaNuova();
+        header();
+      }
+      if (rowIndex % 2 === 1) {
+        doc.setFillColor(249, 250, 251);
+        doc.rect(marginX, y, usableWidth, h, 'F');
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(fontSize);
+      doc.setTextColor(...C.ink);
+      let x = marginX;
+      row.forEach((cell, i) => {
+        doc.text(splitCell(cell, colWidths[i]), x + paddingX, y + 3.5);
+        x += colWidths[i];
+      });
+      doc.setDrawColor(...C.line);
+      doc.line(marginX, y + h, marginX + usableWidth, y + h);
+      y += h;
+    });
+    y += 5;
+  }
+
+  function sessioneDelTest(sessione, key) {
+    const config = getEsercizioConfig(key);
+    if (!config) return false;
+    const jet = typeof jetTest === 'function' ? jetTest(sessione) : null;
+    if (jet?.key === key) return true;
+    if (sessione.testStandard === key || sessione.jetProgramStandardKey === key) return true;
+    return esercizioCompilato(config, sessione.esercizi?.[key]);
+  }
+
+  function sessioniSelezionate(sessioni) {
+    return (sessioni || [])
+      .filter(isSessioneTest)
+      .filter((s) => typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
+      .filter((s) => String(s.data || '') >= periodoDa && String(s.data || '') <= periodoA)
+      .filter((s) => testKeys.some((key) => sessioneDelTest(s, key)))
+      .sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
+  }
+
+  function colonneConDati(esercizio, sessioniCompilate) {
+    return colonneEsercizio(esercizio).filter((col) =>
+      sessioniCompilate.some((s) => {
+        const v = col.get(s);
+        return valoreCampoValido(col.campo, v);
+      })
+    );
+  }
+
+  function formattaCella(col, value) {
+    if (value === '' || value === undefined || value === null) return '-';
+    if (col?.tipo === 'number' && col.campo) return formattaValoreCampo(col.campo, value);
+    return String(value);
+  }
+
+  async function disegnaGrafico(group, sessioniGruppo) {
+    if (sessioniGruppo.length < 2) return;
+    const config = buildGroupChartConfig(sessioniGruppo, group);
+    const img = await renderChartOffscreen(config, 1100, 500);
+    const imgHeight = usableWidth * (500 / 1100);
+    assicuraSpazio(imgHeight + 12);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...C.navyDark);
+    doc.text(titoloGruppo(group), marginX, y);
+    y += 4;
+    doc.addImage(img, 'PNG', marginX, y, usableWidth, imgHeight);
+    y += imgHeight + 7;
+  }
+
+  // Copertina generale.
+  doc.setFillColor(...C.navy);
+  doc.rect(0, 0, pageWidth, 55, 'F');
+  doc.setTextColor(...C.white);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text('TEST VISIVI', marginX, 14);
+  doc.setFontSize(21);
+  doc.text('Report multiplo', marginX, 27);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text('Giocatori e Test selezionati', marginX, 35);
+  y = 70;
+
+  const nomiTest = testKeys.map((key) => TEST_STANDARD_LABELS[key] || getEsercizioConfig(key)?.label || key);
+  doc.setTextColor(...C.navyDark);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text('Riepilogo selezione', marginX, y);
+  y += 8;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...C.ink);
+  doc.text('Giocatori: ' + selezioniRaw.length, marginX, y);
+  y += 6;
+  doc.text('Periodo: ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, y);
+  y += 6;
+  const testLines = doc.splitTextToSize('Test: ' + nomiTest.join(', '), usableWidth);
+  doc.text(testLines, marginX, y);
+  y += testLines.length * 4.5 + 5;
+  doc.setFontSize(7.5);
+  doc.setTextColor(...C.muted);
+  doc.text('I Training sono esclusi. Ogni atleta inizia su una nuova pagina.', marginX, y);
+
+  for (let atletaIndex = 0; atletaIndex < selezioniRaw.length; atletaIndex++) {
+    const selezione = selezioniRaw[atletaIndex] || {};
+    const atleta = typeof normalizzaAnagraficaCalciatore === 'function'
+      ? normalizzaAnagraficaCalciatore(selezione.atleta || {})
+      : (selezione.atleta || {});
+    const sessioni = sessioniSelezionate(selezione.sessioni);
+
+    paginaNuova();
+
+    doc.setFillColor(...C.navy);
+    doc.rect(0, 0, pageWidth, 32, 'F');
+    doc.setTextColor(...C.white);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(17);
+    doc.text(nomeCompleto(atleta), marginX, 17);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.text('Periodo ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, 24);
+    y = 42;
+
+    const testPresenti = testKeys.filter((key) => sessioni.some((s) => sessioneDelTest(s, key)));
+    const giornate = new Set(sessioni.map((s) => s.data).filter(Boolean)).size;
+    const kGap = 4;
+    const kWidth = (usableWidth - kGap * 2) / 3;
+    cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
+    cardKpi(marginX + kWidth + kGap, y, kWidth, 'GIORNATE', giornate);
+    cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.length);
+    y += 28;
+
+    if (!sessioni.length) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...C.muted);
+      doc.text('Nessun risultato disponibile per i Test e il periodo selezionati.', marginX, y);
+      continue;
+    }
+
+    for (const key of testKeys) {
+      const esercizio = getEsercizioConfig(key);
+      if (!esercizio || esercizio.custom) continue;
+
+      const compilate = sessioni.filter((s) => sessioneDelTest(s, key) && esercizioCompilato(esercizio, s.esercizi?.[key]));
+      if (!compilate.length) continue;
+
+      titoloSezione(
+        TEST_STANDARD_LABELS[key] || esercizio.label,
+        compilate.length === 1 ? '1 valutazione nel periodo selezionato' : compilate.length + ' valutazioni nel periodo selezionato'
+      );
+
+      const cols = colonneConDati(esercizio, compilate);
+      if (cols.length) {
+        const headers = ['Data', ...cols.map((col) => col.header)];
+        const rows = compilate.map((s) => [
+          formatDataIt(s.data),
+          ...cols.map((col) => formattaCella(col, col.get(s))),
+        ]);
+        const dataWidth = 24;
+        const other = cols.length ? (usableWidth - dataWidth) / cols.length : usableWidth - dataWidth;
+        disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
+      }
+
+      if (compilate.length >= 2) {
+        for (const group of getChartGroups(esercizio)) {
+          const gruppo = sessioniConGruppo(compilate, group);
+          const campiConDati = group.campi.filter((campo) =>
+            gruppo.some((s) => getValoreCampoGruppo(s, group, campo) !== null)
+          );
+          if (gruppo.length >= 2 && campiConDati.length) {
+            await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
+          }
+        }
+      }
+    }
+  }
+
+  const totalePagine = doc.getNumberOfPages();
+  for (let page = 1; page <= totalePagine; page++) {
+    doc.setPage(page);
+    doc.setDrawColor(...C.line);
+    doc.line(marginX, pageHeight - 13, marginX + usableWidth, pageHeight - 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...C.muted);
+    doc.text('Test Visivi - Report multiplo', marginX, footerY);
+    doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
+    if (page === totalePagine) {
+      doc.setFontSize(6.3);
+      doc.text('Il report riporta esclusivamente i dati registrati nell\\'app e non costituisce una diagnosi clinica.', marginX, pageHeight - 5);
+    }
+  }
+
+  doc.save('report_multiplo_test_visivi_' + oggiIso() + '.pdf');
+}
