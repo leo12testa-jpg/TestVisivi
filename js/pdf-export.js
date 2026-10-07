@@ -597,12 +597,13 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
 async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
-  const testKeys = (opzioni.testKeys || []).filter((key) => TEST_STANDARD_KEYS.includes(key));
+  const automatico = opzioni.automatico === true;
+  const testKeysRichiesti = (opzioni.testKeys || []).filter((key) => TEST_STANDARD_KEYS.includes(key));
   const periodoDa = String(opzioni.periodoDa || '');
   const periodoA = String(opzioni.periodoA || '');
 
-  if (!Array.isArray(selezioniRaw) || !selezioniRaw.length) throw new Error('Seleziona almeno un giocatore.');
-  if (!testKeys.length) throw new Error('Seleziona almeno un Test.');
+  if (!Array.isArray(selezioniRaw) || !selezioniRaw.length) throw new Error('Nessun giocatore con Test nel periodo selezionato.');
+  if (!automatico && !testKeysRichiesti.length) throw new Error('Seleziona almeno un Test.');
   if (!periodoDa || !periodoA || periodoDa > periodoA) throw new Error('Controlla il periodo selezionato.');
 
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -747,7 +748,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       .filter(isSessioneTest)
       .filter((s) => typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
       .filter((s) => String(s.data || '') >= periodoDa && String(s.data || '') <= periodoA)
-      .filter((s) => testKeys.some((key) => sessioneDelTest(s, key)))
+      .filter((s) => automatico || testKeysRichiesti.some((key) => sessioneDelTest(s, key)))
       .sort((a, b) => String(a.data || '').localeCompare(String(b.data || '')));
   }
 
@@ -759,8 +760,14 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   }).filter((item) => item.sessioni.length > 0);
 
   if (!selezioniConDati.length) {
-    throw new Error('Nessuno dei giocatori selezionati ha i Test scelti nel periodo indicato.');
+    throw new Error('Nessun giocatore ha Test nel periodo indicato.');
   }
+
+  const testKeys = automatico
+    ? TEST_STANDARD_KEYS.filter((key) =>
+        selezioniConDati.some((item) => item.sessioni.some((s) => sessioneDelTest(s, key)))
+      )
+    : testKeysRichiesti;
 
   function colonneConDati(esercizio, sessioniCompilate) {
     return colonneEsercizio(esercizio).filter((col) =>
@@ -803,19 +810,23 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.text('Report multiplo', marginX, 27);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text('Giocatori e Test selezionati', marginX, 35);
+  doc.text('Giocatori e Test rilevati automaticamente nel periodo', marginX, 35);
   y = 70;
 
-  const nomiTest = testKeys.map((key) => TEST_STANDARD_LABELS[key] || getEsercizioConfig(key)?.label || key);
+  const nomiTest = [...new Set(
+    selezioniConDati.flatMap((item) =>
+      item.sessioni.map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '').filter(Boolean)
+    )
+  )];
   doc.setTextColor(...C.navyDark);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('Riepilogo selezione', marginX, y);
+  doc.text('Riepilogo automatico', marginX, y);
   y += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(...C.ink);
-  doc.text('Giocatori inclusi: ' + selezioniConDati.length + ' / ' + selezioniRaw.length, marginX, y);
+  doc.text('Giocatori con Test nel periodo: ' + selezioniConDati.length, marginX, y);
   y += 6;
   doc.text('Periodo: ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, y);
   y += 6;
@@ -824,7 +835,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   y += testLines.length * 4.5 + 5;
   doc.setFontSize(7.5);
   doc.setTextColor(...C.muted);
-  doc.text('I Training sono esclusi. Ogni atleta inizia su una nuova pagina.', marginX, y);
+  doc.text('Sono inclusi solo i Test realmente registrati nell’intervallo. I Training sono esclusi.', marginX, y);
 
   for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
     const { atleta, sessioni } = selezioniConDati[atletaIndex];
@@ -842,13 +853,15 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.text('Periodo ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, 24);
     y = 42;
 
-    const testPresenti = testKeys.filter((key) => sessioni.some((s) => sessioneDelTest(s, key)));
+    const testPresenti = new Set(
+      sessioni.map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '').filter(Boolean)
+    );
     const giornate = new Set(sessioni.map((s) => s.data).filter(Boolean)).size;
     const kGap = 4;
     const kWidth = (usableWidth - kGap * 2) / 3;
     cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
     cardKpi(marginX + kWidth + kGap, y, kWidth, 'GIORNATE', giornate);
-    cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.length);
+    cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.size);
     y += 28;
 
     if (!sessioni.length) {
@@ -915,6 +928,25 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
             await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
           }
         }
+      }
+    }
+
+    // Test originali/non standard riconosciuti come Test ma non associati a una chiave standard.
+    if (automatico && typeof metricheOriginaliJet === 'function') {
+      const nonStandard = sessioni.filter((s) =>
+        !testKeys.some((key) => sessioneDelTest(s, key)) &&
+        metricheOriginaliJet(s).length > 0
+      );
+
+      for (const s of nonStandard) {
+        const nome = typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : 'Test';
+        titoloSezione(nome || 'Test', 'Valutazione del ' + formatDataIt(s.data));
+        const righeOriginali = metricheOriginaliJet(s).map((m) => [m.label, m.valore]);
+        disegnaTabella(
+          ['Parametro', 'Valore'],
+          righeOriginali,
+          [usableWidth * 0.62, usableWidth * 0.38]
+        );
       }
     }
   }
