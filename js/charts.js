@@ -161,18 +161,45 @@ function buildBarChartConfig(labels, valori, unitLabel) {
     type: 'bar',
     data: {
       labels,
-      datasets: [{ label: unitLabel || 'valore', data: valori, backgroundColor: palette[0], borderRadius: 4, maxBarThickness: 40 }],
+      datasets: [{
+        label: unitLabel || 'Valore',
+        data: valori,
+        backgroundColor: palette[0],
+        borderColor: palette[0],
+        borderWidth: 1,
+        borderRadius: 7,
+        maxBarThickness: 48,
+      }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: (ctx) => formatChartValue(ctx.parsed.y, unitLabel),
+          },
+        },
+      },
       scales: {
-        x: { ticks: { color: chrome.muted }, grid: { display: false } },
+        x: {
+          ticks: { color: chrome.muted, maxRotation: 0, autoSkip: false },
+          grid: { display: false },
+          border: { color: chrome.grid },
+        },
         y: {
-          ticks: { color: chrome.muted },
+          grace: '12%',
+          ticks: {
+            color: chrome.muted,
+            maxTicksLimit: 6,
+            callback: (value) => formatChartValue(value),
+          },
           grid: { color: chrome.grid },
-          title: { display: !!unitLabel, text: unitLabel, color: chrome.muted },
+          border: { display: false },
+          title: { display: !!unitLabel, text: unitLabel, color: chrome.muted, font: { weight: '600' } },
         },
       },
     },
@@ -195,8 +222,9 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
       borderColor: colore,
       backgroundColor: `${colore}33`,
       pointBackgroundColor: colore,
-      borderWidth: 2,
-      pointRadius: 4,
+      borderWidth: 3,
+      pointRadius: 5,
+      pointHoverRadius: 7,
     };
   });
   return {
@@ -206,18 +234,19 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: datasets.length > 1, labels: { color: chrome.text, usePointStyle: true } },
+        legend: { display: datasets.length > 1, position: 'bottom', labels: { color: chrome.text, usePointStyle: true, padding: 16 } },
         tooltip: {
           mode: 'index',
           intersect: false,
           callbacks: tooltipTestNames
             ? {
+                label: (ctx) => ctx.dataset.label + ': ' + formatChartValue(ctx.parsed.r) + '/100',
                 footer: (items) => {
                   const nomi = items.length ? tooltipTestNames[items[0].dataIndex] : null;
                   return nomi && nomi.length ? ['Test associati:', ...nomi.map((n) => `• ${n}`)] : '';
                 },
               }
-            : undefined,
+            : { label: (ctx) => ctx.dataset.label + ': ' + formatChartValue(ctx.parsed.r) + '/100' },
         },
       },
       scales: {
@@ -228,7 +257,7 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
           grid: { color: chrome.grid },
           pointLabels: {
             color: chrome.text,
-            font: { size: 11 },
+            font: { size: 12, weight: '600' },
             callback: (label) => {
               const parole = String(label || '').split(/\s+/);
               const righe = [];
@@ -246,7 +275,7 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
               return righe;
             },
           },
-          ticks: { color: chrome.muted, backdropColor: 'transparent', stepSize: 25 },
+          ticks: { color: chrome.muted, backdropColor: 'transparent', stepSize: 25, showLabelBackdrop: false },
         },
       },
     },
