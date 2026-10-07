@@ -223,17 +223,33 @@ function fakeFirebase(seed) {
     await overflow();
 
     await go('pdf-multiplo.html');
-    assert.equal(await page.locator('.bulk-atleta-check').count(), 0);
-    assert.equal(await page.locator('.bulk-test-check').count(), 0);
+    assert.equal(await page.locator('input[name="bulk-mode"]').count(), 2);
+    assert.equal(await page.locator('#bulk-periodo-panel').isVisible(), true);
+    assert.equal(await page.locator('#bulk-manuale-panel').isHidden(), true);
+
+    // Modalità 1: periodo -> tutti i giocatori/Test nel range.
     await page.locator('#bulk-da').fill('2026-08-01');
     await page.locator('#bulk-a').fill('2026-12-31');
     await page.locator('#bulk-a').dispatchEvent('change');
     assert.match(await page.locator('#bulk-summary').innerText(), /1 giocatore · 4 sessioni Test/);
-    assert.match(await page.locator('#bulk-detail').innerText(), /rilevat/);
     await page.locator('#bulk-genera').click();
     await page.waitForSelector('#bulk-preview-dialog[open]');
-    const previewSrc = await page.locator('#bulk-preview-frame').getAttribute('src');
-    assert.ok(previewSrc && previewSrc.startsWith('blob:'), 'Anteprima PDF caricata prima del download');
+    let previewSrc = await page.locator('#bulk-preview-frame').getAttribute('src');
+    assert.ok(previewSrc && previewSrc.startsWith('blob:'), 'Anteprima PDF periodo caricata');
+    await page.locator('#bulk-preview-close').click();
+
+    // Modalità 2: giocatori + data -> solo i selezionati in quella giornata.
+    await page.locator('input[name="bulk-mode"][value="giocatori-data"]').check();
+    assert.equal(await page.locator('#bulk-manuale-panel').isVisible(), true);
+    await page.locator('.bulk-atleta-check[value="demo"]').check();
+    await page.locator('#bulk-data-test').fill('2026-08-01');
+    await page.locator('#bulk-data-test').dispatchEvent('change');
+    assert.match(await page.locator('#bulk-summary').innerText(), /1 giocatore con Test · 1 sessione Test/);
+
+    await page.locator('#bulk-genera').click();
+    await page.waitForSelector('#bulk-preview-dialog[open]');
+    previewSrc = await page.locator('#bulk-preview-frame').getAttribute('src');
+    assert.ok(previewSrc && previewSrc.startsWith('blob:'), 'Anteprima PDF giocatori + data caricata');
     const multiDownloadPromise = page.waitForEvent('download');
     await page.locator('#bulk-preview-download').click();
     const multiDownload = await multiDownloadPromise;
@@ -257,7 +273,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar per singolo test', 'PDF multiplo automatico da intervallo con anteprima', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar per singolo test', 'PDF multiplo: periodo oppure giocatori + data, con anteprima', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
