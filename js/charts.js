@@ -70,6 +70,15 @@ function getValoreCampoGruppo(sessione, group, campo) {
   return campo.unit === 'ms' ? n / 1000 : n;
 }
 
+function formatChartValue(value, unitLabel = '') {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—';
+  const n = Number(value);
+  const abs = Math.abs(n);
+  const maxFractionDigits = Number.isInteger(n) ? 0 : (abs < 1 ? 3 : abs < 10 ? 2 : 1);
+  const text = n.toLocaleString('it-IT', { maximumFractionDigits: maxFractionDigits });
+  return unitLabel ? text + ' ' + unitLabel : text;
+}
+
 /** Sessioni (gia' ordinate per data) che hanno almeno un valore per il gruppo dato. */
 function sessioniConGruppo(sessioni, group) {
   return sessioni.filter((s) => group.campi.some((c) => getValoreCampoGruppo(s, group, c) !== null));
@@ -83,11 +92,14 @@ function lineChartConfig(labels, datasetsRaw, unitLabel) {
     data: d.data,
     borderColor: palette[i % palette.length],
     backgroundColor: palette[i % palette.length],
-    borderWidth: 2,
-    pointRadius: 4,
-    pointHoverRadius: 6,
+    borderWidth: 3,
+    pointRadius: 4.5,
+    pointHoverRadius: 7,
+    pointHitRadius: 14,
+    pointBorderWidth: 1.5,
     spanGaps: false,
-    tension: 0,
+    tension: 0.18,
+    fill: false,
   }));
   return {
     type: 'line',
@@ -95,17 +107,38 @@ function lineChartConfig(labels, datasetsRaw, unitLabel) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      normalized: true,
       plugins: {
-        legend: { display: datasets.length > 1, labels: { color: chrome.text, usePointStyle: true } },
-        tooltip: { mode: 'index', intersect: false },
+        legend: {
+          display: datasets.length > 1,
+          position: 'bottom',
+          labels: { color: chrome.text, usePointStyle: true, boxWidth: 9, padding: 16 },
+        },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: (ctx) => ctx.dataset.label + ': ' + formatChartValue(ctx.parsed.y, unitLabel),
+          },
+        },
       },
-      interaction: { mode: 'index', intersect: false },
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
       scales: {
-        x: { ticks: { color: chrome.muted }, grid: { color: chrome.grid } },
+        x: {
+          ticks: { color: chrome.muted, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 },
+          grid: { display: false },
+          border: { color: chrome.grid },
+        },
         y: {
-          ticks: { color: chrome.muted },
+          grace: '12%',
+          ticks: {
+            color: chrome.muted,
+            maxTicksLimit: 6,
+            callback: (value) => formatChartValue(value),
+          },
           grid: { color: chrome.grid },
-          title: { display: !!unitLabel, text: unitLabel, color: chrome.muted },
+          border: { display: false },
+          title: { display: !!unitLabel, text: unitLabel, color: chrome.muted, font: { weight: '600' } },
         },
       },
     },
