@@ -213,3 +213,33 @@ test('formatta i decimali senza arrotondare e mostra i millisecondi come secondi
   assert.equal(run('valoreVisualeCampo(campoMs, 350.1234)'), '0.3501234');
   assert.equal(run('valoreInputInterno(campoMs, "0.3501234")'), 350.1234);
 });
+
+
+test('training accidentali: solo vuoti o durata totale fino a 5 secondi', () => {
+  context.input = {
+    modalita: 'training',
+    esercizi: { proActionReaction: { tempoTotale: 4, errori: 0 } },
+  };
+  assert.equal(run('durataSessioneSecondi(input)'), 4);
+  assert.equal(run('trainingAccidentale(input, 5)'), true);
+
+  context.input = {
+    modalita: 'training',
+    esercizi: { proActionReaction: { tempoTotale: 30, errori: 1 } },
+  };
+  assert.equal(run('trainingAccidentale(input, 5)'), false);
+
+  context.input = {
+    modalita: 'test',
+    esercizi: { proActionReaction: { tempoTotale: 2, errori: 0 } },
+  };
+  assert.equal(run('trainingAccidentale(input, 5)'), false);
+
+  context.input = {
+    nomeTestOriginale: 'Allenamento libero',
+    datiOriginali: { 'Tempo totale (ms)': 3500, errori: 0 },
+  };
+  assert.equal(run('modalitaSessioneEffettiva(input)'), 'training');
+  assert.equal(run('durataSessioneSecondi(input)'), 3.5);
+  assert.equal(run('trainingAccidentale(input, 5)'), true);
+});
