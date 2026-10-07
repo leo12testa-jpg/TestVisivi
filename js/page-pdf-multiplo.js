@@ -2,8 +2,18 @@ registerServiceWorker();
 
 let _bulkAtleti = [];
 let _bulkSessioni = [];
+const _bulkAtletiSelezionati = new Set();
 let _bulkPreviewUrl = '';
 let _bulkPreviewNomeFile = '';
+
+function bulkModalita() {
+  return qs('input[name="bulk-mode"]:checked')?.value || 'periodo';
+}
+
+function bulkSessioneValida(s) {
+  return isSessioneTest(s) &&
+    (typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s));
+}
 
 function bulkPeriodoValido() {
   const da = qs('#bulk-da').value;
@@ -15,20 +25,17 @@ function bulkSessioniNelPeriodo() {
   if (!bulkPeriodoValido()) return [];
   const da = qs('#bulk-da').value;
   const a = qs('#bulk-a').value;
-
   return (_bulkSessioni || [])
-    .filter(isSessioneTest)
-    .filter((s) => typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
+    .filter(bulkSessioneValida)
     .filter((s) => String(s.data || '') >= da && String(s.data || '') <= a)
     .sort((x, y) => String(x.data || '').localeCompare(String(y.data || '')));
 }
 
-function bulkDatiAutomatici() {
-  const sessioni = bulkSessioniNelPeriodo();
+function bulkDatiDaSessioni(sessioni, atletaIds = null) {
   const perAtleta = new Map();
-
   sessioni.forEach((s) => {
     if (!s.atletaId) return;
+    if (atletaIds && !atletaIds.has(s.atletaId)) return;
     if (!perAtleta.has(s.atletaId)) perAtleta.set(s.atletaId, []);
     perAtleta.get(s.atletaId).push(s);
   });
@@ -37,13 +44,76 @@ function bulkDatiAutomatici() {
     .filter((atleta) => perAtleta.has(atleta.id))
     .map((atleta) => ({ atleta, sessioni: perAtleta.get(atleta.id) }));
 
+  const sessioniIncluse = selezioni.flatMap((item) => item.sessioni);
   const nomiTest = new Set(
-    sessioni
+    sessioniIncluse
       .map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '')
       .filter(Boolean)
   );
 
-  return { sessioni, selezioni, nomiTest };
+  return { sessioni: sessioniIncluse, selezioni, nomiTest };
+}
+
+function bulkDatiAutomatici() {
+  return bulkDatiDaSessioni(bulkSessioniNelPeriodo());
+}
+
+function bulkDatiManuali() {
+  const data = qs('#bulk-data-test').value;
+  const ids = new Set(_bulkAtletiSelezionati);
+  if (!data || !ids.size) return { sessioni: [], selezioni: [], nomiTest: new Set() };
+
+  const sessioni = (_bulkSessioni || [])
+    .filter(bulkSessioneValida)
+    .filter((s) => String(s.data || '') === data);
+
+  return bulkDatiDaSessioni(sessioni, ids);
+}
+
+function bulkRenderAtleti(filtro = '') {
+  const box = qs('#bulk-atleti');
+  box.innerHTML = '';
+  const needle = String(filtro || '').trim().toLowerCase();
+  const lista = _bulkAtleti.filter((a) => !needle || nomeCompleto(a).toLowerCase().includes(needle));
+
+  if (!lista.length) {
+    box.appendChild(el('div', { class: 'empty-state', text: 'Nessun giocatore corrisponde alla ricerca.' }));
+    return;
+  }
+
+  lista.forEach((a) => {
+    const id = 'bulk-atleta-' + a.id;
+    box.appendChild(el('label', { class: 'bulk-choice-item', for: id }, [
+      el('input', {
+        type: 'checkbox',
+        id,
+        value: a.id,
+        class: 'bulk-atleta-check',
+        checked: _bulkAtletiSelezionati.has(a.id),
+      }),
+      el('span', { text: nomeCompleto(a) }),
+    ]));
+  });
+
+  qsa('.bulk-atleta-check', box).forEach((x) => x.addEventListener('change', () => {
+    if (x.checked) _bulkAtletiSelezionati.add(x.value);
+    else _bulkAtletiSelezionati.delete(x.value);
+    bulkAggiornaRiepilogo();
+  }));
+}
+
+function bulkSetAtleti(checked) {
+  if (checked) _bulkAtleti.forEach((a) => _bulkAtletiSelezionati.add(a.id));
+  else _bulkAtletiSelezionati.clear();
+  qsa('.bulk-atleta-check').forEach((x) => { x.checked = checked; });
+  bulkAggiornaRiepilogo();
+}
+
+function bulkAggiornaModalita() {
+  const manuale = bulkModalita() === 'giocatori-data';
+  qs('#bulk-periodo-panel').hidden = manuale;
+  qs('#bulk-manuale-panel').hidden = !manuale;
+  bulkAggiornaRiepilogo();
 }
 
 function bulkAggiornaRiepilogo() {
@@ -51,32 +121,52 @@ function bulkAggiornaRiepilogo() {
   const summary = qs('#bulk-summary');
   const detail = qs('#bulk-detail');
 
-  if (!bulkPeriodoValido()) {
-    summary.textContent = 'Seleziona un intervallo valido';
-    detail.textContent = 'Indica Data da e Data a.';
+  if (bulkModalita() === 'periodo') {
+    if (!bulkPeriodoValido()) {
+      summary.textContent = 'Seleziona un intervallo valido';
+      detail.textContent = 'Indica Data da e Data a.';
+      btn.disabled = true;
+      return;
+    }
+
+    const { sessioni, selezioni, nomiTest } = bulkDatiAutomatici();
+    if (!selezioni.length || !sessioni.length) {
+      summary.textContent = 'Nessun Test nel periodo selezionato';
+      detail.textContent = 'Cambia l’intervallo per trovare valutazioni Test registrate.';
+      btn.disabled = true;
+      return;
+    }
+
+    summary.textContent =
+      selezioni.length + (selezioni.length === 1 ? ' giocatore' : ' giocatori') +
+      ' · ' + sessioni.length + (sessioni.length === 1 ? ' sessione Test' : ' sessioni Test');
+    detail.textContent =
+      nomiTest.size + (nomiTest.size === 1 ? ' tipo di Test rilevato automaticamente.' : ' tipi di Test rilevati automaticamente.');
+    btn.disabled = false;
+    return;
+  }
+
+  const data = qs('#bulk-data-test').value;
+  if (!_bulkAtletiSelezionati.size || !data) {
+    summary.textContent = !_bulkAtletiSelezionati.size ? 'Seleziona almeno un giocatore' : 'Seleziona la data del Test';
+    detail.textContent = 'Verranno inclusi tutti i Test svolti dai giocatori scelti in quella giornata.';
     btn.disabled = true;
     return;
   }
 
-  const { sessioni, selezioni, nomiTest } = bulkDatiAutomatici();
-  const nAtleti = selezioni.length;
-  const nSessioni = sessioni.length;
-  const nTest = nomiTest.size;
-
-  if (!nAtleti || !nSessioni) {
-    summary.textContent = 'Nessun Test nel periodo selezionato';
-    detail.textContent = 'Cambia l’intervallo per trovare valutazioni Test registrate.';
+  const { sessioni, selezioni, nomiTest } = bulkDatiManuali();
+  if (!selezioni.length || !sessioni.length) {
+    summary.textContent = 'Nessun Test trovato';
+    detail.textContent = 'I giocatori selezionati non hanno Test registrati nella data scelta.';
     btn.disabled = true;
     return;
   }
 
   summary.textContent =
-    nAtleti + (nAtleti === 1 ? ' giocatore' : ' giocatori') +
-    ' · ' + nSessioni + (nSessioni === 1 ? ' sessione Test' : ' sessioni Test');
-
+    selezioni.length + (selezioni.length === 1 ? ' giocatore con Test' : ' giocatori con Test') +
+    ' · ' + sessioni.length + (sessioni.length === 1 ? ' sessione Test' : ' sessioni Test');
   detail.textContent =
-    nTest + (nTest === 1 ? ' tipo di Test rilevato automaticamente.' : ' tipi di Test rilevati automaticamente.');
-
+    nomiTest.size + (nomiTest.size === 1 ? ' tipo di Test incluso.' : ' tipi di Test inclusi.');
   btn.disabled = false;
 }
 
@@ -94,7 +184,6 @@ function bulkChiudiAnteprima() {
 
 function bulkApriAnteprima(report) {
   if (!report?.blob) throw new Error('Anteprima PDF non disponibile.');
-
   if (_bulkPreviewUrl) URL.revokeObjectURL(_bulkPreviewUrl);
   _bulkPreviewUrl = URL.createObjectURL(report.blob);
   _bulkPreviewNomeFile = report.nomeFile || ('report_multiplo_test_visivi_' + oggiIso() + '.pdf');
@@ -118,8 +207,13 @@ function bulkScaricaAnteprima() {
   link.remove();
 }
 
+qsa('input[name="bulk-mode"]').forEach((x) => x.addEventListener('change', bulkAggiornaModalita));
 qs('#bulk-da').addEventListener('change', bulkAggiornaRiepilogo);
 qs('#bulk-a').addEventListener('change', bulkAggiornaRiepilogo);
+qs('#bulk-data-test').addEventListener('change', bulkAggiornaRiepilogo);
+qs('#bulk-ricerca').addEventListener('input', debounce((e) => bulkRenderAtleti(e.target.value), 120));
+qs('#bulk-atleti-tutti').addEventListener('click', () => bulkSetAtleti(true));
+qs('#bulk-atleti-nessuno').addEventListener('click', () => bulkSetAtleti(false));
 qs('#bulk-preview-x').addEventListener('click', bulkChiudiAnteprima);
 qs('#bulk-preview-close').addEventListener('click', bulkChiudiAnteprima);
 qs('#bulk-preview-download').addEventListener('click', bulkScaricaAnteprima);
@@ -133,25 +227,22 @@ window.addEventListener('beforeunload', () => {
 
 qs('#bulk-genera').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
-  const periodoDa = qs('#bulk-da').value;
-  const periodoA = qs('#bulk-a').value;
+  const manuale = bulkModalita() === 'giocatori-data';
+  const dati = manuale ? bulkDatiManuali() : bulkDatiAutomatici();
 
-  if (!bulkPeriodoValido()) {
+  if (!dati.selezioni.length) {
     bulkAggiornaRiepilogo();
     return;
   }
 
-  const { selezioni } = bulkDatiAutomatici();
-  if (!selezioni.length) {
-    bulkAggiornaRiepilogo();
-    return;
-  }
+  const periodoDa = manuale ? qs('#bulk-data-test').value : qs('#bulk-da').value;
+  const periodoA = manuale ? qs('#bulk-data-test').value : qs('#bulk-a').value;
 
   btn.disabled = true;
   btn.textContent = 'Generazione anteprima…';
 
   try {
-    const report = await esportaReportMultiploPdf(selezioni, {
+    const report = await esportaReportMultiploPdf(dati.selezioni, {
       periodoDa,
       periodoA,
       automatico: true,
@@ -174,6 +265,7 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
     dbGetAtleti(),
     dbGetAllSessioni(),
   ]);
+  bulkRenderAtleti();
 
   const oggi = oggiIso();
   const d = new Date(oggi + 'T12:00:00');
@@ -181,7 +273,9 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
+
   qs('#bulk-da').value = y + '-' + m + '-' + day;
   qs('#bulk-a').value = oggi;
-  bulkAggiornaRiepilogo();
+  qs('#bulk-data-test').value = oggi;
+  bulkAggiornaModalita();
 })().catch(mostraErrorePagina);
