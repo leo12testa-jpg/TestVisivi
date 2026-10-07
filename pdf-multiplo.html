@@ -19,8 +19,8 @@
     <section class="page-intro compact">
       <div>
         <p class="eyebrow">REPORT UNICO</p>
-        <h2>Scegli giocatori, Test e periodo</h2>
-        <p class="intro-description">Genera un unico PDF con solo i giocatori selezionati e solo i Test scelti. I Training sono sempre esclusi.</p>
+        <h2>Scegli solo il periodo</h2>
+        <p class="intro-description">L’app trova automaticamente i giocatori che hanno eseguito almeno un Test nell’intervallo e inserisce nel PDF solo i Test realmente svolti. I Training sono sempre esclusi.</p>
       </div>
     </section>
 
@@ -38,42 +38,10 @@
       </div>
     </section>
 
-    <section class="card">
-      <div class="section-heading-row">
-        <div>
-          <p class="eyebrow">GIOCATORI</p>
-          <h2>Seleziona chi inserire</h2>
-        </div>
-        <div class="row wrap">
-          <button type="button" class="secondary" id="bulk-atleti-tutti">Tutti</button>
-          <button type="button" class="secondary" id="bulk-atleti-nessuno">Nessuno</button>
-        </div>
-      </div>
-      <div class="search-bar bulk-search">
-        <label for="bulk-ricerca">Cerca giocatore</label>
-        <input type="search" id="bulk-ricerca" placeholder="Nome o cognome…" />
-      </div>
-      <div id="bulk-atleti" class="bulk-choice-grid" aria-live="polite"><p class="meta">Caricamento giocatori…</p></div>
-    </section>
-
-    <section class="card">
-      <div class="section-heading-row">
-        <div>
-          <p class="eyebrow">TEST</p>
-          <h2>Seleziona cosa inserire</h2>
-        </div>
-        <div class="row wrap">
-          <button type="button" class="secondary" id="bulk-test-tutti">Tutti</button>
-          <button type="button" class="secondary" id="bulk-test-nessuno">Nessuno</button>
-        </div>
-      </div>
-      <div id="bulk-test" class="bulk-choice-grid"></div>
-    </section>
-
     <section class="card bulk-generate-card">
       <div>
-        <strong id="bulk-summary">0 giocatori · 0 Test</strong>
-        <p class="meta">Il PDF userà solo le sessioni Test comprese nel periodo scelto.</p>
+        <strong id="bulk-summary">Caricamento archivio…</strong>
+        <p class="meta" id="bulk-detail">Verranno inclusi automaticamente solo i giocatori e i Test presenti nell’intervallo.</p>
       </div>
       <button type="button" id="bulk-genera" disabled>Anteprima PDF</button>
     </section>
