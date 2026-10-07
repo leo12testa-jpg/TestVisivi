@@ -248,6 +248,39 @@ async function dbPulisciSessioniVuote() {
 }
 
 
+async function dbPulisciTrainingAccidentali(sogliaSecondi = 5) {
+  if (typeof trainingAccidentale !== 'function') {
+    return { eliminati: 0, vuoti: 0, brevi: 0, sogliaSecondi };
+  }
+
+  const snap = await _sessioniCol().get();
+  const candidati = [];
+  let vuoti = 0;
+  let brevi = 0;
+
+  snap.docs.forEach((doc) => {
+    const sessione = _sessioneDaDoc(doc);
+    if (!trainingAccidentale(sessione, sogliaSecondi)) return;
+
+    const haRisultati = typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(sessione);
+    const durata = typeof durataSessioneSecondi === 'function' ? durataSessioneSecondi(sessione) : null;
+    if (!haRisultati) vuoti++;
+    else if (durata !== null && durata <= sogliaSecondi) brevi++;
+
+    candidati.push(doc.id);
+  });
+
+  for (const id of candidati) await dbDeleteSessione(id);
+
+  return {
+    eliminati: candidati.length,
+    vuoti,
+    brevi,
+    sogliaSecondi,
+  };
+}
+
+
 
 async function dbRiclassificaSessioniJet() {
   if (typeof haDatiJet !== 'function' || typeof modalitaSessioneEffettiva !== 'function') {
