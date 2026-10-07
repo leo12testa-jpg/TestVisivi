@@ -931,6 +931,52 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       }
     }
 
+    // Eventuali esercizi/test storici configurati ma non compresi nei Test standard.
+    if (automatico) {
+      const standardSet = new Set(testKeys);
+      const eserciziExtra = ESERCIZI_CONFIG.filter((esercizio) =>
+        !esercizio.custom && !standardSet.has(esercizio.key)
+      );
+
+      for (const esercizio of eserciziExtra) {
+        const compilate = sessioni.filter((s) =>
+          esercizioCompilato(esercizio, s.esercizi?.[esercizio.key])
+        );
+        if (!compilate.length) continue;
+
+        titoloSezione(
+          esercizio.label,
+          compilate.length === 1
+            ? '1 valutazione nel periodo selezionato'
+            : compilate.length + ' valutazioni nel periodo selezionato'
+        );
+
+        const cols = colonneConDati(esercizio, compilate);
+        if (cols.length) {
+          const headers = ['Data', ...cols.map((col) => col.header)];
+          const rows = compilate.map((sessione) => [
+            formatDataIt(sessione.data),
+            ...cols.map((col) => formattaCella(col, col.get(sessione))),
+          ]);
+          const dataWidth = 24;
+          const other = (usableWidth - dataWidth) / cols.length;
+          disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
+        }
+
+        if (compilate.length >= 2) {
+          for (const group of getChartGroups(esercizio)) {
+            const gruppo = sessioniConGruppo(compilate, group);
+            const campiConDati = group.campi.filter((campo) =>
+              gruppo.some((sessione) => getValoreCampoGruppo(sessione, group, campo) !== null)
+            );
+            if (gruppo.length >= 2 && campiConDati.length) {
+              await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
+            }
+          }
+        }
+      }
+    }
+
     // Test originali/non standard riconosciuti come Test ma non associati a una chiave standard.
     if (automatico && typeof metricheOriginaliJet === 'function') {
       const nonStandard = sessioni.filter((s) =>
