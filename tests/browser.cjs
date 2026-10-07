@@ -197,6 +197,9 @@ function fakeFirebase(seed) {
     const datasets = await page.evaluate(() => Object.values(Chart.instances).map(c => c.data.datasets).flat());
     assert.ok(datasets.some(d => JSON.stringify(d.data) === '[0.35,0.32,0.3]'), 'Grafico contiene storico e nuovo test in secondi');
     assert.ok(datasets.some(d => JSON.stringify(d.data) === '[44,40,38]'));
+    assert.ok(await page.locator('.chart-summary-item').count() >= 2, 'Riepilogo immediato presente sopra i grafici');
+    assert.match(await page.locator('.chart-summary-item').first().innerText(), /\d/);
+    assert.ok(await page.locator('.chart-block-subtitle').count() >= 1);
     await page.screenshot({ path: `${out}/charts-desktop.png`, fullPage: true });
     await overflow();
 
@@ -273,7 +276,7 @@ function fakeFirebase(seed) {
     }
     assert.deepEqual(errors, [], 'Console e runtime senza errori');
     assert.deepEqual(external, [], 'Nessuna richiesta esterna');
-    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici storico + nuovo', 'radar per singolo test', 'PDF multiplo: periodo oppure giocatori + data, con anteprima', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
+    const result = { ok: true, fixture: 'sintetica, Firebase sostituito; nessuna verifica dati reali', checks: ['home una query', 'backup JSON grezzo', 'ricerca', 'profilo senza dati clinici', 'PDF valido', 'storico raggruppato per nome e doppi accorpati', 'solo sessioni con risultati reali', 'modifica conservativa e custom', 'nuovo test', 'errore salvataggio recuperabile', 'grafici chiari con riepilogo ultimo valore + storico', 'radar per singolo test', 'PDF multiplo: periodo oppure giocatori + data, con anteprima', 'diario osservazioni', 'Test e Training separati', 'mobile chiaro/scuro', 'console senza errori'], errors, external };
     fs.writeFileSync(`${out}/browser-results.json`, JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result, null, 2));
   } finally { await browser.close(); }
