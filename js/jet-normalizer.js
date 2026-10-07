@@ -123,6 +123,52 @@ function isSessioneJetTest(sessione) {
   return haDatiJet(sessione) && modalitaSessioneEffettiva(sessione) === 'test';
 }
 
+function durataSessioneSecondi(sessione) {
+  if (!sessione) return null;
+  const candidati = [];
+
+  const aggiungi = (raw, unit = 's') => {
+    const n = jetNumero(raw);
+    if (n === null || n < 0) return;
+    candidati.push(unit === 'ms' ? n / 1000 : n);
+  };
+
+  if (sessione.durataSecondi !== undefined) aggiungi(sessione.durataSecondi, 's');
+
+  const originali = typeof risultatiOriginaliJet === 'function' ? risultatiOriginaliJet(sessione) : null;
+  if (originali && typeof originali === 'object') {
+    Object.entries(originali).forEach(([label, raw]) => {
+      if (raw && typeof raw === 'object') return;
+      const normalizzato = jetNome(label);
+      if (!normalizzato.includes('tempototale') && !normalizzato.includes('durata')) return;
+      const unit = /\(ms\)|millisecond/i.test(String(label)) ? 'ms' : 's';
+      aggiungi(raw, unit);
+    });
+  }
+
+  const visita = (value, key = '') => {
+    if (!value || typeof value !== 'object') return;
+    Object.entries(value).forEach(([k, v]) => {
+      const nk = String(k).toLowerCase();
+      if ((nk === 'tempototale' || nk === 'duratasecondi') && (typeof v === 'number' || typeof v === 'string')) {
+        aggiungi(v, 's');
+      } else if (v && typeof v === 'object') {
+        visita(v, k);
+      }
+    });
+  };
+  visita(sessione.esercizi || {});
+
+  return candidati.length ? Math.max(...candidati) : null;
+}
+
+function trainingAccidentale(sessione, sogliaSecondi = 5) {
+  if (typeof isSessioneTraining !== 'function' || !isSessioneTraining(sessione)) return false;
+  if (typeof sessioneHaRisultatiVisibili === 'function' && !sessioneHaRisultatiVisibili(sessione)) return true;
+  const durata = durataSessioneSecondi(sessione);
+  return durata !== null && durata <= Number(sogliaSecondi);
+}
+
 
 function jetValoreReale(value) {
   if (value === undefined || value === null) return false;
