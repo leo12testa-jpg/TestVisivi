@@ -81,13 +81,59 @@ function buildGalleriaCampoVisivoAvanzato(sessioni) {
   return wrapper;
 }
 
+function buildChartSummary(group, sessioni) {
+  const grid = el('div', { class: 'chart-summary-grid' });
+
+  group.campi.forEach((campo) => {
+    const valori = sessioni
+      .map((s) => ({ data: s.data, valore: getValoreCampoGruppo(s, group, campo) }))
+      .filter((x) => x.valore !== null);
+
+    if (!valori.length) return;
+    const ultimo = valori[valori.length - 1];
+    const precedente = valori.length > 1 ? valori[valori.length - 2] : null;
+    let confronto = 'Prima rilevazione';
+
+    if (precedente) {
+      const delta = ultimo.valore - precedente.valore;
+      if (Math.abs(delta) < 1e-9) confronto = '= stabile rispetto alla precedente';
+      else confronto = (delta > 0 ? '↑ +' : '↓ ') + formatChartValue(Math.abs(delta), group.unitLabel) + ' vs precedente';
+    }
+
+    grid.appendChild(el('div', { class: 'chart-summary-item' }, [
+      el('span', { class: 'chart-summary-label', text: campo.label }),
+      el('strong', { text: formatChartValue(ultimo.valore, group.unitLabel) }),
+      el('span', { class: 'chart-summary-meta', text: formatDataIt(ultimo.data) + ' · ' + confronto }),
+    ]));
+  });
+
+  return grid;
+}
+
 function buildChartBlock(group, sessioni) {
   const canvas = el('canvas');
-  const block = el('div', { class: 'chart-block' }, [
-    el('h3', { text: titoloGruppo(group) }),
+  const sessioniGruppo = sessioniConGruppo(sessioni, group);
+  const prima = sessioniGruppo[0]?.data;
+  const ultima = sessioniGruppo[sessioniGruppo.length - 1]?.data;
+  const periodo = sessioniGruppo.length <= 1
+    ? (prima ? formatDataIt(prima) : '')
+    : formatDataIt(prima) + ' → ' + formatDataIt(ultima);
+
+  const block = el('div', { class: 'chart-block chart-block-clear' }, [
+    el('div', { class: 'chart-block-head' }, [
+      el('div', {}, [
+        el('h3', { text: titoloGruppo(group) }),
+        el('p', {
+          class: 'chart-block-subtitle',
+          text: sessioniGruppo.length + (sessioniGruppo.length === 1 ? ' rilevazione' : ' rilevazioni') + (periodo ? ' · ' + periodo : ''),
+        }),
+      ]),
+      group.unitLabel ? el('span', { class: 'chart-unit-badge', text: group.unitLabel }) : null,
+    ].filter(Boolean)),
+    buildChartSummary(group, sessioniGruppo),
     el('div', { class: 'chart-canvas-wrap' }, [canvas]),
   ]);
-  _renderJobs.push({ canvas, sessioni, group });
+  _renderJobs.push({ canvas, sessioni: sessioniGruppo, group });
   return block;
 }
 
@@ -171,7 +217,19 @@ async function init() {
     if (sessioniCompilate.length === 0) return;
     mostratoAlmenoUno = true;
 
-    const sezione = el('section', { 'data-test': esercizio.key, class: 'test-chart-section' }, [el('h2', { text: esercizio.label })]);
+    const dateCompilate = sessioniCompilate.map((s) => s.data).filter(Boolean).sort();
+    const periodoSezione = dateCompilate.length > 1
+      ? formatDataIt(dateCompilate[0]) + ' → ' + formatDataIt(dateCompilate[dateCompilate.length - 1])
+      : (dateCompilate[0] ? formatDataIt(dateCompilate[0]) : '');
+    const sezione = el('section', { 'data-test': esercizio.key, class: 'test-chart-section' }, [
+      el('div', { class: 'test-chart-heading' }, [
+        el('h2', { text: esercizio.label }),
+        el('p', {
+          class: 'meta chart-section-meta',
+          text: sessioniCompilate.length + (sessioniCompilate.length === 1 ? ' rilevazione' : ' rilevazioni') + (periodoSezione ? ' · ' + periodoSezione : ''),
+        }),
+      ]),
+    ]);
     qs('#filtro-test-grafici').appendChild(el('option', { value: esercizio.key, text: esercizio.label }));
 
     if (esercizio.key === 'tracciamentoVisivo') {
