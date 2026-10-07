@@ -1795,6 +1795,62 @@ th {
 
 
 /* PDF multiplo */
+.bulk-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.bulk-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 86px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.bulk-mode-option:has(input:checked) {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+  background: var(--surface-2);
+}
+
+.bulk-mode-option input[type="radio"] {
+  width: 18px;
+  min-width: 18px;
+  height: 18px;
+  min-height: 18px;
+  padding: 0;
+  margin: 3px 0 0;
+  flex: 0 0 18px;
+  accent-color: var(--accent);
+}
+
+.bulk-mode-option span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.bulk-mode-option strong {
+  font-size: .96rem;
+}
+
+.bulk-mode-option small {
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.bulk-manual-date {
+  max-width: 340px;
+  margin: 16px 0 4px;
+}
+
 .bulk-period-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1928,6 +1984,10 @@ th {
 }
 
 @media (max-width: 680px) {
+  .bulk-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
   .bulk-period-grid {
     grid-template-columns: 1fr;
   }
