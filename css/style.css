@@ -2329,3 +2329,16 @@ main:has(#lista-atleti) .team-tools .field button { height: 46px; min-height: 46
  main:has(#lista-atleti) .team-tools .team-action-field { flex: 1 1 100%; width: 100%; }
  main:has(#lista-atleti) .team-tools .team-action-label { display: none; }
 }
+
+/* Radar: filtro per intervallo date, leggibile anche su smartphone. */
+.radar-date-filter { margin-bottom: 22px; }
+.radar-date-filter-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.radar-date-filter-heading h2 { margin: 0 0 4px; }
+.radar-date-filter-heading .meta { margin: 0; }
+.radar-date-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 220px)); gap: 14px; margin: 16px 0 12px; }
+.radar-date-fields .field { min-width: 0; }
+.radar-date-fields input { width: 100%; box-sizing: border-box; min-height: 44px; }
+@media (max-width: 570px) {
+  .radar-date-fields { grid-template-columns: minmax(0, 1fr); }
+  .radar-date-filter-heading button { width: 100%; }
+}
