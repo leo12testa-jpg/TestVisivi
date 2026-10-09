@@ -5,10 +5,16 @@ let _sessioniAtleta = [];
 let _tutteSessioni = [];
 let radarChartAttuale = null;
 let giornateDisponibili = [];
+let _atleti = [];
+const _sessioniCache = new Map();
+let _sessioniB = [];
+function sessioniPer(lettera) { return lettera === 'b' ? _sessioniB : _sessioniAtleta; }
+function atletaPer(lettera) { const id = qs('#radar-player-' + lettera).value; return _atleti.find(a => String(a.id) === id); }
+function nomePer(lettera) { const a = atletaPer(lettera); return a ? nomeCompleto(a) : 'Giocatore'; }
 
-function giornateConTest() {
+function giornateConTest(sessioni) {
   const dates = new Set();
-  for (const s of _sessioniAtleta) {
+  for (const s of sessioni) {
     const data = String(s.data || '').slice(0, 10);
     if (/^\d{4}-\d{2}-\d{2}$/.test(data) &&
       Object.keys(TEST_RADAR_CONFIG).includes(radarChiaveTestSessione(s))) dates.add(data);
@@ -16,26 +22,47 @@ function giornateConTest() {
   return [...dates].sort((a, b) => b.localeCompare(a));
 }
 
-function sessioniDellaGiornata(data) {
+function sessioniDellaGiornata(data, lettera = 'a') {
   if (!data) return [];
-  return _sessioniAtleta.filter(s => String(s.data || '').slice(0, 10) === data);
+  return sessioniPer(lettera).filter(s => String(s.data || '').slice(0, 10) === data);
 }
 
-function riempiGiornate() {
-  giornateDisponibili = giornateConTest();
-  const predefinite = [giornateDisponibili[0] || '', ''];
-  ['a', 'b'].forEach((lettera, i) => {
-    const select = qs('#radar-day-' + lettera);
-    select.replaceChildren(el('option', { value: '', text: 'Seleziona giornata…' }));
-    giornateDisponibili.forEach(data => {
-      const numero = sessioniDellaGiornata(data).length;
-      select.appendChild(el('option', {
-        value: data,
-        text: formatDataIt(data) + ' · ' + numero + (numero === 1 ? ' test' : ' test')
-      }));
-    });
-    select.value = predefinite[i];
+function riempiGiornata(lettera, keep = true) {
+  const select = qs('#radar-day-' + lettera);
+  const old = keep ? select.value : '';
+  const dates = giornateConTest(sessioniPer(lettera));
+  select.replaceChildren(el('option', { value: '', text: lettera === 'a' ? 'Seleziona giornata…' : 'Nessuna giornata (solo A)' }));
+  dates.forEach(data => {
+    const n = sessioniDellaGiornata(data, lettera).length;
+    select.appendChild(el('option', { value: data, text: formatDataIt(data) + ' · ' + n + ' test' }));
   });
+  const stesso = !qs('#radar-player-b').value;
+  select.value = old && dates.includes(old) ? old : (
+    lettera === 'a' ? dates[0] || '' : stesso ? '' : dates[0] || ''
+  );
+  return dates;
+}
+function riempiGiornate() {
+  giornateDisponibili = riempiGiornata('a', false);
+  riempiGiornata('b', false);
+}
+async function cambiaGiocatore(lettera) {
+  const id = qs('#radar-player-' + lettera).value || qs('#radar-player-a').value;
+  if (!_sessioniCache.has(id)) {
+    const sessioni = await dbGetSessioniByAtleta(id);
+    _sessioniCache.set(id, sessioni.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s)));
+  }
+  if (lettera === 'a') {
+    _sessioniAtleta = _sessioniCache.get(id);
+    // Il secondo selettore vuoto confronta due giornate dello stesso atleta.
+    if (!qs('#radar-player-b').value) _sessioniB = _sessioniAtleta;
+    riempiGiornata('a', false);
+    if (!qs('#radar-player-b').value) riempiGiornata('b', false);
+  } else {
+    _sessioniB = _sessioniCache.get(id);
+    riempiGiornata('b', false);
+  }
+  costruisciRadar();
 }
 
 function costruisciRadar() {
@@ -49,9 +76,9 @@ function costruisciRadar() {
   const giornoA = qs('#radar-day-a').value;
   const giornoB = qs('#radar-day-b').value;
   const sessioniA = sessioniDellaGiornata(giornoA);
-  const sessioniB = sessioniDellaGiornata(giornoB);
+  const sessioniB = sessioniDellaGiornata(giornoB, 'b');
   const stato = qs('#radar-date-status');
-  if (!giornateDisponibili.length) {
+  if (!giornateConTest(_sessioniAtleta).length) {
     stato.textContent = 'Nessuna giornata con test validi disponibile.';
     container.appendChild(el('div', { class: 'empty-state', text: 'Non ci sono test disponibili per costruire il radar.' }));
     return;
@@ -60,7 +87,7 @@ function costruisciRadar() {
     stato.textContent = 'Seleziona almeno la prima giornata per visualizzare il radar.';
     return;
   }
-  if (giornoB && giornoA === giornoB) {
+  if (giornoB && giornoA === giornoB && qs('#radar-player-a').value === (qs('#radar-player-b').value || qs('#radar-player-a').value)) {
     stato.textContent = 'Scegli due giornate diverse per un confronto significativo.';
     return;
   }
@@ -71,8 +98,8 @@ function costruisciRadar() {
   const keys = TEST_STANDARD_KEYS.filter(key =>
     radarA.righe.some(r => r.key === key) || (giornoB && radarB.righe.some(r => r.key === key))
   );
-  stato.textContent = formatDataIt(giornoA) + ': ' + sessioniA.length + ' test' +
-    (giornoB ? ' · ' + formatDataIt(giornoB) + ': ' + sessioniB.length + ' test' : '') +
+  stato.textContent = nomePer('a') + ' · ' + formatDataIt(giornoA) + ': ' + sessioniA.length + ' test' +
+    (giornoB ? ' · ' + nomePer('b') + ' · ' + formatDataIt(giornoB) + ': ' + sessioniB.length + ' test' : '') +
     '. Punteggi rispetto allo stesso archivio.';
   if (!keys.length) {
     container.appendChild(el('div', { class: 'empty-state', text: 'Le giornate selezionate non contengono risultati sufficienti.' }));
@@ -86,8 +113,8 @@ function costruisciRadar() {
     el('p', { class: 'meta', text: giornoB ? 'Blu = prima giornata, verde = seconda. Punteggi relativi all’archivio. Sono visibili solo i test eseguiti.' : 'Radar della giornata selezionata. Punteggi relativi all’archivio; test non eseguiti senza punteggio.' })
   ]));
   const cfg = radarChartConfig(labels, [
-    { label: formatDataIt(giornoA), data: valori(radarA) },
-    ...(giornoB ? [{ label: formatDataIt(giornoB), data: valori(radarB) }] : []),
+    { label: nomePer('a') + ' · ' + formatDataIt(giornoA), data: valori(radarA) },
+    ...(giornoB ? [{ label: nomePer('b') + ' · ' + formatDataIt(giornoB), data: valori(radarB) }] : []),
   ], null);
   const colors = [
     ['#2474ba', 'rgba(36,116,186,.16)'],
@@ -132,13 +159,31 @@ async function init() {
   qs('#titolo-pagina').textContent = 'Radar — ' + nomeCompleto(atleta);
   document.title = 'Radar ' + nomeCompleto(atleta) + ' - Test Visivi';
 
-  const [tutte, sessioni] = await Promise.all([dbGetAllSessioni(), dbGetSessioniByAtleta(atletaId)]);
+  const [tutte, sessioni, atleti] = await Promise.all([dbGetAllSessioni(), dbGetSessioniByAtleta(atletaId), dbGetAtleti()]);
+  _atleti = atleti;
   _sessioniAtleta = sessioni.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  _sessioniCache.set(atletaId, _sessioniAtleta);
+  _sessioniB = _sessioniAtleta;
   _tutteSessioni = tutte.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  for (const lettera of ['a', 'b']) {
+    const select = qs('#radar-player-' + lettera);
+    select.replaceChildren(el('option', { value: '', text: lettera === 'b' ? 'Stesso giocatore A' : 'Seleziona giocatore…' }));
+    _atleti.forEach(a => select.appendChild(el('option', { value: String(a.id), text: nomeCompleto(a) })));
+  }
+  qs('#radar-player-a').value = atletaId;
+  qs('#radar-player-a').addEventListener('change', () => { if (qs('#radar-player-a').value) cambiaGiocatore('a').catch(mostraErrorePagina); });
+  qs('#radar-player-b').addEventListener('change', () => cambiaGiocatore('b').catch(mostraErrorePagina));
   riempiGiornate();
   qs('#radar-day-a').addEventListener('change', costruisciRadar);
   qs('#radar-day-b').addEventListener('change', costruisciRadar);
-  qs('#radar-reset-date').addEventListener('click', () => { riempiGiornate(); costruisciRadar(); });
+  qs('#radar-reset-date').addEventListener('click', () => {
+    qs('#radar-player-a').value = atletaId;
+    qs('#radar-player-b').value = '';
+    _sessioniAtleta = _sessioniCache.get(atletaId);
+    _sessioniB = _sessioniAtleta;
+    riempiGiornate();
+    costruisciRadar();
+  });
   costruisciRadar();
   onThemeChange(costruisciRadar);
 }
