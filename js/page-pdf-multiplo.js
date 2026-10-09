@@ -205,7 +205,9 @@ function bulkChiudiAnteprima() {
 }
 
 function bulkApriAnteprima(report) {
-  if (!report?.blob) throw new Error('Anteprima PDF non disponibile.');
+  if (!(report?.blob instanceof Blob) || report.blob.size < 100 || report.blob.type && report.blob.type !== 'application/pdf') {
+    throw new Error('Il PDF generato non è valido. Riprova a creare l’anteprima.');
+  }
   if (_bulkPreviewUrl) URL.revokeObjectURL(_bulkPreviewUrl);
   _bulkPreviewUrl = URL.createObjectURL(report.blob);
   _bulkPreviewNomeFile = report.nomeFile || ('report_multiplo_test_visivi_' + oggiIso() + '.pdf');
@@ -217,6 +219,14 @@ function bulkApriAnteprima(report) {
 
   const dialog = qs('#bulk-preview-dialog');
   if (!dialog.open) dialog.showModal();
+}
+
+function bulkApriInScheda() {
+  if (!_bulkPreviewUrl) return;
+  const aperta = window.open(_bulkPreviewUrl, '_blank', 'noopener');
+  if (!aperta) {
+    qs('#bulk-preview-meta').textContent = 'Il browser ha bloccato la nuova scheda: consenti i popup oppure usa Scarica PDF.';
+  }
 }
 
 function bulkScaricaAnteprima() {
@@ -242,6 +252,7 @@ qs('#bulk-atleti-nessuno').addEventListener('click', () => bulkSetAtleti(false))
 qs('#bulk-preview-x').addEventListener('click', bulkChiudiAnteprima);
 qs('#bulk-preview-close').addEventListener('click', bulkChiudiAnteprima);
 qs('#bulk-preview-download').addEventListener('click', bulkScaricaAnteprima);
+qs('#bulk-preview-open').addEventListener('click', bulkApriInScheda);
 qs('#bulk-preview-dialog').addEventListener('cancel', (e) => {
   e.preventDefault();
   bulkChiudiAnteprima();
