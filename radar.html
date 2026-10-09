@@ -26,15 +26,11 @@
 
     <section class="card radar-days-card">
       <div class="radar-days-header">
-        <div><h2>Radar di una o due giornate</h2><p class="meta">Scegli i giocatori e le rispettive giornate. Il secondo giocatore è facoltativo: puoi confrontare anche due giornate dello stesso atleta. I Training sono esclusi.</p></div>
+        <div><h2>Confronto giocatori</h2><p class="meta">Aggiungi i giocatori che vuoi confrontare e scegli una giornata per ciascuno. Il radar mostra solo i test eseguiti; i Training sono esclusi.</p></div>
         <button type="button" class="secondary" id="radar-reset-date">Reimposta selezione</button>
       </div>
-      <div class="radar-day-selectors">
-        <div class="field"><label for="radar-player-a">Giocatore A</label><select id="radar-player-a" aria-label="Primo giocatore"></select></div>
-        <div class="field"><label for="radar-player-b">Giocatore B (facoltativo)</label><select id="radar-player-b" aria-label="Secondo giocatore facoltativo"></select></div>
-        <div class="field"><label for="radar-day-a"><span class="radar-period-dot radar-dot-a"></span> Giornata A</label><select id="radar-day-a" aria-label="Prima giornata"></select></div>
-        <div class="field"><label for="radar-day-b"><span class="radar-period-dot radar-dot-b"></span> Giornata B</label><select id="radar-day-b" aria-label="Seconda giornata (facoltativa)"></select></div>
-      </div>
+      <div id="radar-profiles" class="radar-profiles"></div>
+      <div class="row wrap"><button type="button" class="secondary" id="radar-add-player">+ Aggiungi giocatore</button></div>
       <p class="meta" id="radar-date-status" role="status"></p>
     </section>
     <div id="contenuto-radar"></div>
