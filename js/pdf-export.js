@@ -807,59 +807,6 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     return String(value);
   }
 
-  async function disegnaGraficoUnicoTest(esercizio, sessioni) {
-    const series = [];
-    for (const group of getChartGroups(esercizio)) {
-      const compatibili = new Set(sessioniConGruppo(sessioni, group));
-      for (const campo of group.campi) {
-        const values = sessioni.map(s => {
-          if (!compatibili.has(s)) return null;
-          const raw = getValoreCampoGruppo(s, group, campo);
-          if (raw === '' || raw == null) return null;
-          const n = Number(String(raw).replace(',', '.'));
-          return Number.isFinite(n) ? n : null;
-        });
-        if (values.some(v => v !== null)) series.push({ label: campo.label + (group.unitLabel ? ' (' + group.unitLabel + ')' : ''), values });
-      }
-    }
-    if (!series.length) return;
-    const colors = ['#22577a','#38a3a5','#e09f3e','#9e4b9b','#c45353','#527c39','#6f71b5','#bc6c25'];
-    const config = sessioni.length === 1
-      ? buildBarChartConfig(series.map(s => s.label), series.map(s => s.values[0]), 'Valori rilevati')
-      : {
-          type: 'line',
-          data: {
-            labels: sessioni.map(s => formatDataIt(s.data)),
-            datasets: series.map((s,i) => {
-              const first = s.values.find(v => v !== null && v !== 0);
-              return { label: s.label, data: s.values.map(v => v === null || !first ? null : Math.round(1000 * v / first) / 10), borderColor: colors[i % colors.length], backgroundColor: colors[i % colors.length], fill: false, tension: .2, spanGaps: false, pointRadius: 2 };
-            }).filter(s => s.data.some(v => v !== null)),
-          },
-          options: {
-            responsive: false, animation: false,
-            plugins: { legend: { display: true, position: 'bottom', labels: { color: '#182026', boxWidth: 9, font: { size: 10 } } } },
-            scales: {
-              x: { ticks: { color: '#63707d' }, grid: { color: '#dce2e8' } },
-              y: { title: { display: true, text: 'Indice relativo (prima misura = 100)' }, ticks: { color: '#63707d' }, grid: { color: '#dce2e8' } },
-            },
-          },
-        };
-    const img = await renderChartOffscreen(config, 1100, 500);
-    const graphWidth = usableWidth * .78;
-    const graphHeight = graphWidth * 500 / 1100;
-    assicuraSpazio(graphHeight + 24);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.setTextColor(...C.navyDark);
-    doc.text('Grafici', marginX, y);
-    y += 7;
-    doc.setFontSize(8.5);
-    doc.text(esercizio.label + ' - riepilogo', marginX, y, { maxWidth: usableWidth });
-    y += 7;
-    doc.addImage(img, 'PNG', marginX + (usableWidth - graphWidth) / 2, y, graphWidth, graphHeight);
-    y += graphHeight + 9;
-  }
-
   async function disegnaSoloRadarAtleta(sessioni) {
     const radar = radarDatiSintesi(sessioni, archivioRadar);
     if (!radar.righe.length) {
@@ -962,6 +909,21 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     cardKpi(marginX + kWidth + kGap, y, kWidth, 'GIORNATE', giornate);
     cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.size);
     y += 28;
+
+    // Anagrafica e dati visivi/clinici: soltanto informazioni già compilate.
+    const anagraficaMultiplo = [
+      ['Data di nascita', atleta.dataNascita ? formatDataIt(atleta.dataNascita) : ''],
+      ['Altezza', testoValido(atleta.altezza) ? atleta.altezza + ' cm' : ''],
+    ].filter(([, valore]) => testoValido(valore));
+    const datiCliniciMultiplo = datiCliniciNonVuoti(atleta.datiClinici);
+    if (anagraficaMultiplo.length) {
+      titoloSezione('Dati anagrafici');
+      disegnaTabella(['Campo', 'Valore'], anagraficaMultiplo, [72, 108]);
+    }
+    if (datiCliniciMultiplo.length) {
+      titoloSezione('Dati visivi e clinici', 'Solo dati dichiarati e compilati nel profilo del giocatore.');
+      disegnaTabella(['Parametro', 'Valore'], datiCliniciMultiplo, [90, 90]);
+    }
 
     if (!sessioni.length) {
       doc.setFont('helvetica', 'normal');
