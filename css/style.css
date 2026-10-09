@@ -2196,3 +2196,41 @@ th {
     flex: 1 1 100%; min-width: 0; width: 100%;
   }
 }
+
+/* v80 - Home: griglia giocatori senza tagli laterali. */
+body:has(#lista-atleti) { overflow-x: hidden; }
+main:has(#lista-atleti) {
+  width: 100%;
+  max-width: 1180px;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-inline: auto;
+}
+main:has(#lista-atleti) .search-bar,
+main:has(#lista-atleti) .team-tools,
+main:has(#lista-atleti) .fab-row {
+  width: 100%;
+  max-width: 760px;
+  box-sizing: border-box;
+}
+#lista-atleti.athlete-grid {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+#lista-atleti > * { min-width: 0; max-width: 100%; box-sizing: border-box; }
+#lista-atleti .list-item { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+#lista-atleti .athlete-card-text { min-width: 0; overflow: hidden; }
+#lista-atleti .athlete-name { overflow-wrap: anywhere; }
+#lista-atleti .team-caption { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 1100px) {
+  #lista-atleti.athlete-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 650px) {
+  #lista-atleti.athlete-grid { grid-template-columns: minmax(0, 1fr); }
+  main:has(#lista-atleti) .team-tools { gap: 10px; }
+  main:has(#lista-atleti) .fab-row { gap: 10px; }
+}
