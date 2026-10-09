@@ -864,9 +864,9 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.text('Meno di tre test valutabili: impossibile formare un poligono radar.', marginX, y);
       y += 7;
     }
-    disegnaTabella(['Test eseguito', 'Indice', 'Data'], radar.righe.map((r) => [
-      r.nome, r.valore + '/100', r.data ? formatDataIt(r.data) : '-'
-    ]), [110, 25, 45]);
+    disegnaTabella(['Test eseguito', 'Indice', 'Valutazione', 'Data'], radar.righe.map((r) => [
+      r.nome, r.valore + '/100', r.livello || radarLivello(r.valore) || '-', r.data ? formatDataIt(r.data) : '-'
+    ]), [77, 23, 47, 33]);
   }
 
   // Copertina generale.
@@ -928,9 +928,11 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     y = 42;
 
     const datiCliniciMultiplo = datiCliniciMultiploDaProfilo(atleta.datiClinici);
+    titoloSezione('Dati clinici e visivi', 'Informazioni registrate nella scheda del giocatore.');
     if (datiCliniciMultiplo.length) {
-      titoloSezione('Dati clinici e visivi', 'Solo dati compilati nel profilo del giocatore.');
       disegnaTabella(['Parametro', 'Valore'], datiCliniciMultiplo, [90, 90]);
+    } else {
+      disegnaTabella(['Parametro', 'Valore'], [['Dati clinici e visivi', 'Non compilati nella scheda giocatore']], [90, 90]);
     }
 
     if (!sessioni.length) {
