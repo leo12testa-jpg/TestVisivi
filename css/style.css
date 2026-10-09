@@ -2155,3 +2155,44 @@ th {
 .team-select-card > .list-item { flex: 1; }
 .team-caption { font-size: .7rem; color: var(--text-muted); line-height: 1.2; margin-top: 2px; }
 #assegna-squadre .row { margin-top: 10px; }
+
+/* Home: barra strumenti coerente, compatta e responsive (v78). */
+.search-bar, .team-tools, .fab-row { max-width: 760px; }
+.search-bar { margin-bottom: 18px; }
+.search-bar input[type="search"] {
+  min-height: 46px; border-radius: 12px; padding: 0 15px;
+  box-sizing: border-box;
+}
+.team-tools {
+  display: flex; align-items: flex-end; flex-wrap: wrap;
+  gap: 12px; margin: 0 0 18px;
+}
+.team-tools .field { flex: 0 0 175px; min-width: 0; }
+.team-tools select { width: 100%; }
+.fab-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.team-tools select, .team-tools button,
+.fab-row button, .fab-row .btn {
+  min-height: 46px; box-sizing: border-box; border-radius: 12px;
+  padding: 0 17px; font-size: .92rem; font-weight: 600;
+}
+.team-tools button, .fab-row button, .fab-row .btn {
+  display: inline-flex; justify-content: center; align-items: center;
+  line-height: 1.2; white-space: nowrap; text-decoration: none;
+  transition: background-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+#organizza-squadre { min-width: 225px; }
+#btn-nuovo-atleta { min-width: 145px; }
+.fab-row .btn { min-width: 140px; }
+.team-tools button:hover, .fab-row button:hover, .fab-row .btn:hover {
+  transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,35,55,.1);
+}
+.team-tools select:focus-visible, .team-tools button:focus-visible,
+.fab-row button:focus-visible, .fab-row .btn:focus-visible {
+  outline: 2px solid #4f83ab; outline-offset: 2px;
+}
+@media (max-width: 570px) {
+  .team-tools .field { flex: 1 1 100%; }
+  .team-tools button, .fab-row button, .fab-row .btn {
+    flex: 1 1 100%; min-width: 0; width: 100%;
+  }
+}
