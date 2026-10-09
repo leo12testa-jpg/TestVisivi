@@ -153,24 +153,29 @@ function costruisciRadar() {
 async function init() {
   const user = await richiedeLogin();
   if (!user) return;
-  const atleta = await dbGetAtleta(atletaId);
-  if (!atleta) { window.location.href = './index.html'; return; }
-  qs('#back-link').href = './atleta.html?id=' + encodeURIComponent(atletaId);
-  qs('#titolo-pagina').textContent = 'Radar — ' + nomeCompleto(atleta);
-  document.title = 'Radar ' + nomeCompleto(atleta) + ' - Test Visivi';
-
-  const [tutte, sessioni, atleti] = await Promise.all([dbGetAllSessioni(), dbGetSessioniByAtleta(atletaId), dbGetAtleti()]);
+  const [tutte, atleti] = await Promise.all([dbGetAllSessioni(), dbGetAtleti()]);
   _atleti = atleti;
-  _sessioniAtleta = sessioni.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
-  _sessioniCache.set(atletaId, _sessioniAtleta);
-  _sessioniB = _sessioniAtleta;
   _tutteSessioni = tutte.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  if (!_atleti.length) {
+    qs('#radar-date-status').textContent = 'Nessun giocatore presente. Aggiungi un giocatore per utilizzare il radar.';
+    qs('#contenuto-radar').replaceChildren();
+    return;
+  }
+  const atletaIniziale = _atleti.find(a => String(a.id) === String(atletaId)) || _atleti[0];
+  const inizialeId = String(atletaIniziale.id);
+  const sessioni = await dbGetSessioniByAtleta(inizialeId);
+  _sessioniAtleta = sessioni.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
+  _sessioniCache.set(inizialeId, _sessioniAtleta);
+  _sessioniB = _sessioniAtleta;
+  qs('#back-link').href = atletaId ? './atleta.html?id=' + encodeURIComponent(inizialeId) : './index.html';
+  qs('#titolo-pagina').textContent = 'Confronto giocatori';
+  document.title = 'Confronto giocatori - Test Visivi';
   for (const lettera of ['a', 'b']) {
     const select = qs('#radar-player-' + lettera);
     select.replaceChildren(el('option', { value: '', text: lettera === 'b' ? 'Stesso giocatore A' : 'Seleziona giocatore…' }));
     _atleti.forEach(a => select.appendChild(el('option', { value: String(a.id), text: nomeCompleto(a) })));
   }
-  qs('#radar-player-a').value = atletaId;
+  qs('#radar-player-a').value = inizialeId;
   qs('#radar-player-a').addEventListener('change', () => { if (qs('#radar-player-a').value) cambiaGiocatore('a').catch(mostraErrorePagina); });
   qs('#radar-player-b').addEventListener('change', () => cambiaGiocatore('b').catch(mostraErrorePagina));
   riempiGiornate();
@@ -179,7 +184,7 @@ async function init() {
   qs('#radar-reset-date').addEventListener('click', () => {
     qs('#radar-player-a').value = atletaId;
     qs('#radar-player-b').value = '';
-    _sessioniAtleta = _sessioniCache.get(atletaId);
+    _sessioniAtleta = _sessioniCache.get(inizialeId);
     _sessioniB = _sessioniAtleta;
     riempiGiornate();
     costruisciRadar();
