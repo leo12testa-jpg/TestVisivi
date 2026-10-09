@@ -66,9 +66,10 @@ function costruisciRadar() {
   }
   const radarA = radarDatiSintesi(sessioniA, _tutteSessioni);
   const radarB = radarDatiSintesi(sessioniB, _tutteSessioni);
-  // Tutti i 13 assi rimangono visibili anche quando un test non è stato
-  // svolto in una (o entrambe) le giornate. Mai assegnare zero ai mancanti.
-  const keys = [...TEST_STANDARD_KEYS];
+  // Solo i test realmente eseguiti in almeno una giornata selezionata.\n  // Nessun punteggio fittizio per i test mancanti.
+  const keys = TEST_STANDARD_KEYS.filter(key =>
+    radarA.righe.some(r => r.key === key) || (giornoB && radarB.righe.some(r => r.key === key))
+  );
   stato.textContent = formatDataIt(giornoA) + ': ' + sessioniA.length + ' test' +
     (giornoB ? ' · ' + formatDataIt(giornoB) + ': ' + sessioniB.length + ' test' : '') +
     '. Punteggi rispetto allo stesso archivio.';
@@ -81,7 +82,7 @@ function costruisciRadar() {
   const canvas = el('canvas', { id: 'radar-canvas' });
   container.appendChild(el('section', { class: 'card radar-simple-card' }, [
     el('div', { class: 'chart-canvas-wrap radar-simple-canvas', style: 'height:490px;' }, [canvas]),
-    el('p', { class: 'meta', text: giornoB ? 'Blu = prima giornata, verde = seconda. Punteggi relativi all’archivio; test non eseguiti senza punteggio.' : 'Radar della giornata selezionata. Punteggi relativi all’archivio; test non eseguiti senza punteggio.' })
+    el('p', { class: 'meta', text: giornoB ? 'Blu = prima giornata, verde = seconda. Punteggi relativi all’archivio. Sono visibili solo i test eseguiti.' : 'Radar della giornata selezionata. Punteggi relativi all’archivio; test non eseguiti senza punteggio.' })
   ]));
   const cfg = radarChartConfig(labels, [
     { label: formatDataIt(giornoA), data: valori(radarA) },
