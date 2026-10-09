@@ -24,17 +24,27 @@
       </div>
     </section>
 
-    <section class="card radar-date-filter">
-      <div class="radar-date-filter-heading">
-        <div><h2>Periodo di riferimento</h2><p class="meta">Per ogni test viene considerata l’ultima misurazione valida nel periodo selezionato.</p></div>
-        <button type="button" class="secondary" id="radar-reset-date">Tutto lo storico</button>
-      </div>
-      <div class="field-grid radar-date-fields">
-        <div class="field"><label for="radar-date-from">Dal</label><input type="date" id="radar-date-from" /></div>
-        <div class="field"><label for="radar-date-to">Al</label><input type="date" id="radar-date-to" /></div>
-      </div>
-      <p class="meta" id="radar-date-status" role="status"></p>
-    </section>
+    <div class="radar-compare-grid">
+      <section class="card radar-date-filter">
+        <h2>Periodo A <span class="radar-period-dot radar-dot-a"></span></h2>
+        <p class="meta">Seleziona le date e, per ogni tipo di test, la rilevazione da confrontare.</p>
+        <div class="radar-date-fields">
+          <div class="field"><label for="radar-a-from">Dal</label><input type="date" id="radar-a-from"></div>
+          <div class="field"><label for="radar-a-to">Al</label><input type="date" id="radar-a-to"></div>
+        </div>
+        <div id="radar-a-tests" class="radar-test-options"></div>
+      </section>
+      <section class="card radar-date-filter">
+        <h2>Periodo B <span class="radar-period-dot radar-dot-b"></span></h2>
+        <p class="meta">Può essere un altro anno oppure un intervallo dello stesso anno.</p>
+        <div class="radar-date-fields">
+          <div class="field"><label for="radar-b-from">Dal</label><input type="date" id="radar-b-from"></div>
+          <div class="field"><label for="radar-b-to">Al</label><input type="date" id="radar-b-to"></div>
+        </div>
+        <div id="radar-b-tests" class="radar-test-options"></div>
+      </section>
+    </div>
+    <div class="row wrap"><button type="button" class="secondary" id="radar-reset-date">Azzera periodi</button><p class="meta" id="radar-date-status" role="status"></p></div>
     <div id="contenuto-radar"></div>
   </main>
 
