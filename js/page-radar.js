@@ -95,9 +95,9 @@ function costruisciRadar() {
     dataset.borderColor = colors[i][0];
     dataset.pointBackgroundColor = colors[i][0];
     dataset.backgroundColor = colors[i][1];
-    dataset.spanGaps = false;
+    // Collega i risultati disponibili saltando gli assi senza test.\n    // I dati mancanti restano null: non vengono convertiti in 0.\n    dataset.spanGaps = true;\n    dataset.fill = dataset.data.filter(Number.isFinite).length >= 3 ? 'origin' : false;
   });
-  radarChartAttuale = renderChart(canvas, cfg);
+  const countA = valori(radarA).filter(Number.isFinite).length;\n  const countB = giornoB ? valori(radarB).filter(Number.isFinite).length : 0;\n  if (countA < 3 || (giornoB && countB < 3)) {\n    container.appendChild(el('p', { class: 'meta', text: 'Per formare un poligono servono almeno tre test con punteggio per giornata. Con uno o due risultati vedrai solo i punti o una linea.' }));\n  }\n  radarChartAttuale = renderChart(canvas, cfg);
 
   container.appendChild(el('section', { class: 'radar-test-summary' },
     keys.map(key => {
