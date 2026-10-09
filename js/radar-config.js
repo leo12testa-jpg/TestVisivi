@@ -1,6 +1,6 @@
 /*
  * Radar per singolo TEST.
- * Ogni asse del radar corrisponde direttamente a uno dei 13 test standard.
+ * Ogni asse del radar corrisponde a una delle 13 tipologie standard.
  * Le sessioni Training sono sempre escluse.
  *
  * Il punteggio 0-100 di ciascun test usa l'ultima valutazione disponibile
@@ -11,6 +11,30 @@
 const TEST_RADAR_CONFIG = {
   attenzioneSeparata: [
     { campo: 'immaginiAlSec', direzione: 'alto', label: 'Immagini al secondo' },
+  ],
+  pedana360: [
+    { campo: 'tempoReazioneMedio', direzione: 'basso', label: 'Tempo di reazione medio' },
+  ],
+  velocitaRiconoscimento: [
+    { campo: 'quantitaNumeri', direzione: 'alto', label: 'Elementi riconosciuti' },
+  ],
+  percezioneCampoVisivo: [
+    { campo: 'angoloMassimo', direzione: 'alto', label: 'Ampiezza periferica massima' },
+  ],
+  localizzazioneAffollamentoOculare: [
+    { campo: 'tempoTotale', direzione: 'basso', label: 'Tempo totale' },
+  ],
+  ordinamentoStrategico: [
+    { campo: 'clickErrati', direzione: 'basso', label: 'Click errati' },
+  ],
+  visualizzazioneTraiettorie: [
+    { campo: 'clickErrati', direzione: 'basso', label: 'Click errati' },
+  ],
+  riconoscimentoNumeri: [
+    { campo: 'quantitaNumeri', direzione: 'alto', label: 'Numeri riconosciuti' },
+  ],
+  reazioneVisuoMotoriaSceltaMultipla: [
+    { campo: 'tempoReazioneMedio', direzione: 'basso', label: 'Tempo di reazione medio' },
   ],
   localizzazioneSpaziale: [
     { campo: 'immaginiAlSec', direzione: 'alto', label: 'Immagini al secondo' },
