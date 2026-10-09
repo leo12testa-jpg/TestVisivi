@@ -24,6 +24,17 @@
       </div>
     </section>
 
+    <section class="card radar-date-filter">
+      <div class="radar-date-filter-heading">
+        <div><h2>Periodo di riferimento</h2><p class="meta">Per ogni test viene considerata l’ultima misurazione valida nel periodo selezionato.</p></div>
+        <button type="button" class="secondary" id="radar-reset-date">Tutto lo storico</button>
+      </div>
+      <div class="field-grid radar-date-fields">
+        <div class="field"><label for="radar-date-from">Dal</label><input type="date" id="radar-date-from" /></div>
+        <div class="field"><label for="radar-date-to">Al</label><input type="date" id="radar-date-to" /></div>
+      </div>
+      <p class="meta" id="radar-date-status" role="status"></p>
+    </section>
     <div id="contenuto-radar"></div>
   </main>
 
