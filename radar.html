@@ -24,27 +24,17 @@
       </div>
     </section>
 
-    <div class="radar-compare-grid">
-      <section class="card radar-date-filter">
-        <h2>Periodo A <span class="radar-period-dot radar-dot-a"></span></h2>
-        <p class="meta">Seleziona le date e, per ogni tipo di test, la rilevazione da confrontare.</p>
-        <div class="radar-date-fields">
-          <div class="field"><label for="radar-a-from">Dal</label><input type="date" id="radar-a-from"></div>
-          <div class="field"><label for="radar-a-to">Al</label><input type="date" id="radar-a-to"></div>
-        </div>
-        <div id="radar-a-tests" class="radar-test-options"></div>
-      </section>
-      <section class="card radar-date-filter">
-        <h2>Periodo B <span class="radar-period-dot radar-dot-b"></span></h2>
-        <p class="meta">Può essere un altro anno oppure un intervallo dello stesso anno.</p>
-        <div class="radar-date-fields">
-          <div class="field"><label for="radar-b-from">Dal</label><input type="date" id="radar-b-from"></div>
-          <div class="field"><label for="radar-b-to">Al</label><input type="date" id="radar-b-to"></div>
-        </div>
-        <div id="radar-b-tests" class="radar-test-options"></div>
-      </section>
-    </div>
-    <div class="row wrap"><button type="button" class="secondary" id="radar-reset-date">Azzera periodi</button><p class="meta" id="radar-date-status" role="status"></p></div>
+    <section class="card radar-days-card">
+      <div class="radar-days-header">
+        <div><h2>Confronta due giornate</h2><p class="meta">Scegli due date dell’archivio: tutti i test validi registrati in ciascuna giornata entrano nel radar. I Training sono esclusi.</p></div>
+        <button type="button" class="secondary" id="radar-reset-date">Ultime due giornate</button>
+      </div>
+      <div class="radar-day-selectors">
+        <div class="field"><label for="radar-day-a"><span class="radar-period-dot radar-dot-a"></span> Giornata A</label><select id="radar-day-a" aria-label="Prima giornata"></select></div>
+        <div class="field"><label for="radar-day-b"><span class="radar-period-dot radar-dot-b"></span> Giornata B</label><select id="radar-day-b" aria-label="Seconda giornata"></select></div>
+      </div>
+      <p class="meta" id="radar-date-status" role="status"></p>
+    </section>
     <div id="contenuto-radar"></div>
   </main>
 
