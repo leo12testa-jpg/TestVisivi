@@ -353,7 +353,7 @@ const TEST_STANDARD_INFO = {
   },
   attenzioneSeparata: {
     descrizione: 'Attenzione divisa tra lettura centrale e risposta periferica occhio-mano.',
-    principali: ['tempoReazioneMedio', 'errori', 'immaginiColpite', 'tempoTotale'],
+    principali: ['tempoReazioneMedio', 'errori', 'immaginiColpite'],
     secondari: ['numeroTarget', 'immaginiAlSec', 'recuperi', 'tempoArea5', 'tempoAreaEsterna'],
   },
   velocitaPrecisioneAffollamento: {

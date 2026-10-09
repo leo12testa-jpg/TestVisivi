@@ -216,8 +216,10 @@ function metricheOriginaliJet(sessione, limite = Infinity) {
   if (!risultati) return [];
 
   const metriche = [];
+  const nascondiTempoTotale = jetTest(sessione)?.key === 'attenzioneSeparata';
   Object.entries(risultati).forEach(([label, raw]) => {
     if (!jetValoreReale(raw) || metriche.length >= limite || metricaOriginaleJetTecnica(label, raw)) return;
+    if (nascondiTempoTotale && /^(tempo[ _-]*totale|total[ _-]*time)(\s*\([^)]*\))?$/i.test(String(label).trim())) return;
     let valore = raw;
     if (Array.isArray(raw)) valore = raw.filter(jetValoreReale).join(' · ');
     else if (raw && typeof raw === 'object') return;
