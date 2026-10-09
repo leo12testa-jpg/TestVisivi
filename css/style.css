@@ -2128,3 +2128,23 @@ th {
     flex: 1 1 0;
   }
 }
+
+
+/* Elenco giocatori compatto: nomi completi, senza descrizioni ripetute. */
+#lista-atleti.athlete-grid { gap: 8px; }
+#lista-atleti .list-item {
+  min-height: 50px;
+  padding: 9px 12px;
+  gap: 10px;
+  border-radius: 10px;
+}
+#lista-atleti .avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  font-size: .68rem;
+}
+#lista-atleti .athlete-name {
+  font-size: .9rem;
+  line-height: 1.3;
+}

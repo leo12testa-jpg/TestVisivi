@@ -54,12 +54,11 @@ function renderLista(filtro) {
   }
 
   atletiFiltrati.forEach((a) => {
-    const metaText = 'Profilo, risultati e andamento';
     const anagrafica = normalizzaAnagraficaCalciatore(a);
 
     const item = el('a', { class: 'list-item', href: `./atleta.html?id=${a.id}`, style: 'text-decoration:none;color:inherit;' }, [
       el('span', { class: 'avatar', 'aria-hidden': 'true', text: `${(anagrafica.nome || '').slice(0, 1)}${(anagrafica.cognome || '').slice(0, 1)}` }),
-      el('div', { class: 'athlete-card-text' }, [el('div', { class: 'athlete-name', text: nomeCompleto(a) }), el('div', { class: 'meta', text: metaText })]),
+      el('div', { class: 'athlete-card-text' }, [el('div', { class: 'athlete-name', text: nomeCompleto(a) })]),
       el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),
     ]);
     container.appendChild(item);
