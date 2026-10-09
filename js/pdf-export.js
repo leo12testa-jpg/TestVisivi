@@ -721,63 +721,74 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
 
   function disegnaTabella(headers, rows, widths) {
     if (!rows.length) return;
-    // Mantieni la tabella entro i margini anche con molte colonne.
     const supplied = widths && widths.length === headers.length ? widths : Array(headers.length).fill(1);
-    const total = supplied.reduce((sum, w) => sum + Math.max(0, w), 0) || headers.length;
-    const colWidths = supplied.map(w => usableWidth * Math.max(0, w) / total);
+    const total = supplied.reduce((sum,w) => sum + Math.max(0,w),0) || headers.length;
+    const colWidths = supplied.map(w => usableWidth * Math.max(0,w) / total);
     const fontSize = headers.length > 12 ? 5.2 : headers.length > 8 ? 6 : headers.length > 5 ? 6.7 : 7.6;
-    const paddingX = 1.5;
-    const lineHeight = 3.2;
+    const paddingX = 1.5, lineHeight = 3.2, bottom = footerY - 5;
     const splitCell = (value, width) => {
       const str = String(value ?? '-');
-      // Forza anche le stringhe lunghe prive di spazi a rientrare nella cella.
-      const maxW = Math.max(1, width - paddingX * 2);
-      const lines = doc.splitTextToSize(str, maxW);
-      const fitted = [];
+      const maxW = Math.max(1,width - 2 * paddingX);
+      doc.setFontSize(fontSize);
+      let lines = doc.splitTextToSize(str,maxW);
+      const out = [];
       for (const line of lines) {
-        if (doc.getTextWidth(line) <= maxW) { fitted.push(line); continue; }
+        if (doc.getTextWidth(line) <= maxW) { out.push(line); continue; }
         let part = '';
         for (const c of line) {
-          if (part && doc.getTextWidth(part + c) > maxW) { fitted.push(part); part = ''; }
+          if (part && doc.getTextWidth(part+c)>maxW) {out.push(part);part='';}
           part += c;
         }
-        if (part) fitted.push(part);
+        if (part) out.push(part);
       }
-      return fitted.length ? fitted : ['-'];
+      return out.length ? out : ['-'];
     };
-    const availableBottom = footerY - 5;
-    function drawRow(cells, isHeader, index) {
-      doc.setFont('helvetica', isHeader ? 'bold' : 'normal');
+    const chunksFor = (cells,bold) => {
+      doc.setFont('helvetica', bold ? 'bold' : 'normal');
       doc.setFontSize(fontSize);
-      const chunks = cells.map((cell, i) => splitCell(cell, colWidths[i]));
-      const maxLinesPerPage = Math.max(1, Math.floor((availableBottom - 26) / lineHeight));
-      const maxLines = Math.max(...chunks.map(c => c.length));
-      for (let start = 0; start < maxLines; start += maxLinesPerPage) {
-        const amount = Math.min(maxLinesPerPage, maxLines - start);
-        const h = amount * lineHeight + 3;
-        if (y + h > availableBottom) paginaNuova();
-        if (isHeader) { doc.setFillColor(...C.blueSoft); doc.rect(marginX, y, usableWidth, h, 'F'); }
-        else if (index % 2) { doc.setFillColor(249, 250, 251); doc.rect(marginX, y, usableWidth, h, 'F'); }
-        doc.setDrawColor(...C.line);
-        doc.rect(marginX, y, usableWidth, h);
-        let x = marginX;
-        chunks.forEach((lines, i) => {
-          doc.setFont('helvetica', isHeader ? 'bold' : 'normal');
-          doc.setFontSize(fontSize);
-          doc.setTextColor(...(isHeader ? C.navyDark : C.ink));
-          doc.text(lines.slice(start, start + amount), x + paddingX, y + 3.5);
-          x += colWidths[i];
-        });
-        y += h;
+      return cells.map((v,i) => splitCell(v,colWidths[i]));
+    };
+    const heightFor = (chunks) => Math.max(...chunks.map(c=>c.length)) * lineHeight + 3;
+    const paint = (chunks,header,index) => {
+      const h = heightFor(chunks);
+      if (header) {doc.setFillColor(...C.blueSoft);doc.rect(marginX,y,usableWidth,h,'F');}
+      else if(index%2){doc.setFillColor(249,250,251);doc.rect(marginX,y,usableWidth,h,'F');}
+      doc.setDrawColor(...C.line);
+      doc.rect(marginX,y,usableWidth,h);
+      let x = marginX;
+      chunks.forEach((lines,i)=>{
+        doc.setFont('helvetica',header?'bold':'normal');
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...(header?C.navyDark:C.ink));
+        doc.text(lines,x+paddingX,y+3.5);
+        x += colWidths[i];
+      });
+      y+=h;
+    };
+    const head = chunksFor(headers,true);
+    const headH = heightFor(head);
+    const first = chunksFor(rows[0],false);
+    if (y+headH+heightFor(first)>bottom) paginaNuova();
+    paint(head,true,0);
+    rows.forEach((row,i)=>{
+      const chunks=chunksFor(row,false);
+      const h=heightFor(chunks);
+      if (h > bottom-26) {
+        // A row too tall for one page: split only this exceptional row into
+        // complete line groups, with repeated table header on subsequent pages.
+        const maxLines=Math.max(1,Math.floor((bottom-26-3)/lineHeight));
+        const count=Math.max(...chunks.map(c=>c.length));
+        for(let j=0;j<count;j+=maxLines){
+          const piece=chunks.map(c=>c.slice(j,j+maxLines));
+          if(y+heightFor(piece)>bottom){paginaNuova();paint(head,true,0);}
+          paint(piece,false,i);
+        }
+      } else {
+        if(y+h>bottom){paginaNuova();paint(head,true,0);}
+        paint(chunks,false,i);
       }
-    }
-    drawRow(headers, true, 0);
-    rows.forEach((row, i) => {
-      // Riporta l'intestazione ogni volta che la tabella continua su nuova pagina.
-      if (y > availableBottom - 18) { paginaNuova(); drawRow(headers, true, 0); }
-      drawRow(row, false, i);
     });
-    y += 5;
+    y+=5;
   }
 
   function sessioneDelTest(sessione, key) {
@@ -930,31 +941,11 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.text('Periodo ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, 24);
     y = 42;
 
-    // Anagrafica e dati visivi/clinici: soltanto informazioni già compilate.
-    const anagraficaMultiplo = [
-      ['Data di nascita', atleta.dataNascita ? formatDataIt(atleta.dataNascita) : ''],
-      ['Altezza', valorePresenteMultiplo(atleta.altezza) ? atleta.altezza + ' cm' : ''],
-    ].filter(([, valore]) => valorePresenteMultiplo(valore));
     const datiCliniciMultiplo = datiCliniciMultiploDaProfilo(atleta.datiClinici);
-    if (anagraficaMultiplo.length) {
-      titoloSezione('Dati anagrafici');
-      disegnaTabella(['Campo', 'Valore'], anagraficaMultiplo, [72, 108]);
-    }
     if (datiCliniciMultiplo.length) {
-      titoloSezione('Dati clinici e visivi', 'Solo dati effettivamente compilati nel profilo del giocatore.');
+      titoloSezione('Dati clinici e visivi', 'Solo dati compilati nel profilo del giocatore.');
       disegnaTabella(['Parametro', 'Valore'], datiCliniciMultiplo, [90, 90]);
     }
-
-    const testPresenti = new Set(
-      sessioni.map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '').filter(Boolean)
-    );
-    const giornate = new Set(sessioni.map((s) => s.data).filter(Boolean)).size;
-    const kGap = 4;
-    const kWidth = (usableWidth - kGap * 2) / 3;
-    cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
-    cardKpi(marginX + kWidth + kGap, y, kWidth, 'GIORNATE', giornate);
-    cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.size);
-    y += 28;
 
     if (!sessioni.length) {
       doc.setFont('helvetica', 'normal');
