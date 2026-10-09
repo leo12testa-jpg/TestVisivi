@@ -2367,3 +2367,13 @@ main:has(#lista-atleti) .team-tools .field button { height: 46px; min-height: 46
   .radar-day-selectors { grid-template-columns:minmax(0,1fr);gap:12px; }
   .radar-days-header button { width:100%; }
 }
+
+/* Selettore profili radar multiplo */
+.radar-profiles {display:grid;gap:14px;margin:18px 0;}
+.radar-profile-row {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 16px;border:1px solid var(--border-color,#dbe3ed);border-radius:12px;padding:14px;min-width:0;}
+.radar-profile-heading {grid-column:1/-1;display:flex;align-items:center;gap:10px;}
+.radar-profile-heading button {margin-left:auto;padding:7px 12px;min-height:34px;}
+.radar-profile-swatch {display:inline-block;width:12px;height:12px;border-radius:50%;}
+.radar-profile-row .field {min-width:0;}
+.radar-profile-row select {width:100%;max-width:100%;min-height:44px;box-sizing:border-box;}
+@media(max-width:620px){.radar-profile-row {grid-template-columns:minmax(0,1fr);}}
