@@ -2234,3 +2234,86 @@ main:has(#lista-atleti) .fab-row {
   main:has(#lista-atleti) .team-tools { gap: 10px; }
   main:has(#lista-atleti) .fab-row { gap: 10px; }
 }
+
+/* v81 - Home: restyling visibile della toolbar e delle schede. */
+main:has(#lista-atleti) .search-bar {
+  max-width: none;
+  padding: 22px 24px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  border-radius: 20px 20px 0 0;
+  margin: 0;
+}
+main:has(#lista-atleti) .search-bar input[type="search"] {
+  min-height: 52px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 1rem;
+}
+main:has(#lista-atleti) .team-tools {
+  max-width: none;
+  background: var(--surface);
+  padding: 10px 24px 15px;
+  margin: 0;
+  border-inline: 1px solid var(--border);
+  gap: 12px;
+}
+main:has(#lista-atleti) .fab-row {
+  max-width: none;
+  background: var(--surface);
+  margin: 0 0 28px;
+  padding: 4px 24px 22px;
+  border: 1px solid var(--border);
+  border-top: 0;
+  border-radius: 0 0 20px 20px;
+  gap: 12px;
+  box-shadow: 0 12px 28px rgba(15,35,55,.055);
+}
+main:has(#lista-atleti) .team-tools select,
+main:has(#lista-atleti) .team-tools button,
+main:has(#lista-atleti) .fab-row button,
+main:has(#lista-atleti) .fab-row .btn {
+  min-height: 46px;
+  border-radius: 11px;
+  font-weight: 650;
+}
+main:has(#lista-atleti) #btn-nuovo-atleta {
+  background: #316f7d;
+  border-color: #316f7d;
+  color: white;
+  box-shadow: 0 5px 12px rgba(49,111,125,.17);
+}
+main:has(#lista-atleti) #lista-atleti.athlete-grid { gap: 12px; }
+main:has(#lista-atleti) #lista-atleti .list-item {
+  min-height: 68px;
+  padding: 13px 16px;
+  border-radius: 15px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 3px 8px rgba(20,48,65,.035);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+main:has(#lista-atleti) #lista-atleti .list-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 9px 22px rgba(20,48,65,.12);
+}
+main:has(#lista-atleti) #lista-atleti .avatar {
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  font-size: .72rem;
+}
+main:has(#lista-atleti) #lista-atleti .athlete-name {
+  font-size: .94rem;
+  letter-spacing: -.01em;
+}
+main:has(#lista-atleti) #lista-atleti .team-caption {
+  margin-top: 3px;
+  font-size: .76rem;
+}
+@media (max-width: 650px) {
+  main:has(#lista-atleti) .search-bar { padding: 16px 16px 8px; }
+  main:has(#lista-atleti) .team-tools { padding: 8px 16px 12px; }
+  main:has(#lista-atleti) .fab-row { padding: 4px 16px 16px; }
+}
