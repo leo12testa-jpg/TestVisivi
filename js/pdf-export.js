@@ -718,7 +718,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       const partHeaders = indices.map(i=>headers[i]);
       const partRows = rows.map(row=>indices.map(i=>row[i]));
       disegnaTabella(partHeaders,partRows,
-        indices.map(i=>i===0&&hasDate?27:1));
+        indices.map(i=>i===0&&hasDate?27:31));
     }
   }
 
