@@ -66,7 +66,8 @@ function costruisciRadar() {
   }
   const radarA = radarDatiSintesi(sessioniA, _tutteSessioni);
   const radarB = radarDatiSintesi(sessioniB, _tutteSessioni);
-  // Solo i test realmente eseguiti in almeno una giornata selezionata.\n  // Nessun punteggio fittizio per i test mancanti.
+  // Solo i test realmente eseguiti in almeno una giornata selezionata.
+  // Nessun punteggio fittizio per i test mancanti.
   const keys = TEST_STANDARD_KEYS.filter(key =>
     radarA.righe.some(r => r.key === key) || (giornoB && radarB.righe.some(r => r.key === key))
   );
@@ -96,9 +97,17 @@ function costruisciRadar() {
     dataset.borderColor = colors[i][0];
     dataset.pointBackgroundColor = colors[i][0];
     dataset.backgroundColor = colors[i][1];
-    // Collega i risultati disponibili saltando gli assi senza test.\n    // I dati mancanti restano null: non vengono convertiti in 0.\n    dataset.spanGaps = true;\n    dataset.fill = dataset.data.filter(Number.isFinite).length >= 3 ? 'origin' : false;
+    // Collega i risultati disponibili saltando gli assi senza test.
+    // I dati mancanti restano null: non vengono convertiti in 0.
+    dataset.spanGaps = true;
+    dataset.fill = dataset.data.filter(Number.isFinite).length >= 3 ? 'origin' : false;
   });
-  const countA = valori(radarA).filter(Number.isFinite).length;\n  const countB = giornoB ? valori(radarB).filter(Number.isFinite).length : 0;\n  if (countA < 3 || (giornoB && countB < 3)) {\n    container.appendChild(el('p', { class: 'meta', text: 'Per formare un poligono servono almeno tre test con punteggio per giornata. Con uno o due risultati vedrai solo i punti o una linea.' }));\n  }\n  radarChartAttuale = renderChart(canvas, cfg);
+  const countA = valori(radarA).filter(Number.isFinite).length;
+  const countB = giornoB ? valori(radarB).filter(Number.isFinite).length : 0;
+  if (countA < 3 || (giornoB && countB < 3)) {
+    container.appendChild(el('p', { class: 'meta', text: 'Per formare un poligono servono almeno tre test con punteggio per giornata. Con uno o due risultati vedrai solo i punti o una linea.' }));
+  }
+  radarChartAttuale = renderChart(canvas, cfg);
 
   container.appendChild(el('section', { class: 'radar-test-summary' },
     keys.map(key => {
