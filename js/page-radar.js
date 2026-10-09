@@ -3,103 +3,112 @@ registerServiceWorker();
 const atletaId = getQueryParam('id');
 let _sessioniAtleta = [];
 let _tutteSessioni = [];
-const radarScelte = { a: {}, b: {} };
 let radarChartAttuale = null;
+let giornateDisponibili = [];
 
-function sessioniNelPeriodo(periodo) {
-  const dal = qs('#radar-' + periodo + '-from').value;
-  const al = qs('#radar-' + periodo + '-to').value;
-  if (dal && al && dal > al) return null;
-  return _sessioniAtleta.filter(s =>
-    (!dal || String(s.data || '') >= dal) && (!al || String(s.data || '') <= al)
-  );
+function giornateConTest() {
+  const dates = new Set();
+  for (const s of _sessioniAtleta) {
+    const data = String(s.data || '').slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(data) &&
+      Object.keys(TEST_RADAR_CONFIG).includes(radarChiaveTestSessione(s))) dates.add(data);
+  }
+  return [...dates].sort((a, b) => b.localeCompare(a));
 }
 
-function testDisponibili(sessioni, key) {
-  return sessioni.filter(s => radarChiaveTestSessione(s) === key)
-    .sort((a,b) => String(b.data || '').localeCompare(String(a.data || '')) ||
-      String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+function sessioniDellaGiornata(data) {
+  if (!data) return [];
+  return _sessioniAtleta.filter(s => String(s.data || '').slice(0, 10) === data);
 }
 
-function scegliSessioni(periodo) {
-  const sessioni = sessioniNelPeriodo(periodo);
-  if (sessioni === null) return null;
-  const container = qs('#radar-' + periodo + '-tests');
-  container.replaceChildren();
-  const selezionate = [];
-  Object.keys(TEST_RADAR_CONFIG).forEach(key => {
-    const disponibili = testDisponibili(sessioni, key);
-    const scelta = radarScelte[periodo][key];
-    if (!disponibili.length) {
-      container.appendChild(el('p', { class: 'meta', text: (TEST_STANDARD_LABELS[key] || key) + ': nessun test nel periodo' }));
-      return;
-    }
-    const select = el('select', { 'aria-label': 'Rilevazione ' + (TEST_STANDARD_LABELS[key] || key) });
-    select.appendChild(el('option', { value: '__none__', text: 'Escludi dal radar' }));
-    disponibili.forEach((s, i) => {
-      select.appendChild(el('option', { value: String(i), text: formatDataIt(s.data) + (s.updatedAt ? ' · ' + String(s.updatedAt).slice(11,16) : '') }));
+function riempiGiornate() {
+  giornateDisponibili = giornateConTest();
+  const predefinite = [giornateDisponibili[1] || '', giornateDisponibili[0] || ''];
+  ['a', 'b'].forEach((lettera, i) => {
+    const select = qs('#radar-day-' + lettera);
+    select.replaceChildren(el('option', { value: '', text: 'Seleziona giornata…' }));
+    giornateDisponibili.forEach(data => {
+      const numero = sessioniDellaGiornata(data).length;
+      select.appendChild(el('option', {
+        value: data,
+        text: formatDataIt(data) + ' · ' + numero + (numero === 1 ? ' test' : ' test')
+      }));
     });
-    const selectedIndex = scelta === '__none__' ? -1 : disponibili.findIndex((s,i) => String(s.id || '') + '|' + i === scelta);
-    select.value = scelta === '__none__' ? '__none__' : String(selectedIndex < 0 ? 0 : selectedIndex);
-    if (select.value !== '__none__') selezionate.push(disponibili[Number(select.value)]);
-    select.addEventListener('change', () => {
-      radarScelte[periodo][key] = select.value === '__none__' ? '__none__' :
-        String(disponibili[Number(select.value)].id || '') + '|' + select.value;
-      costruisciRadar();
-    });
-    container.appendChild(el('div', { class: 'radar-test-picker' }, [
-      el('label', { text: TEST_STANDARD_LABELS[key] || key }), select
-    ]));
+    select.value = predefinite[i];
   });
-  return selezionate;
 }
 
 function costruisciRadar() {
   const container = qs('#contenuto-radar');
-  if (radarChartAttuale) { radarChartAttuale.destroy(); radarChartAttuale = null; }
+  if (radarChartAttuale) {
+    radarChartAttuale.destroy();
+    radarChartAttuale = null;
+  }
   container.replaceChildren();
-  const a = scegliSessioni('a');
-  const b = scegliSessioni('b');
-  if (a === null || b === null) {
-    qs('#radar-date-status').textContent = 'Controlla le date: la data iniziale non può essere successiva a quella finale.';
+
+  const giornoA = qs('#radar-day-a').value;
+  const giornoB = qs('#radar-day-b').value;
+  const sessioniA = sessioniDellaGiornata(giornoA);
+  const sessioniB = sessioniDellaGiornata(giornoB);
+  const stato = qs('#radar-date-status');
+  if (!giornateDisponibili.length) {
+    stato.textContent = 'Nessuna giornata con test validi disponibile.';
+    container.appendChild(el('div', { class: 'empty-state', text: 'Non ci sono test disponibili per costruire il radar.' }));
     return;
   }
-  const radarA = radarDatiSintesi(a, _tutteSessioni);
-  const radarB = radarDatiSintesi(b, _tutteSessioni);
-  const keys = [...new Set([...radarA.righe.map(r => r.key), ...radarB.righe.map(r => r.key)])];
-  qs('#radar-date-status').textContent = 'A: ' + a.length + ' test · B: ' + b.length + ' test. Confronto rispetto allo stesso archivio storico.';
+  if (!giornoA || !giornoB) {
+    stato.textContent = 'Seleziona due giornate da confrontare.';
+    return;
+  }
+  if (giornoA === giornoB) {
+    stato.textContent = 'Scegli due giornate diverse per un confronto significativo.';
+    return;
+  }
+  const radarA = radarDatiSintesi(sessioniA, _tutteSessioni);
+  const radarB = radarDatiSintesi(sessioniB, _tutteSessioni);
+  const keys = Object.keys(TEST_RADAR_CONFIG)
+    .filter(key => radarA.righe.some(r => r.key === key) || radarB.righe.some(r => r.key === key));
+  stato.textContent = formatDataIt(giornoA) + ': ' + sessioniA.length + ' test · ' +
+    formatDataIt(giornoB) + ': ' + sessioniB.length + ' test. Confronto rispetto allo stesso archivio.';
   if (!keys.length) {
-    container.appendChild(el('div', { class: 'empty-state', text: 'Nessun test valido nei periodi selezionati.' }));
+    container.appendChild(el('div', { class: 'empty-state', text: 'Le giornate selezionate non contengono risultati sufficienti.' }));
     return;
   }
   const labels = keys.map(key => TEST_STANDARD_LABELS[key] || key);
-  const valori = (radar) => keys.map(key => radar.righe.find(r => r.key === key)?.valore ?? null);
+  const valori = radar => keys.map(key => radar.righe.find(r => r.key === key)?.valore ?? null);
   const canvas = el('canvas', { id: 'radar-canvas' });
   container.appendChild(el('section', { class: 'card radar-simple-card' }, [
     el('div', { class: 'chart-canvas-wrap radar-simple-canvas', style: 'height:490px;' }, [canvas]),
-    el('p', { class: 'meta', text: 'Blu = periodo A; verde = periodo B. Percentili relativi all’archivio completo, non soglie scientifiche assolute. Assenze indicate come dati mancanti.' })
+    el('p', { class: 'meta', text: 'Un unico radar: blu = prima giornata, verde = seconda. Punteggi relativi all’archivio Test, non valori normativi. I test assenti restano senza punteggio.' })
   ]));
   const cfg = radarChartConfig(labels, [
-    { label: 'Periodo A', data: valori(radarA) },
-    { label: 'Periodo B', data: valori(radarB) }
+    { label: formatDataIt(giornoA), data: valori(radarA) },
+    { label: formatDataIt(giornoB), data: valori(radarB) },
   ], null);
-  cfg.data.datasets[0].borderColor = '#2474ba';
-  cfg.data.datasets[0].backgroundColor = 'rgba(36,116,186,.15)';
-  cfg.data.datasets[0].pointBackgroundColor = '#2474ba';
-  cfg.data.datasets[1].borderColor = '#16a085';
-  cfg.data.datasets[1].backgroundColor = 'rgba(22,160,133,.15)';
-  cfg.data.datasets[1].pointBackgroundColor = '#16a085';
-  radarChartAttuale = renderChart(canvas, cfg);
-  const righe = keys.map(key => {
-    const ra = radarA.righe.find(r => r.key === key);
-    const rb = radarB.righe.find(r => r.key === key);
-    return el('article', { class: 'radar-test-summary-item' }, [
-      el('strong', { text: TEST_STANDARD_LABELS[key] || key }),
-      el('span', { class: 'meta', text: 'A: ' + (ra ? ra.valore + '/100 · ' + formatDataIt(ra.data) : '—') +
-        '   |   B: ' + (rb ? rb.valore + '/100 · ' + formatDataIt(rb.data) : '—') })
-    ]);
+  const colors = [
+    ['#2474ba', 'rgba(36,116,186,.16)'],
+    ['#16a085', 'rgba(22,160,133,.16)'],
+  ];
+  cfg.data.datasets.forEach((dataset, i) => {
+    dataset.borderColor = colors[i][0];
+    dataset.pointBackgroundColor = colors[i][0];
+    dataset.backgroundColor = colors[i][1];
+    dataset.spanGaps = false;
   });
-  container.appendChild(el('section', { class: 'radar-test-summary' }, righe));
+  radarChartAttuale = renderChart(canvas, cfg);
+
+  container.appendChild(el('section', { class: 'radar-test-summary' },
+    keys.map(key => {
+      const a = radarA.righe.find(r => r.key === key);
+      const b = radarB.righe.find(r => r.key === key);
+      return el('article', { class: 'radar-test-summary-item' }, [
+        el('strong', { text: TEST_STANDARD_LABELS[key] || key }),
+        el('span', { class: 'meta', text: formatDataIt(giornoA) + ': ' +
+          (a ? a.valore + '/100' : 'non eseguito') + '  |  ' + formatDataIt(giornoB) + ': ' +
+          (b ? b.valore + '/100' : 'non eseguito') })
+      ]);
+    })
+  ));
 }
 
 async function init() {
@@ -110,19 +119,14 @@ async function init() {
   qs('#back-link').href = './atleta.html?id=' + encodeURIComponent(atletaId);
   qs('#titolo-pagina').textContent = 'Radar — ' + nomeCompleto(atleta);
   document.title = 'Radar ' + nomeCompleto(atleta) + ' - Test Visivi';
+
   const [tutte, sessioni] = await Promise.all([dbGetAllSessioni(), dbGetSessioniByAtleta(atletaId)]);
   _sessioniAtleta = sessioni.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
   _tutteSessioni = tutte.filter(s => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
-  ['a','b'].forEach(p => {
-    ['from','to'].forEach(side => qs('#radar-' + p + '-' + side).addEventListener('change', () => {
-      radarScelte[p] = {};
-      costruisciRadar();
-    }));
-  });
-  qs('#radar-reset-date').addEventListener('click', () => {
-    ['a','b'].forEach(p => { qs('#radar-' + p + '-from').value = ''; qs('#radar-' + p + '-to').value = ''; radarScelte[p] = {}; });
-    costruisciRadar();
-  });
+  riempiGiornate();
+  qs('#radar-day-a').addEventListener('change', costruisciRadar);
+  qs('#radar-day-b').addEventListener('change', costruisciRadar);
+  qs('#radar-reset-date').addEventListener('click', () => { riempiGiornate(); costruisciRadar(); });
   costruisciRadar();
   onThemeChange(costruisciRadar);
 }
