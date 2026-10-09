@@ -686,7 +686,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     const titleLines = doc.splitTextToSize(titolo, usableWidth);
-    assicuraSpazio(titleLines.length * 5 + 34);
+    assicuraSpazio(titleLines.length * 5 + (sottotitolo ? Math.ceil(sottotitolo.length / 92) * 3.7 + 17 : 19));
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.setTextColor(...C.navyDark);
@@ -703,20 +703,6 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     linea(y);
     y += 5;
     doc.setTextColor(...C.ink);
-  }
-
-  function cardKpi(x, yPos, width, label, value) {
-    doc.setFillColor(...C.paper);
-    doc.setDrawColor(...C.line);
-    doc.roundedRect(x, yPos, width, 20, 2.5, 2.5, 'FD');
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.2);
-    doc.setTextColor(...C.muted);
-    doc.text(label, x + 4, yPos + 6);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(...C.navyDark);
-    doc.text(String(value), x + 4, yPos + 14);
   }
 
   function disegnaTabella(headers, rows, widths) {
@@ -768,7 +754,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     const head = chunksFor(headers,true);
     const headH = heightFor(head);
     const first = chunksFor(rows[0],false);
-    if (y+headH+heightFor(first)>bottom) paginaNuova();
+    if (y+headH+Math.min(heightFor(first),bottom-26)>bottom) paginaNuova();
     paint(head,true,0);
     rows.forEach((row,i)=>{
       const chunks=chunksFor(row,false);
@@ -865,7 +851,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         null
       );
       const png = await renderChartOffscreen(config, 1100, 850);
-      const w = Math.min(usableWidth, 164);
+      const w = Math.min(usableWidth, 138);
       const h = w * 850 / 1100;
       assicuraSpazio(h + 6);
       doc.addImage(png, 'PNG', marginX + (usableWidth - w) / 2, y, w, h);
