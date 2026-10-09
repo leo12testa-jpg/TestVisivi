@@ -8,11 +8,26 @@ function costruisciRadar() {
   const container = qs('#contenuto-radar');
   container.innerHTML = '';
 
-  const radar = radarDatiSintesi(_sessioniAtleta, _tutteSessioni);
+  const dal = qs('#radar-date-from').value;
+  const al = qs('#radar-date-to').value;
+  const stato = qs('#radar-date-status');
+  if (dal && al && dal > al) {
+    stato.textContent = 'La data iniziale deve essere precedente o uguale alla data finale.';
+    container.appendChild(el('div', { class: 'empty-state', text: 'Controlla le date selezionate.' }));
+    return;
+  }
+  const nelPeriodo = _sessioniAtleta.filter((s) =>
+    (!dal || String(s.data || '') >= dal) &&
+    (!al || String(s.data || '') <= al)
+  );
+  stato.textContent = dal || al
+    ? `Test validi nel periodo: ${nelPeriodo.length}. Confronto percentili: archivio completo.`
+    : `Tutto lo storico: ${nelPeriodo.length} Test validi.`;
+  const radar = radarDatiSintesi(nelPeriodo, _tutteSessioni);
   if (!radar.labels.length) {
     container.appendChild(el('div', {
       class: 'empty-state',
-      text: 'Nessun Test con valori sufficienti per costruire il radar.',
+      text: 'Nessun Test con valori sufficienti nel periodo selezionato per costruire il radar.',
     }));
     return;
   }
@@ -42,7 +57,7 @@ function costruisciRadar() {
     el('article', { class: 'radar-test-summary-item' }, [
       el('div', {}, [
         el('strong', { text: riga.nome }),
-        el('span', { class: 'meta', text: riga.data ? `Ultimo test: ${formatDataIt(riga.data)}` : '' }),
+        el('span', { class: 'meta', text: riga.data ? `Test selezionato: ${formatDataIt(riga.data)}` : '' }),
         el('span', {
           class: 'meta',
           text: riga.parametriValoriRadar?.length
@@ -78,6 +93,15 @@ async function init() {
   _sessioniAtleta = sessioniAtleta.filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
   _tutteSessioni = tutteSessioni.filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
 
+  // Le date filtrano il profilo dell'atleta, senza cambiare la popolazione
+  // di confronto e quindi senza alterare artificialmente i percentili.
+  qs('#radar-date-from').addEventListener('change', costruisciRadar);
+  qs('#radar-date-to').addEventListener('change', costruisciRadar);
+  qs('#radar-reset-date').addEventListener('click', () => {
+    qs('#radar-date-from').value = '';
+    qs('#radar-date-to').value = '';
+    costruisciRadar();
+  });
   costruisciRadar();
   onThemeChange(costruisciRadar);
 }
