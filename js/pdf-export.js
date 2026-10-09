@@ -924,30 +924,38 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       );
 
       const cols = colonneConDati(esercizio, compilate);
-      if (cols.length) {
-        const headers = ['Data', ...cols.map((col) => col.header)];
-        const rows = compilate.map((s) => [
-          formatDataIt(s.data),
-          ...cols.map((col) => formattaCella(col, col.get(s))),
-        ]);
-        const dataWidth = 24;
-        const other = cols.length ? (usableWidth - dataWidth) / cols.length : usableWidth - dataWidth;
-        disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
+      const normalizzaLabel = (label) => String(label).toLowerCase()
+        .replace(/\([^)]*\)/g, '').replace(/[^a-z0-9]/g, '');
+      const sinonimi = {
+        immaginiColpite: ['Immagini colpite'],
+        immaginiAlSec: ['Immagini al secondo'],
+        numeroTarget: ['Numero target'],
+      };
+      const note = new Map();
+      const tutteDelTest = selezioniConDati.flatMap((item) => item.sessioni)
+        .filter((s) => sessioneDelTest(s, key));
+      for (const s of tutteDelTest) {
+        for (const m of typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(s) : []) {
+          const giaInTabella = cols.some((col) => [
+            col.header, col.campo.key,
+            ...(typeof aliasesCampoJet === 'function' ? aliasesCampoJet(col.campo).map((a) => a.name) : []),
+            ...(sinonimi[col.campo.key] || []),
+          ].some((label) => normalizzaLabel(label) === normalizzaLabel(m.label)));
+          if (!giaInTabella) note.set(m.key, m.label);
+        }
       }
-
-      for (const s of delTest.filter((s) => typeof metricheOriginaliJet === 'function' && metricheOriginaliJet(s).length)) {
-        assicuraSpazio(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(8);
-        doc.setTextColor(...C.navyDark);
-        doc.text('Risultati originali - ' + formatDataIt(s.data), marginX, y);
-        y += 4.5;
-        const righeOriginali = metricheOriginaliJet(s).map((m) => [m.label, m.valore]);
-        disegnaTabella(
-          ['Parametro', 'Valore'],
-          righeOriginali,
-          [usableWidth * 0.62, usableWidth * 0.38]
-        );
+      const extra = [...note.entries()];
+      const headers = ['Data', ...cols.map((col) => col.header), ...extra.map(([, label]) => label)];
+      const rows = delTest.map((s) => {
+        const raw = new Map((typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(s) : [])
+          .map((m) => [m.key, m.valore]));
+        return [formatDataIt(s.data), ...cols.map((col) => formattaCella(col, col.get(s))),
+          ...extra.map(([key]) => raw.get(key) ?? '-')];
+      });
+      if (headers.length > 1) {
+        const dataWidth = 24;
+        const other = (usableWidth - dataWidth) / (headers.length - 1);
+        disegnaTabella(headers, rows, [dataWidth, ...headers.slice(1).map(() => other)]);
       }
 
       if (compilate.length) {
