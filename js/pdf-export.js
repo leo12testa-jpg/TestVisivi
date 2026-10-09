@@ -690,57 +690,61 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
 
   function disegnaTabella(headers, rows, widths) {
     if (!rows.length) return;
-    const colWidths = widths || Array(headers.length).fill(usableWidth / headers.length);
-    const fontSize = headers.length > 8 ? 6.2 : headers.length > 5 ? 7 : 7.7;
-    const paddingX = 1.4;
+    // Mantieni la tabella entro i margini anche con molte colonne.
+    const supplied = widths && widths.length === headers.length ? widths : Array(headers.length).fill(1);
+    const total = supplied.reduce((sum, w) => sum + Math.max(0, w), 0) || headers.length;
+    const colWidths = supplied.map(w => usableWidth * Math.max(0, w) / total);
+    const fontSize = headers.length > 12 ? 5.2 : headers.length > 8 ? 6 : headers.length > 5 ? 6.7 : 7.6;
+    const paddingX = 1.5;
     const lineHeight = 3.2;
-    const splitCell = (text, width) => doc.splitTextToSize(String(text), Math.max(4, width - paddingX * 2));
-
-    function rowHeight(cells, bold = false) {
-      doc.setFont('helvetica', bold ? 'bold' : 'normal');
-      doc.setFontSize(fontSize);
-      return Math.max(...cells.map((cell, i) => splitCell(cell, colWidths[i]).length)) * lineHeight + 3;
-    }
-
-    function header() {
-      const h = rowHeight(headers, true);
-      assicuraSpazio(h + 5);
-      doc.setFillColor(...C.blueSoft);
-      doc.setDrawColor(...C.line);
-      doc.rect(marginX, y, usableWidth, h, 'FD');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(fontSize);
-      doc.setTextColor(...C.navyDark);
-      let x = marginX;
-      headers.forEach((cell, i) => {
-        doc.text(splitCell(cell, colWidths[i]), x + paddingX, y + 3.5);
-        x += colWidths[i];
-      });
-      y += h;
-    }
-
-    header();
-    rows.forEach((row, rowIndex) => {
-      const h = rowHeight(row);
-      if (y + h > footerY - 5) {
-        paginaNuova();
-        header();
+    const splitCell = (value, width) => {
+      const str = String(value ?? '-');
+      // Forza anche le stringhe lunghe prive di spazi a rientrare nella cella.
+      const maxW = Math.max(1, width - paddingX * 2);
+      const lines = doc.splitTextToSize(str, maxW);
+      const fitted = [];
+      for (const line of lines) {
+        if (doc.getTextWidth(line) <= maxW) { fitted.push(line); continue; }
+        let part = '';
+        for (const c of line) {
+          if (part && doc.getTextWidth(part + c) > maxW) { fitted.push(part); part = ''; }
+          part += c;
+        }
+        if (part) fitted.push(part);
       }
-      if (rowIndex % 2 === 1) {
-        doc.setFillColor(249, 250, 251);
-        doc.rect(marginX, y, usableWidth, h, 'F');
-      }
-      doc.setFont('helvetica', 'normal');
+      return fitted.length ? fitted : ['-'];
+    };
+    const availableBottom = footerY - 5;
+    function drawRow(cells, isHeader, index) {
+      doc.setFont('helvetica', isHeader ? 'bold' : 'normal');
       doc.setFontSize(fontSize);
-      doc.setTextColor(...C.ink);
-      let x = marginX;
-      row.forEach((cell, i) => {
-        doc.text(splitCell(cell, colWidths[i]), x + paddingX, y + 3.5);
-        x += colWidths[i];
-      });
-      doc.setDrawColor(...C.line);
-      doc.line(marginX, y + h, marginX + usableWidth, y + h);
-      y += h;
+      const chunks = cells.map((cell, i) => splitCell(cell, colWidths[i]));
+      const maxLinesPerPage = Math.max(1, Math.floor((availableBottom - 26) / lineHeight));
+      const maxLines = Math.max(...chunks.map(c => c.length));
+      for (let start = 0; start < maxLines; start += maxLinesPerPage) {
+        const amount = Math.min(maxLinesPerPage, maxLines - start);
+        const h = amount * lineHeight + 3;
+        if (y + h > availableBottom) paginaNuova();
+        if (isHeader) { doc.setFillColor(...C.blueSoft); doc.rect(marginX, y, usableWidth, h, 'F'); }
+        else if (index % 2) { doc.setFillColor(249, 250, 251); doc.rect(marginX, y, usableWidth, h, 'F'); }
+        doc.setDrawColor(...C.line);
+        doc.rect(marginX, y, usableWidth, h);
+        let x = marginX;
+        chunks.forEach((lines, i) => {
+          doc.setFont('helvetica', isHeader ? 'bold' : 'normal');
+          doc.setFontSize(fontSize);
+          doc.setTextColor(...(isHeader ? C.navyDark : C.ink));
+          doc.text(lines.slice(start, start + amount), x + paddingX, y + 3.5);
+          x += colWidths[i];
+        });
+        y += h;
+      }
+    }
+    drawRow(headers, true, 0);
+    rows.forEach((row, i) => {
+      // Riporta l'intestazione ogni volta che la tabella continua su nuova pagina.
+      if (y > availableBottom - 18) { paginaNuova(); drawRow(headers, true, 0); }
+      drawRow(row, false, i);
     });
     y += 5;
   }
@@ -815,18 +819,21 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     }
     if (config.options.plugins?.legend?.labels) config.options.plugins.legend.labels.color = '#182026';
     const img = await renderChartOffscreen(config, 1100, 500);
-    const imgHeight = usableWidth * (500 / 1100);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    const graphWidth = usableWidth * 0.78;
+    const imgHeight = graphWidth * (500 / 1100);
+    const graphX = marginX + (usableWidth - graphWidth) / 2;
     const lines = doc.splitTextToSize(titoloGruppo(group), usableWidth);
-    assicuraSpazio(imgHeight + lines.length * 4 + 8);
+    assicuraSpazio(imgHeight + lines.length * 4 + 19);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8.5);
+    doc.setFontSize(10);
     doc.setTextColor(...C.navyDark);
+    doc.text('Grafici', marginX, y);
+    y += 7;
+    doc.setFontSize(8.5);
     doc.text(lines, marginX, y);
-    y += lines.length * 4;
-    doc.addImage(img, 'PNG', marginX, y, usableWidth, imgHeight);
-    y += imgHeight + 7;
+    y += lines.length * 4 + 3;
+    doc.addImage(img, 'PNG', graphX, y, graphWidth, imgHeight);
+    y += imgHeight + 9;
   }
 
   // Copertina generale.
