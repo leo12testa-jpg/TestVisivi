@@ -211,7 +211,7 @@ function montaIndicatoreConnessione() {
 }
 montaIndicatoreConnessione();
 
-const APP_BUILD_VERSION = '94';
+const APP_BUILD_VERSION = '95';
 
 async function leggiVersionePubblicata() {
   if (!navigator.onLine) return null;
