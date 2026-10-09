@@ -2317,3 +2317,15 @@ main:has(#lista-atleti) #lista-atleti .team-caption {
   main:has(#lista-atleti) .team-tools { padding: 8px 16px 12px; }
   main:has(#lista-atleti) .fab-row { padding: 4px 16px 16px; }
 }
+
+/* Squadra e relativa azione su identica baseline, desktop e mobile. */
+main:has(#lista-atleti) .team-tools { align-items: flex-end; }
+main:has(#lista-atleti) .team-tools .field { display: flex; flex-direction: column; justify-content: flex-end; }
+main:has(#lista-atleti) .team-tools .team-action-field { flex: 0 1 auto; min-width: 0; }
+main:has(#lista-atleti) .team-tools .team-action-label { visibility: hidden; user-select: none; }
+main:has(#lista-atleti) .team-tools .field select,
+main:has(#lista-atleti) .team-tools .field button { height: 46px; min-height: 46px; box-sizing: border-box; margin: 0; }
+@media(max-width:570px) {
+ main:has(#lista-atleti) .team-tools .team-action-field { flex: 1 1 100%; width: 100%; }
+ main:has(#lista-atleti) .team-tools .team-action-label { display: none; }
+}
