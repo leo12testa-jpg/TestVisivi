@@ -20,39 +20,32 @@ function dimensioniImmagine(dataUrl) {
 }
 
 function renderChartOffscreen(config, widthPx, heightPx) {
-  return new Promise((resolve) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = widthPx;
-    canvas.height = heightPx;
-    canvas.style.position = 'fixed';
-    canvas.style.left = '-99999px';
-    canvas.style.top = '0';
-    document.body.appendChild(canvas);
-
-    const cfg = {
-      ...config,
-      options: {
-        ...config.options,
-        responsive: false,
-        animation: false,
-        devicePixelRatio: 2,
-        plugins: {
-          ...(config.options?.plugins || {}),
-          legend: { ...(config.options?.plugins?.legend || {}), labels: { boxWidth: 10, font: { size: 11 } } },
-        },
+  // Il grafico non animato viene disegnato subito: evitare due frame di attesa
+  // per ogni grafico, soprattutto nell'anteprima PDF con molti atleti.
+  const canvas = document.createElement('canvas');
+  canvas.width = widthPx;
+  canvas.height = heightPx;
+  const cfg = {
+    ...config,
+    options: {
+      ...config.options,
+      responsive: false,
+      animation: false,
+      devicePixelRatio: 1,
+      plugins: {
+        ...(config.options?.plugins || {}),
+        legend: { ...(config.options?.plugins?.legend || {}), labels: { boxWidth: 10, font: { size: 11 } } },
       },
-    };
-
-    const chart = new Chart(canvas, cfg);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const dataUrl = canvas.toDataURL('image/png', 1);
-        chart.destroy();
-        canvas.remove();
-        resolve(dataUrl);
-      });
-    });
-  });
+    },
+  };
+  let chart;
+  try {
+    chart = new Chart(canvas, cfg);
+    chart.update('none');
+    return Promise.resolve(canvas.toDataURL('image/png'));
+  } finally {
+    if (chart) chart.destroy();
+  }
 }
 
 async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
