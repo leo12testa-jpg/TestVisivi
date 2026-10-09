@@ -10,7 +10,7 @@ const _sessioniCache = new Map();
 let _sessioniB = [];
 function sessioniPer(lettera) { return lettera === 'b' ? _sessioniB : _sessioniAtleta; }
 function atletaPer(lettera) { const id = qs('#radar-player-' + lettera).value; return _atleti.find(a => String(a.id) === id); }
-function nomePer(lettera) { const a = atletaPer(lettera); return a ? nomeCompleto(a) : 'Giocatore'; }
+function nomePer(lettera) { const a = atletaPer(lettera) || (lettera === 'b' ? atletaPer('a') : null); return a ? nomeCompleto(a) : 'Giocatore'; }
 
 function giornateConTest(sessioni) {
   const dates = new Set();
