@@ -789,7 +789,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     : testKeysRichiesti;
 
   // Un'unica popolazione storica per tutti i radar; medesima scala di confronto.
-  const archivioRadar = (await dbGetAllSessioni()).filter((s) =>
+  const archivioRadar = (Array.isArray(opzioni.archivioRadar) ? opzioni.archivioRadar : await dbGetAllSessioni()).filter((s) =>
     isSessioneTest(s) && (typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
   );
 
