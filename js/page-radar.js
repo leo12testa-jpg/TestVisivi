@@ -66,8 +66,9 @@ function costruisciRadar() {
   }
   const radarA = radarDatiSintesi(sessioniA, _tutteSessioni);
   const radarB = radarDatiSintesi(sessioniB, _tutteSessioni);
-  const keys = Object.keys(TEST_RADAR_CONFIG)
-    .filter(key => radarA.righe.some(r => r.key === key) || radarB.righe.some(r => r.key === key));
+  // Tutti i 13 assi rimangono visibili anche quando un test non è stato
+  // svolto in una (o entrambe) le giornate. Mai assegnare zero ai mancanti.
+  const keys = [...TEST_STANDARD_KEYS];
   stato.textContent = formatDataIt(giornoA) + ': ' + sessioniA.length + ' test · ' +
     formatDataIt(giornoB) + ': ' + sessioniB.length + ' test. Confronto rispetto allo stesso archivio.';
   if (!keys.length) {
