@@ -274,19 +274,29 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
   const periodoDa = manuale ? bulkDateManuali().da : qs('#bulk-da').value;
   const periodoA = manuale ? bulkDateManuali().a : qs('#bulk-a').value;
 
+  const erroreBox = qs('#bulk-preview-error');
+  erroreBox.hidden = true;
+  erroreBox.textContent = '';
   btn.disabled = true;
   btn.textContent = 'Generazione anteprima…';
 
   try {
+    // L’archivio è già in memoria: non fare una seconda richiesta Firebase
+    // durante il clic, che può fallire o rallentare la generazione.
     const report = await esportaReportMultiploPdf(dati.selezioni, {
       periodoDa,
       periodoA,
       automatico: true,
+      archivioRadar: _bulkSessioni,
       scarica: false,
     });
     bulkApriAnteprima(report);
   } catch (err) {
-    mostraErrorePagina(err);
+    console.error('Anteprima PDF multiplo non riuscita:', err);
+    erroreBox.textContent = 'Anteprima non riuscita: ' + (err?.message || String(err) || 'Errore sconosciuto') +
+      '. Controlla l’intervallo e riprova.';
+    erroreBox.hidden = false;
+    erroreBox.scrollIntoView({block:'center',behavior:'smooth'});
   } finally {
     btn.textContent = 'Anteprima PDF';
     bulkAggiornaRiepilogo();
