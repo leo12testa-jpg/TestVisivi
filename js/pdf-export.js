@@ -788,6 +788,11 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       )
     : testKeysRichiesti;
 
+  // Un'unica popolazione storica per tutti i radar; medesima scala di confronto.
+  const archivioRadar = (await dbGetAllSessioni()).filter((s) =>
+    isSessioneTest(s) && (typeof sessioneHaRisultatiVisibili !== 'function' || sessioneHaRisultatiVisibili(s))
+  );
+
   // Controlla soltanto le sessioni del test corrente, senza ricreare
   // l'intero archivio per ogni colonna e per ogni atleta.
   function colonneConDati(esercizio, sessioniCompilate) {
@@ -853,6 +858,40 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     y += 7;
     doc.addImage(img, 'PNG', marginX + (usableWidth - graphWidth) / 2, y, graphWidth, graphHeight);
     y += graphHeight + 9;
+  }
+
+  async function disegnaSoloRadarAtleta(sessioni) {
+    const radar = radarDatiSintesi(sessioni, archivioRadar);
+    if (!radar.righe.length) {
+      titoloSezione('Radar prestazionale', 'Nessun test con parametri sufficienti per il radar.');
+      return;
+    }
+    titoloSezione('Radar prestazionale',
+      'Solo Test eseguiti nel periodo. Per ciascuna tipologia viene considerata l’ultima valutazione valida. ' +
+      'Indice relativo all’archivio Test: 50 corrisponde circa alla mediana, non a una soglia scientifica.');
+    if (radar.righe.length >= 3) {
+      const config = radarChartConfig(
+        radar.righe.map((r) => r.nome),
+        [{ label: 'Profilo test', data: radar.righe.map((r) => r.valore) }],
+        null
+      );
+      const png = await renderChartOffscreen(config, 1100, 850);
+      const w = Math.min(usableWidth, 164);
+      const h = w * 850 / 1100;
+      assicuraSpazio(h + 6);
+      doc.addImage(png, 'PNG', marginX + (usableWidth - w) / 2, y, w, h);
+      y += h + 6;
+    } else {
+      assicuraSpazio(8);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.muted);
+      doc.text('Meno di tre test valutabili: impossibile formare un poligono radar.', marginX, y);
+      y += 7;
+    }
+    disegnaTabella(['Test eseguito', 'Indice', 'Data'], radar.righe.map((r) => [
+      r.nome, r.valore + '/100', r.data ? formatDataIt(r.data) : '-'
+    ]), [110, 25, 45]);
   }
 
   // Copertina generale.
@@ -932,6 +971,8 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       continue;
     }
 
+    await disegnaSoloRadarAtleta(sessioni);
+
     for (const key of testKeys) {
       const esercizio = getEsercizioConfig(key);
       if (!esercizio || esercizio.custom) continue;
@@ -987,7 +1028,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         disegnaTabella(headers, rows, [dataWidth, ...headers.slice(1).map(() => other)]);
       }
 
-      if (compilate.length) await disegnaGraficoUnicoTest(esercizio, compilate);
+      // Il PDF multiplo contiene esclusivamente il radar come grafico.
     }
 
     // Eventuali esercizi/test storici configurati ma non compresi nei Test standard.
@@ -1022,7 +1063,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
           disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
         }
 
-        if (compilate.length) await disegnaGraficoUnicoTest(esercizio, compilate);
+        // Il PDF multiplo contiene esclusivamente il radar come grafico.
       }
     }
 
@@ -1033,18 +1074,6 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         titoloSezione('Campo visivo avanzato', 'Valutazione del ' + formatDataIt(s.data));
         if (dati.durataSecondi !== undefined && dati.durataSecondi !== null) {
           disegnaTabella(['Parametro', 'Valore'], [['Durata', dati.durataSecondi + ' s']], [110, 70]);
-        }
-        if (dati.immaginePolarPlot) {
-          try {
-            const { larghezza, altezza } = await dimensioniImmagine(dati.immaginePolarPlot);
-            const w = Math.min(usableWidth, 120, 160 * larghezza / altezza);
-            const h = w * altezza / larghezza;
-            assicuraSpazio(h + 6);
-            doc.addImage(dati.immaginePolarPlot, formatoImmagineDaDataUrl(dati.immaginePolarPlot), marginX, y, w, h);
-            y += h + 6;
-          } catch (_) {
-            disegnaTabella(['Grafico', 'Stato'], [['Campo visivo', 'Immagine non leggibile']], [110, 70]);
-          }
         }
         if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length) {
           disegnaTabella(['Settore', 'Fascia angoli', 'Risposte corrette'],
