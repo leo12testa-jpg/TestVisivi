@@ -22,8 +22,9 @@ function dimensioniImmagine(dataUrl) {
 function renderChartOffscreen(config, widthPx, heightPx) {
   return new Promise((resolve) => {
     const canvas = document.createElement('canvas');
-    canvas.width = widthPx;
-    canvas.height = heightPx;
+    // Risoluzione contenuta per report con molti grafici: meno pixel da codificare.
+    canvas.width = Math.round(widthPx * 0.65);
+    canvas.height = Math.round(heightPx * 0.65);
     canvas.style.position = 'fixed';
     canvas.style.left = '-99999px';
     canvas.style.top = '0';
@@ -45,12 +46,13 @@ function renderChartOffscreen(config, widthPx, heightPx) {
 
     const chart = new Chart(canvas, cfg);
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const dataUrl = canvas.toDataURL('image/png', 1);
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        resolve(dataUrl);
+      } finally {
         chart.destroy();
         canvas.remove();
-        resolve(dataUrl);
-      });
+      }
     });
   });
 }
@@ -930,8 +932,9 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         numeroTarget: ['Numero target'],
       };
       const note = new Map();
-      const tutteDelTest = selezioniConDati.flatMap((item) => item.sessioni)
-        .filter((s) => sessioneDelTest(s, key));
+      // Le colonne e le metriche devono appartenere al giocatore corrente.
+      // In precedenza ogni giocatore rianalizzava l'intero archivio.
+      const tutteDelTest = delTest;
       for (const s of tutteDelTest) {
         for (const m of typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(s) : []) {
           const giaInTabella = cols.some((col) => [
