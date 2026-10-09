@@ -668,7 +668,11 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(...C.navyDark);
-      if (intestazione) doc.text(nomeAtletaPagina, marginX, 10, { maxWidth: usableWidth });
+      if (intestazione) {
+        doc.text(nomeAtletaPagina, marginX, 11, { maxWidth: usableWidth });
+        doc.setDrawColor(...C.line);
+        doc.line(marginX, 14, marginX + usableWidth, 14);
+      }
     }
   }
 
@@ -700,8 +704,8 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.text(lines, marginX, y);
       y += lines.length * 3.7 + 1.5;
     }
-    linea(y);
-    y += 5;
+    linea(y + 2);
+    y += 8;
     doc.setTextColor(...C.ink);
   }
 
@@ -709,11 +713,19 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   // ogni parte ripete Data, mantenendo tutti i valori senza ridurre i testi a caratteri illeggibili.
   function disegnaTabellaLeggibile(headers, rows, widths) {
     if (headers.length <= 7) return disegnaTabella(headers, rows, widths);
-    const colsPerBlock = 5;
+    const colsPerBlock = 4;
     const hasDate = headers[0] === 'Data';
     const fixed = hasDate ? [0] : [];
     const other = headers.map((_,i)=>i).filter(i=>!fixed.includes(i));
+    const parti = Math.ceil(other.length / colsPerBlock);
     for (let start=0;start<other.length;start+=colsPerBlock) {
+      const parte = Math.floor(start / colsPerBlock) + 1;
+      assicuraSpazio(12);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...C.muted);
+      doc.text('PARAMETRI  ' + parte + ' / ' + parti,marginX,y);
+      y += 5;
       const indices = [...fixed,...other.slice(start,start+colsPerBlock)];
       const partHeaders = indices.map(i=>headers[i]);
       const partRows = rows.map(row=>indices.map(i=>row[i]));
@@ -727,8 +739,8 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     const supplied = widths && widths.length === headers.length ? widths : Array(headers.length).fill(1);
     const total = supplied.reduce((sum,w) => sum + Math.max(0,w),0) || headers.length;
     const colWidths = supplied.map(w => usableWidth * Math.max(0,w) / total);
-    const fontSize = headers.length > 12 ? 5.2 : headers.length > 8 ? 6 : headers.length > 5 ? 6.7 : 7.6;
-    const paddingX = 1.5, lineHeight = 3.2, bottom = footerY - 5;
+    const fontSize = headers.length > 8 ? 7.0 : headers.length > 5 ? 7.6 : 8.2;
+    const paddingX = 2.2, lineHeight = 3.8, bottom = footerY - 5;
     const splitCell = (value, width) => {
       const str = String(value ?? '-');
       const maxW = Math.max(1,width - 2 * paddingX);
@@ -751,7 +763,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.setFontSize(fontSize);
       return cells.map((v,i) => splitCell(v,colWidths[i]));
     };
-    const heightFor = (chunks) => Math.max(...chunks.map(c=>c.length)) * lineHeight + 3;
+    const heightFor = (chunks) => Math.max(...chunks.map(c=>c.length)) * lineHeight + 4;
     const paint = (chunks,header,index) => {
       const h = heightFor(chunks);
       if (header) {doc.setFillColor(...C.blueSoft);doc.rect(marginX,y,usableWidth,h,'F');}
@@ -763,7 +775,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         doc.setFont('helvetica',header?'bold':'normal');
         doc.setFontSize(fontSize);
         doc.setTextColor(...(header?C.navyDark:C.ink));
-        doc.text(lines,x+paddingX,y+3.5);
+        doc.text(lines,x+paddingX,y+4.1);
         x += colWidths[i];
       });
       y+=h;
@@ -859,7 +871,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       return;
     }
     // Riserva spazio per titolo e radar: niente titolo isolato a piè pagina.
-    const radarW = Math.min(usableWidth, 132);
+    const radarW = Math.min(usableWidth, 128);
     const radarH = radarW * 850 / 1100;
     if (radar.righe.length >= 3 && y + radarH + 35 > footerY - 5) paginaNuova();
     titoloSezione('Radar prestazionale',
@@ -900,7 +912,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.text('Report multiplo', marginX, 27);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text('Giocatori e Test rilevati automaticamente nel periodo', marginX, 35);
+  doc.text('Valutazioni visive | Report tecnico riepilogativo', marginX, 35);
   y = 70;
 
   const nomiTest = [...new Set(
@@ -911,7 +923,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.setTextColor(...C.navyDark);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text('Riepilogo automatico', marginX, y);
+  doc.text('INFORMAZIONI DEL REPORT', marginX, y);
   y += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
