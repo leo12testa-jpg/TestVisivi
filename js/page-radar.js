@@ -1,4 +1,6 @@
 registerServiceWorker();
+// Collega il comando subito, senza attendere Firebase o il caricamento dell’archivio.
+document.querySelector('#radar-add-player')?.addEventListener('click', aggiungiProfilo);
 
 const atletaId = getQueryParam('id');
 const _sessioniCache = new Map();
@@ -145,6 +147,27 @@ function costruisciRadar() {
     return el('article',{class:'radar-test-summary-item'},children);
   })));
 }
+function aggiungiProfilo() {
+  if (profili.length >= 8) {
+    qs('#radar-date-status').textContent = 'Limite di 8 profili raggiunto.';
+    return;
+  }
+  if (!_atleti.length) {
+    qs('#radar-date-status').textContent = 'Caricamento dei giocatori in corso. Riprova tra poco.';
+    return;
+  }
+  // I nuovi profili non hanno una data preimpostata: devono essere scelti esplicitamente.
+  profili.push({id:++counter,atletaId:inizialeId,data:''});
+  try {
+    disegnaSelettori();
+    costruisciRadar();
+    const rows = qs('#radar-profiles').querySelectorAll('.radar-profile-row');
+    if (rows.length) rows[rows.length - 1].scrollIntoView({behavior:'smooth',block:'nearest'});
+  } catch (err) {
+    qs('#radar-date-status').textContent = 'Errore nell’aggiunta del giocatore: ' + err.message;
+    console.error(err);
+  }
+}
 async function init() {
   const user = await richiedeLogin();
   if (!user) return;
@@ -162,11 +185,7 @@ async function init() {
   qs('#titolo-pagina').textContent = 'Confronto giocatori';
   document.title = 'Confronto giocatori - Test Visivi';
   profili = [{id:++counter,atletaId:inizialeId,data:''}];
-  qs('#radar-add-player').addEventListener('click', () => {
-    if (profili.length >= 8) { qs('#radar-date-status').textContent = 'Per leggibilità puoi confrontare fino a 8 profili.'; return; }
-    profili.push({id:++counter,atletaId:inizialeId,data:''});
-    disegnaSelettori(); costruisciRadar();
-  });
+
   qs('#radar-reset-date').addEventListener('click', () => {
     profili = [{id:++counter,atletaId:inizialeId,data:''}];
     disegnaSelettori(); costruisciRadar();
