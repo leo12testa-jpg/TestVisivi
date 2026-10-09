@@ -802,38 +802,57 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     return String(value);
   }
 
-  async function disegnaGrafico(group, sessioniGruppo) {
-    if (!sessioniGruppo.length) return;
-    const config = sessioniGruppo.length === 1
-      ? buildBarChartConfig(
-          group.campi.map((campo) => campo.label),
-          group.campi.map((campo) => getValoreCampoGruppo(sessioniGruppo[0], group, campo)),
-          group.unitLabel
-        )
-      : buildGroupChartConfig(sessioniGruppo, group);
-    // Il PDF resta leggibile anche quando l'app usa il tema scuro.
-    for (const axis of Object.values(config.options.scales || {})) {
-      if (axis.ticks) axis.ticks.color = '#63707d';
-      if (axis.title) axis.title.color = '#63707d';
-      if (axis.grid) axis.grid.color = '#dce2e8';
+  async function disegnaGraficoUnicoTest(esercizio, sessioni) {
+    const series = [];
+    for (const group of getChartGroups(esercizio)) {
+      const compatibili = new Set(sessioniConGruppo(sessioni, group));
+      for (const campo of group.campi) {
+        const values = sessioni.map(s => {
+          if (!compatibili.has(s)) return null;
+          const raw = getValoreCampoGruppo(s, group, campo);
+          if (raw === '' || raw == null) return null;
+          const n = Number(String(raw).replace(',', '.'));
+          return Number.isFinite(n) ? n : null;
+        });
+        if (values.some(v => v !== null)) series.push({ label: campo.label + (group.unitLabel ? ' (' + group.unitLabel + ')' : ''), values });
+      }
     }
-    if (config.options.plugins?.legend?.labels) config.options.plugins.legend.labels.color = '#182026';
+    if (!series.length) return;
+    const colors = ['#22577a','#38a3a5','#e09f3e','#9e4b9b','#c45353','#527c39','#6f71b5','#bc6c25'];
+    const config = sessioni.length === 1
+      ? buildBarChartConfig(series.map(s => s.label), series.map(s => s.values[0]), 'Valori rilevati')
+      : {
+          type: 'line',
+          data: {
+            labels: sessioni.map(s => formatDataIt(s.data)),
+            datasets: series.map((s,i) => {
+              const first = s.values.find(v => v !== null && v !== 0);
+              return { label: s.label, data: s.values.map(v => v === null || !first ? null : Math.round(1000 * v / first) / 10), borderColor: colors[i % colors.length], backgroundColor: colors[i % colors.length], fill: false, tension: .2, spanGaps: false, pointRadius: 2 };
+            }).filter(s => s.data.some(v => v !== null)),
+          },
+          options: {
+            responsive: false, animation: false,
+            plugins: { legend: { display: true, position: 'bottom', labels: { color: '#182026', boxWidth: 9, font: { size: 10 } } } },
+            scales: {
+              x: { ticks: { color: '#63707d' }, grid: { color: '#dce2e8' } },
+              y: { title: { display: true, text: 'Indice relativo (prima misura = 100)' }, ticks: { color: '#63707d' }, grid: { color: '#dce2e8' } },
+            },
+          },
+        };
     const img = await renderChartOffscreen(config, 1100, 500);
-    const graphWidth = usableWidth * 0.78;
-    const imgHeight = graphWidth * (500 / 1100);
-    const graphX = marginX + (usableWidth - graphWidth) / 2;
-    const lines = doc.splitTextToSize(titoloGruppo(group), usableWidth);
-    assicuraSpazio(imgHeight + lines.length * 4 + 19);
+    const graphWidth = usableWidth * .78;
+    const graphHeight = graphWidth * 500 / 1100;
+    assicuraSpazio(graphHeight + 24);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(...C.navyDark);
     doc.text('Grafici', marginX, y);
     y += 7;
     doc.setFontSize(8.5);
-    doc.text(lines, marginX, y);
-    y += lines.length * 4 + 3;
-    doc.addImage(img, 'PNG', graphX, y, graphWidth, imgHeight);
-    y += imgHeight + 9;
+    doc.text(esercizio.label + ' - riepilogo', marginX, y, { maxWidth: usableWidth });
+    y += 7;
+    doc.addImage(img, 'PNG', marginX + (usableWidth - graphWidth) / 2, y, graphWidth, graphHeight);
+    y += graphHeight + 9;
   }
 
   // Copertina generale.
@@ -968,17 +987,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         disegnaTabella(headers, rows, [dataWidth, ...headers.slice(1).map(() => other)]);
       }
 
-      if (compilate.length) {
-        for (const group of getChartGroups(esercizio)) {
-          const gruppo = sessioniConGruppo(compilate, group);
-          const campiConDati = group.campi.filter((campo) =>
-            gruppo.some((s) => getValoreCampoGruppo(s, group, campo) !== null)
-          );
-          if (gruppo.length && campiConDati.length) {
-            await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
-          }
-        }
-      }
+      if (compilate.length) await disegnaGraficoUnicoTest(esercizio, compilate);
     }
 
     // Eventuali esercizi/test storici configurati ma non compresi nei Test standard.
@@ -1013,17 +1022,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
           disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
         }
 
-        if (compilate.length) {
-          for (const group of getChartGroups(esercizio)) {
-            const gruppo = sessioniConGruppo(compilate, group);
-            const campiConDati = group.campi.filter((campo) =>
-              gruppo.some((sessione) => getValoreCampoGruppo(sessione, group, campo) !== null)
-            );
-            if (gruppo.length && campiConDati.length) {
-              await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
-            }
-          }
-        }
+        if (compilate.length) await disegnaGraficoUnicoTest(esercizio, compilate);
       }
     }
 
