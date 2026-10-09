@@ -612,6 +612,8 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   const usableWidth = pageWidth - marginX * 2;
   const footerY = pageHeight - 9;
   let y = 18;
+  let nomeAtletaPagina = '';
+  const atletiPerPagina = {};
 
   const C = {
     navy: [21, 62, 105],
@@ -624,9 +626,16 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     white: [255, 255, 255],
   };
 
-  function paginaNuova() {
+  function paginaNuova(intestazione = true) {
     doc.addPage();
     y = 18;
+    if (nomeAtletaPagina) {
+      atletiPerPagina[doc.getNumberOfPages()] = nomeAtletaPagina;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...C.navyDark);
+      if (intestazione) doc.text(nomeAtletaPagina, marginX, 10, { maxWidth: usableWidth });
+    }
   }
 
   function assicuraSpazio(mm) {
@@ -640,12 +649,15 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   }
 
   function titoloSezione(titolo, sottotitolo = '') {
-    assicuraSpazio(sottotitolo ? 16 : 11);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11.5);
+    const titleLines = doc.splitTextToSize(titolo, usableWidth);
+    assicuraSpazio(titleLines.length * 5 + 34);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.setTextColor(...C.navyDark);
-    doc.text(titolo, marginX, y);
-    y += 5;
+    doc.text(titleLines, marginX, y);
+    y += titleLines.length * 5;
     if (sottotitolo) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
@@ -771,7 +783,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
 
   function colonneConDati(esercizio, sessioniCompilate) {
     return colonneEsercizio(esercizio).filter((col) =>
-      sessioniCompilate.some((s) => {
+      selezioniConDati.flatMap((item) => item.sessioni).some((s) => {
         const v = col.get(s);
         return valoreCampoValido(col.campo, v);
       })
@@ -785,16 +797,32 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   }
 
   async function disegnaGrafico(group, sessioniGruppo) {
-    if (sessioniGruppo.length < 2) return;
-    const config = buildGroupChartConfig(sessioniGruppo, group);
+    if (!sessioniGruppo.length) return;
+    const config = sessioniGruppo.length === 1
+      ? buildBarChartConfig(
+          group.campi.map((campo) => campo.label),
+          group.campi.map((campo) => getValoreCampoGruppo(sessioniGruppo[0], group, campo)),
+          group.unitLabel
+        )
+      : buildGroupChartConfig(sessioniGruppo, group);
+    // Il PDF resta leggibile anche quando l'app usa il tema scuro.
+    for (const axis of Object.values(config.options.scales || {})) {
+      if (axis.ticks) axis.ticks.color = '#63707d';
+      if (axis.title) axis.title.color = '#63707d';
+      if (axis.grid) axis.grid.color = '#dce2e8';
+    }
+    if (config.options.plugins?.legend?.labels) config.options.plugins.legend.labels.color = '#182026';
     const img = await renderChartOffscreen(config, 1100, 500);
     const imgHeight = usableWidth * (500 / 1100);
-    assicuraSpazio(imgHeight + 12);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    const lines = doc.splitTextToSize(titoloGruppo(group), usableWidth);
+    assicuraSpazio(imgHeight + lines.length * 4 + 8);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8.5);
     doc.setTextColor(...C.navyDark);
-    doc.text(titoloGruppo(group), marginX, y);
-    y += 4;
+    doc.text(lines, marginX, y);
+    y += lines.length * 4;
     doc.addImage(img, 'PNG', marginX, y, usableWidth, imgHeight);
     y += imgHeight + 7;
   }
@@ -840,13 +868,17 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
     const { atleta, sessioni } = selezioniConDati[atletaIndex];
 
-    paginaNuova();
+    nomeAtletaPagina = nomeCompleto(atleta);
+    paginaNuova(false);
 
     doc.setFillColor(...C.navy);
     doc.rect(0, 0, pageWidth, 32, 'F');
     doc.setTextColor(...C.white);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(17);
+    while (doc.getTextWidth(nomeCompleto(atleta)) > usableWidth && doc.getFontSize() > 9) {
+      doc.setFontSize(doc.getFontSize() - 1);
+    }
     doc.text(nomeCompleto(atleta), marginX, 17);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
@@ -903,12 +935,12 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
       }
 
-      for (const s of originali) {
+      for (const s of delTest.filter((s) => typeof metricheOriginaliJet === 'function' && metricheOriginaliJet(s).length)) {
         assicuraSpazio(12);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
         doc.setTextColor(...C.navyDark);
-        doc.text(formatDataIt(s.data), marginX, y);
+        doc.text('Risultati originali - ' + formatDataIt(s.data), marginX, y);
         y += 4.5;
         const righeOriginali = metricheOriginaliJet(s).map((m) => [m.label, m.valore]);
         disegnaTabella(
@@ -918,13 +950,13 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         );
       }
 
-      if (compilate.length >= 2) {
+      if (compilate.length) {
         for (const group of getChartGroups(esercizio)) {
           const gruppo = sessioniConGruppo(compilate, group);
           const campiConDati = group.campi.filter((campo) =>
             gruppo.some((s) => getValoreCampoGruppo(s, group, campo) !== null)
           );
-          if (gruppo.length >= 2 && campiConDati.length) {
+          if (gruppo.length && campiConDati.length) {
             await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
           }
         }
@@ -963,16 +995,44 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
           disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
         }
 
-        if (compilate.length >= 2) {
+        if (compilate.length) {
           for (const group of getChartGroups(esercizio)) {
             const gruppo = sessioniConGruppo(compilate, group);
             const campiConDati = group.campi.filter((campo) =>
               gruppo.some((sessione) => getValoreCampoGruppo(sessione, group, campo) !== null)
             );
-            if (gruppo.length >= 2 && campiConDati.length) {
+            if (gruppo.length && campiConDati.length) {
               await disegnaGrafico({ ...group, campi: campiConDati }, gruppo);
             }
           }
+        }
+      }
+    }
+
+    if (automatico) {
+      for (const s of sessioni) {
+        const dati = s.esercizi?.campoVisivoAvanzato;
+        if (!dati) continue;
+        titoloSezione('Campo visivo avanzato', 'Valutazione del ' + formatDataIt(s.data));
+        if (dati.durataSecondi !== undefined && dati.durataSecondi !== null) {
+          disegnaTabella(['Parametro', 'Valore'], [['Durata', dati.durataSecondi + ' s']], [110, 70]);
+        }
+        if (dati.immaginePolarPlot) {
+          try {
+            const { larghezza, altezza } = await dimensioniImmagine(dati.immaginePolarPlot);
+            const w = Math.min(usableWidth, 120, 160 * larghezza / altezza);
+            const h = w * altezza / larghezza;
+            assicuraSpazio(h + 6);
+            doc.addImage(dati.immaginePolarPlot, formatoImmagineDaDataUrl(dati.immaginePolarPlot), marginX, y, w, h);
+            y += h + 6;
+          } catch (_) {
+            disegnaTabella(['Grafico', 'Stato'], [['Campo visivo', 'Immagine non leggibile']], [110, 70]);
+          }
+        }
+        if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length) {
+          disegnaTabella(['Settore', 'Fascia angoli', 'Risposte corrette'],
+            dati.percentualiSettori.map((r) => [String(r.settore), String(r.fasciaAngoli || '-'), r.percentualeCorretta == null ? '-' : r.percentualeCorretta + '%']),
+            [35, 85, 60]);
         }
       }
     }
@@ -1005,7 +1065,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...C.muted);
-    doc.text('Test Visivi - Report multiplo', marginX, footerY);
+    doc.text(atletiPerPagina[page] || 'Test Visivi - Report multiplo', marginX, footerY, { maxWidth: usableWidth - 35 });
     doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
     if (page === totalePagine) {
       doc.setFontSize(6.3);
