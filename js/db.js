@@ -533,3 +533,8 @@ async function dbLegacyRilegaAllegati(store, vecchioSessioneId, nuovoSessioneId)
     await dbRequest(store, 'readwrite', (os) => os.put(r));
   }
 }
+
+// Aggiorna solo l'appartenenza, senza sovrascrivere altri dati del profilo.
+function dbAssegnaSquadraAtleta(id, squadraId) {
+  return _atletiCol().doc(id).update({ squadraId, updatedAt: new Date().toISOString() });
+}

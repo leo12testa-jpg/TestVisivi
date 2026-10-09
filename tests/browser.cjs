@@ -82,7 +82,7 @@ function fakeFirebase(seed) {
   try {
     await go('index.html');
     assert.equal(await page.locator('#lista-atleti a').count(), 2);
-    assert.deepEqual(await page.evaluate(() => window.__dbReads), ['atleti'], 'Home: una sola query, nessuna sessione');
+    assert.deepEqual(await page.evaluate(() => window.__dbReads), ['atleti', 'squadre'], 'Home: anagrafiche e squadre, nessuna sessione');
     await page.screenshot({ path: `${out}/home-desktop.png`, fullPage: true });
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#btn-backup').click();

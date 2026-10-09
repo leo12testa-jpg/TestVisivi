@@ -1,6 +1,32 @@
 registerServiceWorker();
 
 let _atleti = [];
+let _squadreHome = [];
+let _organizzaSquadre = false;
+const _selezionatiSquadra = new Set();
+
+function aggiornaSquadreHome() {
+  for (const id of ['filtro-squadra', 'squadra-destinazione']) {
+    const select = qs('#' + id);
+    const precedente = select.value;
+    select.replaceChildren(el('option', { value: '', text: id === 'filtro-squadra' ? 'Tutte le squadre' : 'Scegli squadra…' }),
+      el('option', { value: '__nessuna__', text: 'Senza squadra' }));
+    _squadreHome.forEach((s) => select.appendChild(el('option', { value: s.id, text: s.nome })));
+    if ([...select.options].some((o) => o.value === precedente)) select.value = precedente;
+  }
+}
+function atletiVisibiliHome(filtro) {
+  const squadra = qs('#filtro-squadra').value;
+  return _atleti.filter((a) =>
+    (!filtro || nomeCompleto(a).toLowerCase().includes(filtro)) &&
+    (!squadra || (squadra === '__nessuna__' ? !a.squadraId : a.squadraId === squadra)));
+}
+function aggiornaSelezioneSquadra() {
+  qs('#selezione-conteggio').textContent = _selezionatiSquadra.size + ' selezionati';
+  qs('#assegna-giocatori').disabled = !_selezionatiSquadra.size || !qs('#squadra-destinazione').value;
+}
+function renderHome() { renderLista(qs('#ricerca').value.trim().toLowerCase()); }
+
 
 function scaricaJsonArchivio(dati, nomeFile) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(dati, null, 2)], { type: 'application/json' }));
@@ -27,7 +53,8 @@ async function caricaLista() {
   if (!user) return;
 
   try {
-    _atleti = await dbGetAtleti();
+    [_atleti, _squadreHome] = await Promise.all([dbGetAtleti(), dbGetSquadre()]);
+    aggiornaSquadreHome();
     qs('#numero-atleti').textContent = String(_atleti.length);
     aggiornaAvvisoDoppioni();
     renderLista(qs('#ricerca').value.trim().toLowerCase());
@@ -42,9 +69,7 @@ async function caricaLista() {
 function renderLista(filtro) {
   const container = qs('#lista-atleti');
   container.innerHTML = '';
-  const atletiFiltrati = _atleti.filter(
-    (a) => !filtro || nomeCompleto(a).toLowerCase().includes(filtro) || a.nome.toLowerCase().includes(filtro) || a.cognome.toLowerCase().includes(filtro)
-  );
+  const atletiFiltrati = atletiVisibiliHome(filtro);
 
   if (atletiFiltrati.length === 0) {
     container.appendChild(
@@ -61,13 +86,23 @@ function renderLista(filtro) {
       el('div', { class: 'athlete-card-text' }, [el('div', { class: 'athlete-name', text: nomeCompleto(a) })]),
       el('div', { text: '›', style: 'color:var(--text-muted);font-size:1.3rem;' }),
     ]);
-    container.appendChild(item);
+    const squadra = _squadreHome.find((s) => s.id === a.squadraId);
+    item.querySelector('.athlete-card-text').appendChild(el('div', { class: 'team-caption', text: squadra?.nome || 'Senza squadra' }));
+    if (_organizzaSquadre) {
+      const check = el('input', { type: 'checkbox', 'aria-label': 'Seleziona ' + nomeCompleto(a) });
+      check.checked = _selezionatiSquadra.has(a.id);
+      check.addEventListener('change', () => {
+        if (check.checked) _selezionatiSquadra.add(a.id); else _selezionatiSquadra.delete(a.id);
+        aggiornaSelezioneSquadra();
+      });
+      container.appendChild(el('div', { class: 'team-select-card' }, [check, item]));
+    } else container.appendChild(item);
   });
 }
 
 qs('#ricerca').addEventListener(
   'input',
-  debounce((e) => renderLista(e.target.value.trim().toLowerCase()), 150)
+  () => { _selezionatiSquadra.clear(); aggiornaSelezioneSquadra(); renderHome(); }
 );
 
 qs('#btn-nuovo-atleta').addEventListener('click', () => {
@@ -181,3 +216,68 @@ qs('#btn-backup').addEventListener('click', async (event) => {
 });
 
 caricaLista();
+
+qs('#filtro-squadra').addEventListener('change', () => {
+  _selezionatiSquadra.clear(); aggiornaSelezioneSquadra(); renderHome();
+});
+qs('#organizza-squadre').addEventListener('click', () => {
+  _organizzaSquadre = !_organizzaSquadre;
+  qs('#assegna-squadre').hidden = !_organizzaSquadre;
+  qs('#organizza-squadre').setAttribute('aria-expanded', String(_organizzaSquadre));
+  _selezionatiSquadra.clear(); aggiornaSelezioneSquadra(); renderHome();
+});
+qs('#seleziona-visibili').addEventListener('click', () => {
+  atletiVisibiliHome(qs('#ricerca').value.trim().toLowerCase()).forEach((a) => _selezionatiSquadra.add(a.id));
+  aggiornaSelezioneSquadra(); renderHome();
+});
+qs('#svuota-selezione').addEventListener('click', () => {
+  _selezionatiSquadra.clear(); aggiornaSelezioneSquadra(); renderHome();
+});
+qs('#squadra-destinazione').addEventListener('change', aggiornaSelezioneSquadra);
+qs('#crea-squadra-rapida').addEventListener('click', async (event) => {
+  const nome = qs('#squadra-rapida-nome').value.trim();
+  if (!nome) return qs('#squadra-rapida-nome').focus();
+  event.currentTarget.disabled = true;
+  try {
+    let squadra = _squadreHome.find((s) => s.nome.toLocaleLowerCase('it') === nome.toLocaleLowerCase('it'));
+    if (!squadra) {
+      squadra = { id: await dbAddSquadra({ nome }), nome };
+      _squadreHome.push(squadra);
+      _squadreHome.sort((a, b) => a.nome.localeCompare(b.nome));
+    }
+    aggiornaSquadreHome();
+    qs('#squadra-destinazione').value = squadra.id;
+    qs('#squadra-rapida-nome').value = '';
+    aggiornaSelezioneSquadra();
+  } catch (err) { mostraErrorePagina(err); }
+  finally { qs('#crea-squadra-rapida').disabled = false; }
+});
+qs('#assegna-giocatori').addEventListener('click', async () => {
+  const scelta = qs('#squadra-destinazione').value;
+  const ids = [..._selezionatiSquadra];
+  if (!scelta || !ids.length) return;
+  const squadraId = scelta === '__nessuna__' ? '' : scelta;
+  qs('#assegna-squadre').disabled = true;
+  qs('#organizza-squadre').disabled = true;
+  qs('#ricerca').disabled = true;
+  qs('#filtro-squadra').disabled = true;
+  let riusciti = 0;
+  try {
+    for (const id of ids) {
+      await dbAssegnaSquadraAtleta(id, squadraId);
+      const atleta = _atleti.find((a) => a.id === id);
+      if (atleta) atleta.squadraId = squadraId;
+      _selezionatiSquadra.delete(id);
+      riusciti++;
+    }
+    qs('#squadre-esito').textContent = riusciti + ' giocatori aggiornati.';
+  } catch (err) {
+    qs('#squadre-esito').textContent = riusciti + ' giocatori aggiornati; gli altri restano selezionati. Riprova. ' + err.message;
+  } finally {
+    qs('#assegna-squadre').disabled = false;
+    qs('#organizza-squadre').disabled = false;
+    qs('#ricerca').disabled = false;
+    qs('#filtro-squadra').disabled = false;
+    aggiornaSelezioneSquadra(); renderHome();
+  }
+});

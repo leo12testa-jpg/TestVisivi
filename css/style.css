@@ -2148,3 +2148,10 @@ th {
   font-size: .9rem;
   line-height: 1.3;
 }
+
+.team-tools { align-items: end; margin-bottom: 12px; }
+.team-select-card { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.team-select-card > input { width: 20px; height: 20px; flex: 0 0 20px; }
+.team-select-card > .list-item { flex: 1; }
+.team-caption { font-size: .7rem; color: var(--text-muted); line-height: 1.2; margin-top: 2px; }
+#assegna-squadre .row { margin-top: 10px; }

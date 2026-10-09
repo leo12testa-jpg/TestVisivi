@@ -16,7 +16,7 @@
   </header>
   <main>
     <section class="page-intro">
-      <div><p class="eyebrow">VISIONE · MOVIMENTO · PERFORMANCE</p><h2>Ogni progresso, a colpo d’occhio.</h2><p class="intro-description">Il tuo spazio per seguire gli atleti e misurare le abilità visive nel tempo.</p><p class="meta">Versione ufficiale · aggiornata al 07/10/2026 · v67</p></div>
+      <div><p class="eyebrow">VISIONE · MOVIMENTO · PERFORMANCE</p><h2>Ogni progresso, a colpo d’occhio.</h2><p class="intro-description">Il tuo spazio per seguire gli atleti e misurare le abilità visive nel tempo.</p><p class="meta">Versione ufficiale · aggiornata al 09/10/2026 · v72</p></div>
       <div class="intro-stat"><strong id="numero-atleti">—</strong><span>atleti nel tuo archivio</span></div>
     </section>
     <div class="search-bar">
@@ -24,6 +24,28 @@
       <input type="search" id="ricerca" placeholder="Cerca per nome o cognome…" />
     </div>
 
+    <div class="row wrap team-tools">
+      <div class="field"><label for="filtro-squadra">Squadra</label><select id="filtro-squadra"><option value="">Tutte le squadre</option></select></div>
+      <button type="button" class="secondary" id="organizza-squadre" aria-expanded="false">Assegna giocatori alle squadre</button>
+    </div>
+    <fieldset id="assegna-squadre" class="card" hidden>
+      <legend>Assegnazione rapida</legend>
+      <p class="meta">Seleziona i giocatori, scegli la squadra e premi Assegna. Cambiando filtro la selezione si azzera.</p>
+      <div class="row wrap">
+        <button type="button" class="secondary" id="seleziona-visibili">Seleziona tutti i visibili</button>
+        <button type="button" class="secondary" id="svuota-selezione">Deseleziona</button>
+        <span id="selezione-conteggio" role="status">0 selezionati</span>
+      </div>
+      <div class="row wrap">
+        <div class="field"><label for="squadra-destinazione">Squadra di destinazione</label><select id="squadra-destinazione"></select></div>
+        <button type="button" id="assegna-giocatori" disabled>Assegna</button>
+      </div>
+      <div class="row wrap">
+        <div class="field"><label for="squadra-rapida-nome">Nuova squadra</label><input id="squadra-rapida-nome" placeholder="Nome squadra" /></div>
+        <button type="button" class="secondary" id="crea-squadra-rapida">Crea squadra</button>
+      </div>
+    </fieldset>
+    <p class="meta" id="squadre-esito" role="status"></p>
     <div class="fab-row row wrap">
       <button id="btn-nuovo-atleta">+ Nuovo atleta</button>
       <a class="btn secondary" href="./squadre.html" style="text-decoration:none;">Gestisci squadre</a>
