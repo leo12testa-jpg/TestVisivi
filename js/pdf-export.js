@@ -58,6 +58,45 @@ function renderChartOffscreen(config, widthPx, heightPx) {
     });
   });
 }
+// Helpers condivisi tra PDF individuale e PDF multiplo.
+function testoValido(v) {
+  return v !== undefined && v !== null && String(v).trim() !== '';
+}
+
+function datiCliniciNonVuoti(dc) {
+  if (!dc) return [];
+  const righe = [];
+  const add = (label, value) => { if (testoValido(value)) righe.push([label, value]); };
+
+  add('Acuita visiva OD', dc.acuitaVisiva?.od);
+  add('Acuita visiva OS', dc.acuitaVisiva?.os);
+  add('Acuita visiva binoculare', dc.acuitaVisiva?.binoculare);
+  add('Piede dominante', dc.piedeDominante);
+  add('Mano dominante', dc.manoDominante);
+  add('Occhio dominante', dc.occhioDirettoreMotorio);
+  add('Abilita fusionale rapida', dc.abilitaFusionaleRapida);
+  add('Messa a fuoco rapida', dc.abilitaMessaFuocoRapida);
+
+  const formatoCorr = (v) => {
+    if (!v) return '';
+    const valori = [v.sf, v.cyl, v.ax].filter(testoValido);
+    return valori.length ? valori.join(' / ') : '';
+  };
+  add('Correzione propria OD (Sf/Cyl/Ax)', formatoCorr(dc.correzionePropria?.od));
+  add('Correzione propria OS (Sf/Cyl/Ax)', formatoCorr(dc.correzionePropria?.os));
+  add('Correzione OD (Sf/Cyl/Ax)', formatoCorr(dc.correzione?.od));
+  add('Correzione OS (Sf/Cyl/Ax)', formatoCorr(dc.correzione?.os));
+
+  const pos = [
+    ['Alto SX', 'altoSx'], ['Basso SX', 'bassoSx'], ['Centrale', 'centrale'],
+    ['Alto DX', 'altoDx'], ['Basso DX', 'bassoDx'],
+  ];
+  pos.forEach(([label, key]) => add('Schober 3 m - ' + label, dc.schober3m?.[key]));
+  pos.forEach(([label, key]) => add('Brock String - ' + label, dc.brockString?.[key]));
+
+  return righe;
+}
+
 async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
@@ -106,9 +145,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
     white: [255, 255, 255],
   };
 
-  function testoValido(v) {
-    return v !== undefined && v !== null && String(v).trim() !== '';
-  }
+
 
   function paginaNuova() {
     doc.addPage();
@@ -172,39 +209,7 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
     doc.text(String(value), x + 4, yPos + 14);
   }
 
-  function datiCliniciNonVuoti(dc) {
-    if (!dc) return [];
-    const righe = [];
-    const add = (label, value) => { if (testoValido(value)) righe.push([label, value]); };
 
-    add('Acuita visiva OD', dc.acuitaVisiva?.od);
-    add('Acuita visiva OS', dc.acuitaVisiva?.os);
-    add('Acuita visiva binoculare', dc.acuitaVisiva?.binoculare);
-    add('Piede dominante', dc.piedeDominante);
-    add('Mano dominante', dc.manoDominante);
-    add('Occhio dominante', dc.occhioDirettoreMotorio);
-    add('Abilita fusionale rapida', dc.abilitaFusionaleRapida);
-    add('Messa a fuoco rapida', dc.abilitaMessaFuocoRapida);
-
-    const formatoCorr = (v) => {
-      if (!v) return '';
-      const valori = [v.sf, v.cyl, v.ax].filter(testoValido);
-      return valori.length ? valori.join(' / ') : '';
-    };
-    add('Correzione propria OD (Sf/Cyl/Ax)', formatoCorr(dc.correzionePropria?.od));
-    add('Correzione propria OS (Sf/Cyl/Ax)', formatoCorr(dc.correzionePropria?.os));
-    add('Correzione OD (Sf/Cyl/Ax)', formatoCorr(dc.correzione?.od));
-    add('Correzione OS (Sf/Cyl/Ax)', formatoCorr(dc.correzione?.os));
-
-    const pos = [
-      ['Alto SX', 'altoSx'], ['Basso SX', 'bassoSx'], ['Centrale', 'centrale'],
-      ['Alto DX', 'altoDx'], ['Basso DX', 'bassoDx'],
-    ];
-    pos.forEach(([label, key]) => add('Schober 3 m - ' + label, dc.schober3m?.[key]));
-    pos.forEach(([label, key]) => add('Brock String - ' + label, dc.brockString?.[key]));
-
-    return righe;
-  }
 
   function disegnaListaDueColonne(righe) {
     if (!righe.length) return;
