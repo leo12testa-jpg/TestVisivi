@@ -20,7 +20,7 @@
       <div>
         <p class="eyebrow">REPORT UNICO</p>
         <h2>Scegli come creare il PDF</h2>
-        <p class="intro-description">Puoi esportare tutti i Test di un periodo oppure scegliere alcuni giocatori e una data precisa. I Training sono sempre esclusi.</p>
+        <p class="intro-description">Puoi esportare tutti i Test di un periodo oppure scegliere alcuni giocatori e una data singola o un intervallo. I Training sono sempre esclusi.</p>
       </div>
     </section>
 
@@ -37,8 +37,8 @@
         <label class="bulk-mode-option">
           <input type="radio" name="bulk-mode" value="giocatori-data" />
           <span>
-            <strong>Giocatori + data</strong>
-            <small>Scegli i giocatori e una giornata; vengono inclusi tutti i loro Test di quel giorno.</small>
+            <strong>Giocatori + date</strong>
+            <small>Scegli i giocatori e una giornata oppure un periodo; vengono inclusi tutti i Test effettuati nelle date selezionate.</small>
           </span>
         </label>
       </div>
@@ -71,8 +71,19 @@
       </div>
 
       <div class="field bulk-manual-date">
+        <label for="bulk-date-type">Selezione date</label>
+        <select id="bulk-date-type">
+          <option value="singola">Giornata singola</option>
+          <option value="intervallo">Intervallo di date</option>
+        </select>
+      </div>
+      <div id="bulk-manual-single" class="field bulk-manual-date">
         <label for="bulk-data-test">Data Test</label>
         <input type="date" id="bulk-data-test" />
+      </div>
+      <div id="bulk-manual-range" class="field-grid bulk-period-grid" hidden>
+        <div class="field"><label for="bulk-manual-da">Dal</label><input type="date" id="bulk-manual-da" /></div>
+        <div class="field"><label for="bulk-manual-a">Al</label><input type="date" id="bulk-manual-a" /></div>
       </div>
 
       <div class="search-bar bulk-search">
