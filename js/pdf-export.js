@@ -705,6 +705,23 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.setTextColor(...C.ink);
   }
 
+  // Le tabelle molto larghe vengono suddivise per gruppi di colonne:
+  // ogni parte ripete Data, mantenendo tutti i valori senza ridurre i testi a caratteri illeggibili.
+  function disegnaTabellaLeggibile(headers, rows, widths) {
+    if (headers.length <= 7) return disegnaTabella(headers, rows, widths);
+    const colsPerBlock = 5;
+    const hasDate = headers[0] === 'Data';
+    const fixed = hasDate ? [0] : [];
+    const other = headers.map((_,i)=>i).filter(i=>!fixed.includes(i));
+    for (let start=0;start<other.length;start+=colsPerBlock) {
+      const indices = [...fixed,...other.slice(start,start+colsPerBlock)];
+      const partHeaders = indices.map(i=>headers[i]);
+      const partRows = rows.map(row=>indices.map(i=>row[i]));
+      disegnaTabella(partHeaders,partRows,
+        indices.map(i=>i===0&&hasDate?27:1));
+    }
+  }
+
   function disegnaTabella(headers, rows, widths) {
     if (!rows.length) return;
     const supplied = widths && widths.length === headers.length ? widths : Array(headers.length).fill(1);
@@ -841,9 +858,12 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       titoloSezione('Radar prestazionale', 'Nessun test con parametri sufficienti per il radar.');
       return;
     }
+    // Riserva spazio per titolo e radar: niente titolo isolato a piè pagina.
+    const radarW = Math.min(usableWidth, 132);
+    const radarH = radarW * 850 / 1100;
+    if (radar.righe.length >= 3 && y + radarH + 35 > footerY - 5) paginaNuova();
     titoloSezione('Radar prestazionale',
-      'Solo Test eseguiti nel periodo. Per ciascuna tipologia viene considerata l’ultima valutazione valida. ' +
-      'Indice relativo all’archivio Test: 50 corrisponde circa alla mediana, non a una soglia scientifica.');
+      'Ultima valutazione valida di ogni Test nel periodo. Indice relativo all’archivio (0-100), non una soglia clinica.');
     if (radar.righe.length >= 3) {
       const config = radarChartConfig(
         radar.righe.map((r) => r.nome),
@@ -851,7 +871,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         null
       );
       const png = await renderChartOffscreen(config, 1100, 850);
-      const w = Math.min(usableWidth, 138);
+      const w = radarW;
       const h = w * 850 / 1100;
       assicuraSpazio(h + 6);
       doc.addImage(png, 'PNG', marginX + (usableWidth - w) / 2, y, w, h);
@@ -930,9 +950,9 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     const datiCliniciMultiplo = datiCliniciMultiploDaProfilo(atleta.datiClinici);
     titoloSezione('Dati clinici e visivi', 'Informazioni registrate nella scheda del giocatore.');
     if (datiCliniciMultiplo.length) {
-      disegnaTabella(['Parametro', 'Valore'], datiCliniciMultiplo, [90, 90]);
+      disegnaTabellaLeggibile(['Parametro', 'Valore'], datiCliniciMultiplo, [90, 90]);
     } else {
-      disegnaTabella(['Parametro', 'Valore'], [['Dati clinici e visivi', 'Non compilati nella scheda giocatore']], [90, 90]);
+      disegnaTabellaLeggibile(['Parametro', 'Valore'], [['Dati clinici e visivi', 'Non compilati nella scheda giocatore']], [90, 90]);
     }
 
     if (!sessioni.length) {
@@ -995,7 +1015,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       if (headers.length > 1) {
         const dataWidth = 24;
         const other = (usableWidth - dataWidth) / (headers.length - 1);
-        disegnaTabella(headers, rows, [dataWidth, ...headers.slice(1).map(() => other)]);
+        disegnaTabellaLeggibile(headers, rows, [dataWidth, ...headers.slice(1).map(() => other)]);
       }
 
       // Il PDF multiplo contiene esclusivamente il radar come grafico.
@@ -1030,7 +1050,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
           ]);
           const dataWidth = 24;
           const other = (usableWidth - dataWidth) / cols.length;
-          disegnaTabella(headers, rows, [dataWidth, ...cols.map(() => other)]);
+          disegnaTabellaLeggibile(headers, rows, [dataWidth, ...cols.map(() => other)]);
         }
 
         // Il PDF multiplo contiene esclusivamente il radar come grafico.
@@ -1043,10 +1063,10 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         if (!dati) continue;
         titoloSezione('Campo visivo avanzato', 'Valutazione del ' + formatDataIt(s.data));
         if (dati.durataSecondi !== undefined && dati.durataSecondi !== null) {
-          disegnaTabella(['Parametro', 'Valore'], [['Durata', dati.durataSecondi + ' s']], [110, 70]);
+          disegnaTabellaLeggibile(['Parametro', 'Valore'], [['Durata', dati.durataSecondi + ' s']], [110, 70]);
         }
         if (Array.isArray(dati.percentualiSettori) && dati.percentualiSettori.length) {
-          disegnaTabella(['Settore', 'Fascia angoli', 'Risposte corrette'],
+          disegnaTabellaLeggibile(['Settore', 'Fascia angoli', 'Risposte corrette'],
             dati.percentualiSettori.map((r) => [String(r.settore), String(r.fasciaAngoli || '-'), r.percentualeCorretta == null ? '-' : r.percentualeCorretta + '%']),
             [35, 85, 60]);
         }
@@ -1064,7 +1084,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         const nome = typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : 'Test';
         titoloSezione(nome || 'Test', 'Valutazione del ' + formatDataIt(s.data));
         const righeOriginali = metricheOriginaliJet(s).map((m) => [m.label, m.valore]);
-        disegnaTabella(
+        disegnaTabellaLeggibile(
           ['Parametro', 'Valore'],
           righeOriginali,
           [usableWidth * 0.62, usableWidth * 0.38]
