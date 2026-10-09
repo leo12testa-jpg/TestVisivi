@@ -2353,3 +2353,17 @@ main:has(#lista-atleti) .team-tools .field button { height: 46px; min-height: 46
 .radar-test-picker label {font-size:.83rem;font-weight:650;}
 .radar-test-picker select {width:100%;min-width:0;min-height:40px;}
 @media(max-width:800px){.radar-compare-grid{grid-template-columns:minmax(0,1fr)}}
+
+/* Radar v85: selezione diretta di due giornate complete. */
+.radar-days-card { margin-bottom:20px; }
+.radar-days-header { display:flex;align-items:start;justify-content:space-between;gap:20px;flex-wrap:wrap; }
+.radar-days-header h2 { margin:0 0 5px; }
+.radar-days-header p { margin:0; }
+.radar-day-selectors { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:20px 0 12px; }
+.radar-day-selectors .field { min-width:0; }
+.radar-day-selectors label { display:flex;align-items:center;gap:6px;font-weight:650;margin-bottom:8px; }
+.radar-day-selectors select { width:100%;max-width:100%;min-height:48px;box-sizing:border-box; }
+@media(max-width:650px) {
+  .radar-day-selectors { grid-template-columns:minmax(0,1fr);gap:12px; }
+  .radar-days-header button { width:100%; }
+}
