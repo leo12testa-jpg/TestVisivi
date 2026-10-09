@@ -283,7 +283,14 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
   try {
     // L’archivio è già in memoria: non fare una seconda richiesta Firebase
     // durante il clic, che può fallire o rallentare la generazione.
-    const report = await esportaReportMultiploPdf(dati.selezioni, {
+    // Recupera le schede complete direttamente da Firestore, non soltanto
+    // l'elenco iniziale: i dati clinici possono essere stati aggiornati dopo l'apertura.
+    const selezioniAggiornate = await Promise.all(dati.selezioni.map(async (voce) => {
+      const completa = await dbGetAtleta(String(voce.atleta.id));
+      if (!completa) throw new Error('Scheda giocatore non trovata: ' + nomeCompleto(voce.atleta));
+      return { atleta: completa, sessioni: voce.sessioni };
+    }));
+    const report = await esportaReportMultiploPdf(selezioniAggiornate, {
       periodoDa,
       periodoA,
       automatico: true,
