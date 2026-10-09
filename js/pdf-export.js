@@ -930,17 +930,6 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.text('Periodo ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, 24);
     y = 42;
 
-    const testPresenti = new Set(
-      sessioni.map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '').filter(Boolean)
-    );
-    const giornate = new Set(sessioni.map((s) => s.data).filter(Boolean)).size;
-    const kGap = 4;
-    const kWidth = (usableWidth - kGap * 2) / 3;
-    cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
-    cardKpi(marginX + kWidth + kGap, y, kWidth, 'GIORNATE', giornate);
-    cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.size);
-    y += 28;
-
     // Anagrafica e dati visivi/clinici: soltanto informazioni già compilate.
     const anagraficaMultiplo = [
       ['Data di nascita', atleta.dataNascita ? formatDataIt(atleta.dataNascita) : ''],
@@ -952,9 +941,20 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       disegnaTabella(['Campo', 'Valore'], anagraficaMultiplo, [72, 108]);
     }
     if (datiCliniciMultiplo.length) {
-      titoloSezione('Dati visivi e clinici', 'Solo dati dichiarati e compilati nel profilo del giocatore.');
+      titoloSezione('Dati clinici e visivi', 'Solo dati effettivamente compilati nel profilo del giocatore.');
       disegnaTabella(['Parametro', 'Valore'], datiCliniciMultiplo, [90, 90]);
     }
+
+    const testPresenti = new Set(
+      sessioni.map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '').filter(Boolean)
+    );
+    const giornate = new Set(sessioni.map((s) => s.data).filter(Boolean)).size;
+    const kGap = 4;
+    const kWidth = (usableWidth - kGap * 2) / 3;
+    cardKpi(marginX, y, kWidth, 'SESSIONI TEST', sessioni.length);
+    cardKpi(marginX + kWidth + kGap, y, kWidth, 'GIORNATE', giornate);
+    cardKpi(marginX + (kWidth + kGap) * 2, y, kWidth, 'TEST PRESENTI', testPresenti.size);
+    y += 28;
 
     if (!sessioni.length) {
       doc.setFont('helvetica', 'normal');
@@ -963,8 +963,6 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.text('Nessun risultato disponibile per i Test e il periodo selezionati.', marginX, y);
       continue;
     }
-
-    await disegnaSoloRadarAtleta(sessioni);
 
     for (const key of testKeys) {
       const esercizio = getEsercizioConfig(key);
@@ -1094,6 +1092,9 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         );
       }
     }
+
+    // Il radar chiude sempre la scheda dell'atleta, dopo tutte le tabelle.
+    await disegnaSoloRadarAtleta(sessioni);
   }
 
   const totalePagine = doc.getNumberOfPages();
