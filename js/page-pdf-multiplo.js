@@ -58,14 +58,34 @@ function bulkDatiAutomatici() {
   return bulkDatiDaSessioni(bulkSessioniNelPeriodo());
 }
 
-function bulkDatiManuali() {
+function bulkDateManuali() {
+  if (qs('#bulk-date-type').value === 'intervallo') {
+    return { da: qs('#bulk-manual-da').value, a: qs('#bulk-manual-a').value };
+  }
   const data = qs('#bulk-data-test').value;
+  return { da: data, a: data };
+}
+
+function bulkDateManualiValide() {
+  const { da, a } = bulkDateManuali();
+  return !!da && !!a && da <= a;
+}
+
+function bulkAggiornaTipoData() {
+  const intervallo = qs('#bulk-date-type').value === 'intervallo';
+  qs('#bulk-manual-single').hidden = intervallo;
+  qs('#bulk-manual-range').hidden = !intervallo;
+  bulkAggiornaRiepilogo();
+}
+
+function bulkDatiManuali() {
+  const { da, a } = bulkDateManuali();
   const ids = new Set(_bulkAtletiSelezionati);
-  if (!data || !ids.size) return { sessioni: [], selezioni: [], nomiTest: new Set() };
+  if (!bulkDateManualiValide() || !ids.size) return { sessioni: [], selezioni: [], nomiTest: new Set() };
 
   const sessioni = (_bulkSessioni || [])
     .filter(bulkSessioneValida)
-    .filter((s) => String(s.data || '') === data);
+    .filter((s) => String(s.data || '').slice(0, 10) >= da && String(s.data || '').slice(0, 10) <= a);
 
   return bulkDatiDaSessioni(sessioni, ids);
 }
@@ -146,10 +166,12 @@ function bulkAggiornaRiepilogo() {
     return;
   }
 
-  const data = qs('#bulk-data-test').value;
-  if (!_bulkAtletiSelezionati.size || !data) {
-    summary.textContent = !_bulkAtletiSelezionati.size ? 'Seleziona almeno un giocatore' : 'Seleziona la data del Test';
-    detail.textContent = 'Verranno inclusi tutti i Test svolti dai giocatori scelti in quella giornata.';
+  const intervallo = qs('#bulk-date-type').value === 'intervallo';
+  if (!_bulkAtletiSelezionati.size || !bulkDateManualiValide()) {
+    summary.textContent = !_bulkAtletiSelezionati.size ? 'Seleziona almeno un giocatore' : 'Seleziona date valide (Dal non successivo ad Al)';
+    detail.textContent = intervallo
+      ? 'Verranno inclusi tutti i Test dei giocatori scelti nel periodo, date comprese.'
+      : 'Verranno inclusi tutti i Test svolti dai giocatori scelti in quella giornata.';
     btn.disabled = true;
     return;
   }
@@ -157,7 +179,7 @@ function bulkAggiornaRiepilogo() {
   const { sessioni, selezioni, nomiTest } = bulkDatiManuali();
   if (!selezioni.length || !sessioni.length) {
     summary.textContent = 'Nessun Test trovato';
-    detail.textContent = 'I giocatori selezionati non hanno Test registrati nella data scelta.';
+    detail.textContent = intervallo ? 'I giocatori selezionati non hanno Test nel periodo scelto.' : 'I giocatori selezionati non hanno Test nella data scelta.';
     btn.disabled = true;
     return;
   }
@@ -211,6 +233,9 @@ qsa('input[name="bulk-mode"]').forEach((x) => x.addEventListener('change', bulkA
 qs('#bulk-da').addEventListener('change', bulkAggiornaRiepilogo);
 qs('#bulk-a').addEventListener('change', bulkAggiornaRiepilogo);
 qs('#bulk-data-test').addEventListener('change', bulkAggiornaRiepilogo);
+qs('#bulk-manual-da').addEventListener('change', bulkAggiornaRiepilogo);
+qs('#bulk-manual-a').addEventListener('change', bulkAggiornaRiepilogo);
+qs('#bulk-date-type').addEventListener('change', bulkAggiornaTipoData);
 qs('#bulk-ricerca').addEventListener('input', debounce((e) => bulkRenderAtleti(e.target.value), 120));
 qs('#bulk-atleti-tutti').addEventListener('click', () => bulkSetAtleti(true));
 qs('#bulk-atleti-nessuno').addEventListener('click', () => bulkSetAtleti(false));
@@ -235,8 +260,8 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
     return;
   }
 
-  const periodoDa = manuale ? qs('#bulk-data-test').value : qs('#bulk-da').value;
-  const periodoA = manuale ? qs('#bulk-data-test').value : qs('#bulk-a').value;
+  const periodoDa = manuale ? bulkDateManuali().da : qs('#bulk-da').value;
+  const periodoA = manuale ? bulkDateManuali().a : qs('#bulk-a').value;
 
   btn.disabled = true;
   btn.textContent = 'Generazione anteprima…';
@@ -277,5 +302,8 @@ qs('#bulk-genera').addEventListener('click', async (e) => {
   qs('#bulk-da').value = y + '-' + m + '-' + day;
   qs('#bulk-a').value = oggi;
   qs('#bulk-data-test').value = oggi;
+  qs('#bulk-manual-da').value = y + '-' + m + '-' + day;
+  qs('#bulk-manual-a').value = oggi;
+  bulkAggiornaTipoData();
   bulkAggiornaModalita();
 })().catch(mostraErrorePagina);
