@@ -23,7 +23,7 @@ function sessioniDellaGiornata(data) {
 
 function riempiGiornate() {
   giornateDisponibili = giornateConTest();
-  const predefinite = [giornateDisponibili[1] || '', giornateDisponibili[0] || ''];
+  const predefinite = [giornateDisponibili[0] || '', ''];
   ['a', 'b'].forEach((lettera, i) => {
     const select = qs('#radar-day-' + lettera);
     select.replaceChildren(el('option', { value: '', text: 'Seleziona giornata…' }));
@@ -56,11 +56,11 @@ function costruisciRadar() {
     container.appendChild(el('div', { class: 'empty-state', text: 'Non ci sono test disponibili per costruire il radar.' }));
     return;
   }
-  if (!giornoA || !giornoB) {
-    stato.textContent = 'Seleziona due giornate da confrontare.';
+  if (!giornoA) {
+    stato.textContent = 'Seleziona almeno la prima giornata per visualizzare il radar.';
     return;
   }
-  if (giornoA === giornoB) {
+  if (giornoB && giornoA === giornoB) {
     stato.textContent = 'Scegli due giornate diverse per un confronto significativo.';
     return;
   }
@@ -69,8 +69,9 @@ function costruisciRadar() {
   // Tutti i 13 assi rimangono visibili anche quando un test non è stato
   // svolto in una (o entrambe) le giornate. Mai assegnare zero ai mancanti.
   const keys = [...TEST_STANDARD_KEYS];
-  stato.textContent = formatDataIt(giornoA) + ': ' + sessioniA.length + ' test · ' +
-    formatDataIt(giornoB) + ': ' + sessioniB.length + ' test. Confronto rispetto allo stesso archivio.';
+  stato.textContent = formatDataIt(giornoA) + ': ' + sessioniA.length + ' test' +
+    (giornoB ? ' · ' + formatDataIt(giornoB) + ': ' + sessioniB.length + ' test' : '') +
+    '. Punteggi rispetto allo stesso archivio.';
   if (!keys.length) {
     container.appendChild(el('div', { class: 'empty-state', text: 'Le giornate selezionate non contengono risultati sufficienti.' }));
     return;
@@ -80,11 +81,11 @@ function costruisciRadar() {
   const canvas = el('canvas', { id: 'radar-canvas' });
   container.appendChild(el('section', { class: 'card radar-simple-card' }, [
     el('div', { class: 'chart-canvas-wrap radar-simple-canvas', style: 'height:490px;' }, [canvas]),
-    el('p', { class: 'meta', text: 'Un unico radar: blu = prima giornata, verde = seconda. Punteggi relativi all’archivio Test, non valori normativi. I test assenti restano senza punteggio.' })
+    el('p', { class: 'meta', text: giornoB ? 'Blu = prima giornata, verde = seconda. Punteggi relativi all’archivio; test non eseguiti senza punteggio.' : 'Radar della giornata selezionata. Punteggi relativi all’archivio; test non eseguiti senza punteggio.' })
   ]));
   const cfg = radarChartConfig(labels, [
     { label: formatDataIt(giornoA), data: valori(radarA) },
-    { label: formatDataIt(giornoB), data: valori(radarB) },
+    ...(giornoB ? [{ label: formatDataIt(giornoB), data: valori(radarB) }] : []),
   ], null);
   const colors = [
     ['#2474ba', 'rgba(36,116,186,.16)'],
@@ -105,8 +106,8 @@ function costruisciRadar() {
       return el('article', { class: 'radar-test-summary-item' }, [
         el('strong', { text: TEST_STANDARD_LABELS[key] || key }),
         el('span', { class: 'meta', text: formatDataIt(giornoA) + ': ' +
-          (a ? a.valore + '/100' : 'non eseguito') + '  |  ' + formatDataIt(giornoB) + ': ' +
-          (b ? b.valore + '/100' : 'non eseguito') })
+          (a ? a.valore + '/100' : 'non eseguito') +
+          (giornoB ? '  |  ' + formatDataIt(giornoB) + ': ' + (b ? b.valore + '/100' : 'non eseguito') : '') })
       ]);
     })
   ));
