@@ -35,7 +35,7 @@ function renderChartOffscreen(config, widthPx, heightPx) {
         ...config.options,
         responsive: false,
         animation: false,
-        devicePixelRatio: 2,
+        devicePixelRatio: 1,
         plugins: {
           ...(config.options?.plugins || {}),
           legend: { ...(config.options?.plugins?.legend || {}), labels: { boxWidth: 10, font: { size: 11 } } },
@@ -780,12 +780,11 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       )
     : testKeysRichiesti;
 
+  // Controlla soltanto le sessioni del test corrente, senza ricreare
+  // l'intero archivio per ogni colonna e per ogni atleta.
   function colonneConDati(esercizio, sessioniCompilate) {
     return colonneEsercizio(esercizio).filter((col) =>
-      selezioniConDati.flatMap((item) => item.sessioni).some((s) => {
-        const v = col.get(s);
-        return valoreCampoValido(col.campo, v);
-      })
+      sessioniCompilate.some((s) => valoreCampoValido(col.campo, col.get(s)))
     );
   }
 
