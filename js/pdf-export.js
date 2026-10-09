@@ -20,7 +20,7 @@ function dimensioniImmagine(dataUrl) {
 }
 
 function renderChartOffscreen(config, widthPx, heightPx) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas');
     // Risoluzione contenuta per report con molti grafici: meno pixel da codificare.
     canvas.width = Math.round(widthPx * 0.65);
@@ -49,6 +49,8 @@ function renderChartOffscreen(config, widthPx, heightPx) {
       try {
         const dataUrl = canvas.toDataURL('image/png');
         resolve(dataUrl);
+      } catch (error) {
+        reject(error);
       } finally {
         chart.destroy();
         canvas.remove();
