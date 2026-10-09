@@ -603,6 +603,32 @@ async function esportaReportPdf(atletaRaw, sessioniRaw, opzioni = {}) {
  * Test scelti dall'utente. Ogni atleta inizia su una nuova pagina.
  */
 async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
+  // Helper locali autonomi: il report multiplo non dipende da definizioni globali
+  // né dagli helper usati soltanto nel report individuale.
+  const valorePresenteMultiplo = (v) => v !== undefined && v !== null && String(v).trim() !== '';
+  const datiCliniciMultiploDaProfilo = (dc) => {
+    if (!dc) return [];
+    const rows = [];
+    const add = (label, value) => { if (valorePresenteMultiplo(value)) rows.push([label, String(value)]); };
+    add('Acuita visiva OD', dc.acuitaVisiva?.od);
+    add('Acuita visiva OS', dc.acuitaVisiva?.os);
+    add('Acuita visiva binoculare', dc.acuitaVisiva?.binoculare);
+    add('Piede dominante', dc.piedeDominante);
+    add('Mano dominante', dc.manoDominante);
+    add('Occhio dominante', dc.occhioDirettoreMotorio);
+    add('Abilita fusionale rapida', dc.abilitaFusionaleRapida);
+    add('Messa a fuoco rapida', dc.abilitaMessaFuocoRapida);
+    const corr = (v) => v ? [v.sf,v.cyl,v.ax].filter(valorePresenteMultiplo).join(' / ') : '';
+    add('Correzione propria OD (Sf/Cyl/Ax)', corr(dc.correzionePropria?.od));
+    add('Correzione propria OS (Sf/Cyl/Ax)', corr(dc.correzionePropria?.os));
+    add('Correzione OD (Sf/Cyl/Ax)', corr(dc.correzione?.od));
+    add('Correzione OS (Sf/Cyl/Ax)', corr(dc.correzione?.os));
+    for (const [label,key] of [['Alto SX','altoSx'],['Basso SX','bassoSx'],['Centrale','centrale'],['Alto DX','altoDx'],['Basso DX','bassoDx']]) {
+      add('Schober 3 m - ' + label, dc.schober3m?.[key]);
+      add('Brock String - ' + label, dc.brockString?.[key]);
+    }
+    return rows;
+  };
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   const automatico = opzioni.automatico === true;
@@ -918,9 +944,9 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     // Anagrafica e dati visivi/clinici: soltanto informazioni già compilate.
     const anagraficaMultiplo = [
       ['Data di nascita', atleta.dataNascita ? formatDataIt(atleta.dataNascita) : ''],
-      ['Altezza', testoValido(atleta.altezza) ? atleta.altezza + ' cm' : ''],
-    ].filter(([, valore]) => testoValido(valore));
-    const datiCliniciMultiplo = datiCliniciNonVuoti(atleta.datiClinici);
+      ['Altezza', valorePresenteMultiplo(atleta.altezza) ? atleta.altezza + ' cm' : ''],
+    ].filter(([, valore]) => valorePresenteMultiplo(valore));
+    const datiCliniciMultiplo = datiCliniciMultiploDaProfilo(atleta.datiClinici);
     if (anagraficaMultiplo.length) {
       titoloSezione('Dati anagrafici');
       disegnaTabella(['Campo', 'Valore'], anagraficaMultiplo, [72, 108]);
