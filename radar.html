@@ -26,10 +26,12 @@
 
     <section class="card radar-days-card">
       <div class="radar-days-header">
-        <div><h2>Radar di una o due giornate</h2><p class="meta">Scegli la prima giornata per vedere subito il radar. La seconda è facoltativa e permette di confrontare due date. I Training sono esclusi.</p></div>
-        <button type="button" class="secondary" id="radar-reset-date">Ultime due giornate</button>
+        <div><h2>Radar di una o due giornate</h2><p class="meta">Scegli i giocatori e le rispettive giornate. Il secondo giocatore è facoltativo: puoi confrontare anche due giornate dello stesso atleta. I Training sono esclusi.</p></div>
+        <button type="button" class="secondary" id="radar-reset-date">Reimposta selezione</button>
       </div>
       <div class="radar-day-selectors">
+        <div class="field"><label for="radar-player-a">Giocatore A</label><select id="radar-player-a" aria-label="Primo giocatore"></select></div>
+        <div class="field"><label for="radar-player-b">Giocatore B (facoltativo)</label><select id="radar-player-b" aria-label="Secondo giocatore facoltativo"></select></div>
         <div class="field"><label for="radar-day-a"><span class="radar-period-dot radar-dot-a"></span> Giornata A</label><select id="radar-day-a" aria-label="Prima giornata"></select></div>
         <div class="field"><label for="radar-day-b"><span class="radar-period-dot radar-dot-b"></span> Giornata B</label><select id="radar-day-b" aria-label="Seconda giornata (facoltativa)"></select></div>
       </div>
