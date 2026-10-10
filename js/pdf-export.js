@@ -704,7 +704,10 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.text(lines, marginX, y);
       y += lines.length * 3.7 + 1.5;
     }
-    linea(y + 2);
+    doc.setDrawColor(184,29,56); doc.setLineWidth(.7);
+    doc.line(marginX,y+2,marginX+12,y+2);
+    doc.setDrawColor(...C.line); doc.setLineWidth(.25);
+    doc.line(marginX+14,y+2,marginX+usableWidth,y+2);
     y += 8;
     doc.setTextColor(...C.ink);
   }
@@ -901,43 +904,47 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     ]), [77, 23, 47, 33]);
   }
 
-  // Copertina generale.
-  doc.setFillColor(...C.navy);
-  doc.rect(0, 0, pageWidth, 55, 'F');
-  doc.setTextColor(...C.white);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text('TEST VISIVI', marginX, 14);
-  doc.setFontSize(21);
-  doc.text('Report multiplo', marginX, 27);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text('Valutazioni visive | Report tecnico riepilogativo', marginX, 35);
-  y = 70;
+  // Copertina editoriale Bologna FC, senza riepiloghi o tabelle.
+  doc.setFillColor(252,253,255); doc.rect(0,0,pageWidth,pageHeight,'F');
+  doc.setFillColor(17,47,77); doc.rect(pageWidth-37,0,37,pageHeight,'F');
+  doc.setFillColor(184,29,56);
+  doc.triangle(pageWidth-55,pageHeight,pageWidth-37,pageHeight,pageWidth-37,0,'F');
+  doc.setFillColor(233,238,243); doc.rect(0,0,10,pageHeight,'F');
+  doc.setDrawColor(184,29,56); doc.setLineWidth(1.15); doc.line(29,86,48,86);
 
-  const nomiTest = [...new Set(
-    selezioniConDati.flatMap((item) =>
-      item.sessioni.map((s) => typeof nomeTestSessione === 'function' ? nomeTestSessione(s) : '').filter(Boolean)
-    )
-  )];
-  doc.setTextColor(...C.navyDark);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text('INFORMAZIONI DEL REPORT', marginX, y);
-  y += 8;
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.setTextColor(...C.ink);
-  doc.text('Giocatori con Test nel periodo: ' + selezioniConDati.length, marginX, y);
-  y += 6;
-  doc.text('Periodo: ' + formatDataIt(periodoDa) + ' - ' + formatDataIt(periodoA), marginX, y);
-  y += 6;
-  const testLines = doc.splitTextToSize('Test: ' + nomiTest.join(', '), usableWidth);
-  doc.text(testLines, marginX, y);
-  y += testLines.length * 4.5 + 5;
-  doc.setFontSize(7.5);
-  doc.setTextColor(...C.muted);
-  doc.text('Sono inclusi solo i Test realmente registrati nell’intervallo. I Training sono esclusi.', marginX, y);
+  // Il marchio è integrato nella composizione grafica, ma resta una
+  // rappresentazione vettoriale semplificata per non dipendere dalla rete.
+  function stemmaBolognaPdf(x,y,w,h) {
+    doc.setFillColor(248,248,249); doc.setDrawColor(12,37,64);
+    doc.setLineWidth(1.1); doc.ellipse(x+w/2,y+h/2,w/2,h/2,'FD');
+    doc.setFillColor(170,29,53); doc.rect(x+w*.22,y+h*.24,w*.18,h*.55,'F');
+    doc.setFillColor(12,37,64); doc.rect(x+w*.42,y+h*.24,w*.18,h*.55,'F');
+    doc.setFillColor(170,29,53); doc.rect(x+w*.62,y+h*.24,w*.16,h*.55,'F');
+    doc.setFillColor(12,37,64); doc.roundedRect(x+w*.14,y+h*.12,w*.72,h*.16,1.5,1.5,'F');
+    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');doc.setFontSize(8);
+    doc.text('BFC',x+w/2,y+h*.23,{align:'center'});
+  }
+  stemmaBolognaPdf(82,26,39,54);
+  doc.setTextColor(17,47,77);doc.setFont('helvetica','bold');doc.setFontSize(10);
+  doc.text('BOLOGNA FC 1909',pageWidth/2,91,{align:'center'});
+  doc.setFontSize(25);doc.text('REPORT',29,112);
+  doc.setFontSize(19);doc.text('VALUTAZIONE TEST VISIVI',29,124,{maxWidth:146});
+  doc.setFont('helvetica','normal');doc.setFontSize(10);
+  const sub=doc.splitTextToSize('ANALISI DELLE PRESTAZIONI VISIVE E PERCETTIVE DEI GIOCATORI',142);
+  doc.text(sub,29,139);
+  doc.setFontSize(9.2);doc.setTextColor(65,81,97);
+  const intro=doc.splitTextToSize(
+    'Il presente report raccoglie i risultati delle valutazioni visive e percettive effettuate sui giocatori selezionati. Per ciascun atleta sono riportati i dati clinici e visivi disponibili, i risultati dei Test eseguiti e un profilo radar conclusivo delle prestazioni osservate.',139);
+  doc.text(intro,29,169);
+  doc.setDrawColor(184,29,56);doc.setLineWidth(.8);doc.line(29,228,29,257);
+  doc.setFont('helvetica','bold');doc.setFontSize(8.3);doc.setTextColor(17,47,77);
+  doc.text('PERIODO DI VALUTAZIONE',35,235);
+  doc.setFont('helvetica','normal');doc.setFontSize(9.2);
+  doc.text(formatDataIt(periodoDa)+' - '+formatDataIt(periodoA),35,242);
+  doc.setFont('helvetica','bold');doc.setFontSize(8.3);
+  doc.text('DATA DI GENERAZIONE',35,251);
+  doc.setFont('helvetica','normal');doc.setFontSize(9.2);
+  doc.text(formatDataIt(oggiIso()),35,258);
 
   for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
     const { atleta, sessioni } = selezioniConDati[atletaIndex];
@@ -945,8 +952,10 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     nomeAtletaPagina = nomeCompleto(atleta);
     paginaNuova(false);
 
-    doc.setFillColor(...C.navy);
+    doc.setFillColor(17,47,77);
     doc.rect(0, 0, pageWidth, 32, 'F');
+    doc.setFillColor(184,29,56);
+    doc.triangle(pageWidth-31,32,pageWidth,0,pageWidth,32,'F');
     doc.setTextColor(...C.white);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(17);
