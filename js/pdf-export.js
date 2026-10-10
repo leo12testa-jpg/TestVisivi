@@ -904,47 +904,52 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     ]), [77, 23, 47, 33]);
   }
 
-  // Copertina editoriale Bologna FC, senza riepiloghi o tabelle.
-  doc.setFillColor(252,253,255); doc.rect(0,0,pageWidth,pageHeight,'F');
-  doc.setFillColor(17,47,77); doc.rect(pageWidth-37,0,37,pageHeight,'F');
-  doc.setFillColor(184,29,56);
-  doc.triangle(pageWidth-55,pageHeight,pageWidth-37,pageHeight,pageWidth-37,0,'F');
-  doc.setFillColor(233,238,243); doc.rect(0,0,10,pageHeight,'F');
-  doc.setDrawColor(184,29,56); doc.setLineWidth(1.15); doc.line(29,86,48,86);
+  // Copertina Bologna FC nello stile della preview approvata.
+  doc.setFillColor(251,252,254);doc.rect(0,0,pageWidth,pageHeight,'F');
+  doc.setFillColor(19,49,78);
+  doc.triangle(pageWidth-54,0,pageWidth,0,pageWidth,pageHeight,'F');
+  doc.triangle(pageWidth-42,pageHeight,pageWidth,pageHeight,pageWidth-42,178,'F');
+  doc.setFillColor(183,27,52);
+  doc.triangle(pageWidth-64,pageHeight,pageWidth-54,pageHeight,pageWidth-54,0,'F');
+  doc.triangle(pageWidth-54,pageHeight,pageWidth-46,pageHeight,pageWidth-46,155,'F');
+  doc.setFillColor(233,238,243);
+  doc.triangle(0,0,72,0,0,70,'F');
+  doc.setDrawColor(183,27,52);doc.setLineWidth(1.2);doc.line(88,94,105,94);
 
-  // Il marchio è integrato nella composizione grafica, ma resta una
-  // rappresentazione vettoriale semplificata per non dipendere dalla rete.
-  function stemmaBolognaPdf(x,y,w,h) {
-    doc.setFillColor(248,248,249); doc.setDrawColor(12,37,64);
-    doc.setLineWidth(1.1); doc.ellipse(x+w/2,y+h/2,w/2,h/2,'FD');
-    doc.setFillColor(170,29,53); doc.rect(x+w*.22,y+h*.24,w*.18,h*.55,'F');
-    doc.setFillColor(12,37,64); doc.rect(x+w*.42,y+h*.24,w*.18,h*.55,'F');
-    doc.setFillColor(170,29,53); doc.rect(x+w*.62,y+h*.24,w*.16,h*.55,'F');
-    doc.setFillColor(12,37,64); doc.roundedRect(x+w*.14,y+h*.12,w*.72,h*.16,1.5,1.5,'F');
-    doc.setTextColor(255,255,255); doc.setFont('helvetica','bold');doc.setFontSize(8);
-    doc.text('BFC',x+w/2,y+h*.23,{align:'center'});
+  // Logo ufficiale PNG, convertito in data URL prima dell'inserimento nel PDF.
+  // In assenza di rete non blocca il documento.
+  try {
+    const logoSrc = 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Bologna_F.C._1909_logo.svg/250px-Bologna_F.C._1909_logo.svg.png';
+    const logo = await new Promise((resolve,reject)=>{
+      const img = new Image();img.crossOrigin='anonymous';
+      img.onload=()=>{
+        try {const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+          c.getContext('2d').drawImage(img,0,0);resolve(c.toDataURL('image/png'));} catch(e){reject(e);}
+      };img.onerror=()=>reject(new Error('Logo non raggiungibile'));img.src=logoSrc;
+    });
+    doc.addImage(logo,'PNG',90,17,30,46);
+  } catch (_) {
+    doc.setFont('helvetica','bold');doc.setFontSize(19);doc.setTextColor(19,49,78);
+    doc.text('BFC',105,42,{align:'center'});
   }
-  stemmaBolognaPdf(82,26,39,54);
-  doc.setTextColor(17,47,77);doc.setFont('helvetica','bold');doc.setFontSize(10);
-  doc.text('BOLOGNA FC 1909',pageWidth/2,91,{align:'center'});
-  doc.setFontSize(25);doc.text('REPORT',29,112);
-  doc.setFontSize(19);doc.text('VALUTAZIONE TEST VISIVI',29,124,{maxWidth:146});
-  doc.setFont('helvetica','normal');doc.setFontSize(10);
-  const sub=doc.splitTextToSize('ANALISI DELLE PRESTAZIONI VISIVE E PERCETTIVE DEI GIOCATORI',142);
-  doc.text(sub,29,139);
-  doc.setFontSize(9.2);doc.setTextColor(65,81,97);
+  doc.setTextColor(19,49,78);doc.setFont('helvetica','normal');doc.setFontSize(11.5);
+  doc.text('BOLOGNA FC 1909',105,78,{align:'center'});
+  doc.setFont('helvetica','bold');doc.setFontSize(30);
+  doc.text('REPORT',105,111,{align:'center'});
+  doc.setFontSize(20);doc.text('VALUTAZIONE TEST VISIVI',105,125,{align:'center'});
+  doc.setFont('helvetica','normal');doc.setFontSize(10.5);
+  const subtitolo=doc.splitTextToSize('ANALISI DELLE PRESTAZIONI VISIVE E PERCETTIVE DEI GIOCATORI DEL BOLOGNA FC',146);
+  doc.text(subtitolo,105,139,{align:'center'});
+  doc.setFontSize(10);doc.setTextColor(55,72,89);
   const intro=doc.splitTextToSize(
-    'Il presente report raccoglie i risultati delle valutazioni visive e percettive effettuate sui giocatori selezionati. Per ciascun atleta sono riportati i dati clinici e visivi disponibili, i risultati dei Test eseguiti e un profilo radar conclusivo delle prestazioni osservate.',139);
-  doc.text(intro,29,169);
-  doc.setDrawColor(184,29,56);doc.setLineWidth(.8);doc.line(29,228,29,257);
-  doc.setFont('helvetica','bold');doc.setFontSize(8.3);doc.setTextColor(17,47,77);
-  doc.text('PERIODO DI VALUTAZIONE',35,235);
-  doc.setFont('helvetica','normal');doc.setFontSize(9.2);
-  doc.text(formatDataIt(periodoDa)+' - '+formatDataIt(periodoA),35,242);
-  doc.setFont('helvetica','bold');doc.setFontSize(8.3);
-  doc.text('DATA DI GENERAZIONE',35,251);
-  doc.setFont('helvetica','normal');doc.setFontSize(9.2);
-  doc.text(formatDataIt(oggiIso()),35,258);
+    'Questo report presenta i risultati delle valutazioni visive e percettive effettuate sui giocatori selezionati del Bologna FC. Per ciascun atleta vengono riportati i dati clinici e visivi disponibili, i risultati dei test eseguiti e un radar conclusivo che sintetizza il profilo prestazionale emerso.',128);
+  doc.text(intro,39,170);
+  doc.setDrawColor(183,27,52);doc.setLineWidth(.8);doc.line(39,228,39,266);
+  doc.setTextColor(19,49,78);doc.setFont('helvetica','bold');doc.setFontSize(9);
+  doc.text('Periodo di valutazione',45,235);
+  doc.setFont('helvetica','normal');doc.text(formatDataIt(periodoDa)+' - '+formatDataIt(periodoA),45,242);
+  doc.setFont('helvetica','bold');doc.text('Data di generazione',45,255);
+  doc.setFont('helvetica','normal');doc.text(formatDataIt(oggiIso()),45,262);
 
   for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
     const { atleta, sessioni } = selezioniConDati[atletaIndex];
