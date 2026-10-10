@@ -1,6 +1,6 @@
 /* App shell network-first, fallback offline; nessun dato Firestore in CacheStorage. */
 
-const CACHE_NAME = 'jetprogram-cache-v110';
+const CACHE_NAME = 'jetprogram-cache-v111';
 
 const PRECACHE_URLS = [
   './',
