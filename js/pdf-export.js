@@ -714,27 +714,10 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
 
   // Le tabelle molto larghe vengono suddivise per gruppi di colonne:
   // ogni parte ripete Data, mantenendo tutti i valori senza ridurre i testi a caratteri illeggibili.
+  // Una tabella unica per test: tutte le colonne restano nello stesso riquadro.
+  // I titoli lunghi possono andare a capo all'interno della cella, mai in tabelle separate.
   function disegnaTabellaLeggibile(headers, rows, widths) {
-    if (headers.length <= 7) return disegnaTabella(headers, rows, widths);
-    const colsPerBlock = 4;
-    const hasDate = headers[0] === 'Data';
-    const fixed = hasDate ? [0] : [];
-    const other = headers.map((_,i)=>i).filter(i=>!fixed.includes(i));
-    const parti = Math.ceil(other.length / colsPerBlock);
-    for (let start=0;start<other.length;start+=colsPerBlock) {
-      const parte = Math.floor(start / colsPerBlock) + 1;
-      assicuraSpazio(12);
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(7.5);
-      doc.setTextColor(...C.muted);
-      doc.text('PARAMETRI  ' + parte + ' / ' + parti,marginX,y);
-      y += 5;
-      const indices = [...fixed,...other.slice(start,start+colsPerBlock)];
-      const partHeaders = indices.map(i=>headers[i]);
-      const partRows = rows.map(row=>indices.map(i=>row[i]));
-      disegnaTabella(partHeaders,partRows,
-        indices.map(i=>i===0&&hasDate?27:31));
-    }
+    return disegnaTabella(headers, rows, widths);
   }
 
   function disegnaTabella(headers, rows, widths) {
@@ -742,8 +725,8 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     const supplied = widths && widths.length === headers.length ? widths : Array(headers.length).fill(1);
     const total = supplied.reduce((sum,w) => sum + Math.max(0,w),0) || headers.length;
     const colWidths = supplied.map(w => usableWidth * Math.max(0,w) / total);
-    const fontSize = headers.length > 8 ? 7.0 : headers.length > 5 ? 7.6 : 8.2;
-    const paddingX = 2.2, lineHeight = 3.8, bottom = footerY - 5;
+    const fontSize = headers.length > 12 ? 4.8 : headers.length > 9 ? 5.3 : headers.length > 7 ? 6.0 : headers.length > 5 ? 7.1 : 8.2;
+    const paddingX = headers.length > 9 ? .9 : 1.8, lineHeight = headers.length > 9 ? 3.1 : 3.7, bottom = footerY - 5;
     const splitCell = (value, width) => {
       const str = String(value ?? '-');
       const maxW = Math.max(1,width - 2 * paddingX);
@@ -868,7 +851,8 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   }
 
   async function disegnaSoloRadarAtleta(sessioni) {
-    const radar = radarDatiSintesi(sessioni, archivioRadar);
+    const normalizzaRadar = (s) => typeof normalizzaSessioneJet === 'function' ? normalizzaSessioneJet(s) : s;
+    const radar = radarDatiSintesi(sessioni.map(normalizzaRadar), archivioRadar.map(normalizzaRadar));
     if (!radar.righe.length) {
       titoloSezione('Radar prestazionale', 'Nessun test con parametri sufficienti per il radar.');
       return;
