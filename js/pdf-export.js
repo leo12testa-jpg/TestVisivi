@@ -920,13 +920,13 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.text('BOLOGNA FC 1909',105,78,{align:'center'});
   doc.setFont('helvetica','bold');doc.setFontSize(30);
   doc.text('REPORT',105,111,{align:'center'});
-  doc.setFontSize(20);doc.text('VALUTAZIONE TEST VISIVI',105,125,{align:'center'});
+  doc.setFontSize(19);doc.text('VALUTAZIONE TEST VISIVI',105,125,{align:'center'});
   doc.setFont('helvetica','normal');doc.setFontSize(10.5);
-  const subtitolo=doc.splitTextToSize('ANALISI DELLE PRESTAZIONI VISIVE E PERCETTIVE DEI GIOCATORI DEL BOLOGNA FC',146);
+  const subtitolo=doc.splitTextToSize('PROFILAZIONE DELLE PRESTAZIONI VISUO-PERCETTIVE | BOLOGNA FC',146);
   doc.text(subtitolo,105,139,{align:'center'});
   doc.setFontSize(10);doc.setTextColor(55,72,89);
   const intro=doc.splitTextToSize(
-    'Questo report presenta i risultati delle valutazioni visive e percettive effettuate sui giocatori selezionati del Bologna FC. Per ciascun atleta vengono riportati i dati clinici e visivi disponibili, i risultati dei test eseguiti e un radar conclusivo che sintetizza il profilo prestazionale emerso.',128);
+    'Il presente report documenta le valutazioni delle abilita visuo-percettive dei giocatori del Bologna FC. Comprende i dati clinici e visivi disponibili, i risultati dei test svolti e una rappresentazione radar dei parametri valutabili, per descrivere il profilo delle prestazioni osservate nel periodo di riferimento.',128);
   doc.text(intro,39,170);
   doc.setDrawColor(183,27,52);doc.setLineWidth(.8);doc.line(39,228,39,266);
   doc.setTextColor(19,49,78);doc.setFont('helvetica','bold');doc.setFontSize(9);
@@ -1114,8 +1114,14 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...C.muted);
-    doc.text(atletiPerPagina[page] || 'Test Visivi - Report multiplo', marginX, footerY, { maxWidth: usableWidth - 35 });
-    doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
+    if (page === 1) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.navyDark);
+      doc.text('Dott. Tiziano Testa  |  Test Visivi', marginX, footerY);
+    } else {
+      doc.text(atletiPerPagina[page] || 'Test Visivi - Report multiplo', marginX, footerY, { maxWidth: usableWidth - 35 });
+      doc.text('Pagina ' + page + ' / ' + totalePagine, marginX + usableWidth, footerY, { align: 'right' });
+    }
     if (page === totalePagine) {
       doc.setFontSize(6.3);
       doc.text("Il report riporta esclusivamente i dati registrati nell'app e non costituisce una diagnosi clinica.", marginX, pageHeight - 5);
