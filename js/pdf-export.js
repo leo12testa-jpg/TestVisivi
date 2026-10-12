@@ -629,6 +629,21 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     }
     return rows;
   };
+  // Normalizzazione SOLO di visualizzazione, senza modificare i dati salvati.
+  const formattaMetricaPdf = (valore) => {
+    const txt = String(valore ?? '').trim();
+    if (!txt || /^(null|undefined|nan)$/i.test(txt)) return '-';
+    return txt.replace(/\b(?:NULL|undefined|NaN)\b/gi, '-')
+      .replace(/-?\d+[.,]\d{5,}/g, num => {
+        const value = Number(num.replace(',', '.'));
+        return Number.isFinite(value) ? value.toLocaleString('it-IT',{maximumFractionDigits:3}) : num;
+      });
+  };
+  const metricaListaGrezza = (m) => Array.isArray(m?.raw) && m.raw.length > 1;
+  const metricaDaEscluderePdf = (m) => metricaListaGrezza(m)
+    || (String(m?.valore ?? '').length > 95 && String(m?.valore ?? '').includes(' · '));
+  const chiaveMetricaPdf = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/\([^)]*\)/g,'').replace(/[^a-z0-9]/g,'');
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   const automatico = opzioni.automatico === true;
@@ -1006,12 +1021,13 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       const tutteDelTest = delTest;
       for (const s of tutteDelTest) {
         for (const m of typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(s) : []) {
+          if (metricaDaEscluderePdf(m)) continue;
           const giaInTabella = cols.some((col) => [
             col.header, col.campo.key,
             ...(typeof aliasesCampoJet === 'function' ? aliasesCampoJet(col.campo).map((a) => a.name) : []),
             ...(sinonimi[col.campo.key] || []),
-          ].some((label) => normalizzaLabel(label) === normalizzaLabel(m.label)));
-          if (!giaInTabella) note.set(m.key, m.label);
+          ].some((label) => chiaveMetricaPdf(label) === chiaveMetricaPdf(m.label)));
+          if (!giaInTabella && ![...note.values()].some(v => chiaveMetricaPdf(v) === chiaveMetricaPdf(m.label))) note.set(m.key, m.label);
         }
       }
       const extra = [...note.entries()];
@@ -1020,7 +1036,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
         const raw = new Map((typeof metricheOriginaliJet === 'function' ? metricheOriginaliJet(s) : [])
           .map((m) => [m.key, m.valore]));
         return [formatDataIt(s.data), ...cols.map((col) => formattaCella(col, col.get(s))),
-          ...extra.map(([key]) => raw.get(key) ?? '-')];
+          ...extra.map(([key]) => formattaMetricaPdf(raw.get(key) ?? '-'))];
       });
       if (headers.length > 1) {
         const dataWidth = 24;
