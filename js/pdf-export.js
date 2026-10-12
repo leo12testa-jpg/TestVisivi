@@ -705,7 +705,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     const titleLines = doc.splitTextToSize(titolo, usableWidth);
-    assicuraSpazio(titleLines.length * 5 + (sottotitolo ? Math.ceil(sottotitolo.length / 92) * 3.7 + 17 : 19));
+    assicuraSpazio(titleLines.length * 5 + (sottotitolo ? Math.ceil(sottotitolo.length / 92) * 3.7 + 38 : 36));
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(11.5);
     doc.setTextColor(...C.navyDark);
