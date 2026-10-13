@@ -198,15 +198,10 @@ function attivaModalitaLetturaSessione() {
     btn.textContent = apri ? 'Chiudi modifica' : 'Modifica risultati';
 
     if (apri) {
-      qsa('#esercizi-container .field').forEach((field) => {
-        const controllo = qs('input:not([type="file"]), select, textarea', field);
-        if (!controllo) return;
-        field.hidden = String(controllo.value || '').trim() === '';
-      });
-      qsa('#esercizi-container details.esercizio').forEach((details) => {
-        const fields = qsa('.field', details);
-        details.hidden = fields.length > 0 && fields.every((field) => field.hidden);
-      });
+      // I campi vuoti devono restare disponibili: consentono di correggere
+      // e completare i risultati storici, senza sostituire dati originali.
+      qsa('#esercizi-container .field').forEach((field) => { field.hidden = false; });
+      aggiornaTestVisibili();
     }
   });
 }
@@ -457,6 +452,8 @@ async function init() {
         return;
       }
       qs('#test-standard').value = jetTest(sessione)?.key || sessione.testStandard || '';
+      // Mantieni l'associazione JetProgram già riconosciuta: non consentire
+      // riassegnazioni silenziose di test a una tipologia diversa.
       if (jetTest(sessione)) qs('#test-standard').disabled = true;
       mostraOriginali(sessione);
       aggiornaTestVisibili();
