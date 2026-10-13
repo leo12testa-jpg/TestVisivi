@@ -8,6 +8,12 @@ function jetNome(value) {
 }
 
 function jetNumero(value) {
+  // I report JetProgram reali salvano frequentemente un singolo risultato
+  // in un array di una voce: ["0.55"]. E' una misura, non una sequenza da mediare.
+  if (Array.isArray(value)) {
+    if (value.length !== 1 || Array.isArray(value[0])) return null;
+    return jetNumero(value[0]);
+  }
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   if (typeof value !== 'string') return null;
   const s = value.trim();
