@@ -125,15 +125,21 @@ function radarChiaveTestSessione(sessione) {
     return sessione.jetProgramStandardKey;
   }
 
-  const compilato = TEST_STANDARD_KEYS.find((key) =>
-    esercizioCompilato(getEsercizioConfig(key), sessione.esercizi?.[key])
-  );
-  if (compilato) return compilato;
-
+  // Il protocollo JetProgram identificato prevale su campi accessori presenti
+  // in sessioni legacy: la prima chiave compilata può essere un altro test.
+  if (sessione.testStandard && TEST_STANDARD_KEYS.includes(sessione.testStandard)) return sessione.testStandard;
+  if (typeof jetTest === 'function') {
+    const identificato = jetTest(sessione);
+    if (identificato?.key && TEST_STANDARD_KEYS.includes(identificato.key)) return identificato.key;
+  }
   if (typeof chiaveStandardDaNomeProtocollo === 'function') {
     const daNome = chiaveStandardDaNomeProtocollo(sessione);
     if (daNome && TEST_STANDARD_KEYS.includes(daNome)) return daNome;
   }
+  const compilati = TEST_STANDARD_KEYS.filter((key) =>
+    esercizioCompilato(getEsercizioConfig(key), sessione.esercizi?.[key])
+  );
+  if (compilati.length === 1) return compilati[0];
 
   return null;
 }
