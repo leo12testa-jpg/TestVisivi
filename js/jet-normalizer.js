@@ -250,7 +250,10 @@ const JET_RAW_LABELS = {
 
 function aliasesCampoJet(campo) {
   const temporale = ['s', 'ms'].includes(campo.unit);
-  const labels = [campo.label, ...(JET_RAW_LABELS[campo.key] || [])];
+  const labels = [campo.label, ...(JET_RAW_LABELS[campo.key] || []),
+    ...(campo.key === 'immaginiAlSec' ? ['Immagini al secondo'] : []),
+    ...(campo.key === 'livelloMassimo' ? ['Livello massimo completato'] : []),
+    ...(campo.key === 'quantitaNumeri' ? ['Numeri riconosciuti'] : [])];
   const aliases = temporale ? [] : [{ name: campo.key, unit: campo.unit }];
 
   if (!temporale) {
@@ -262,6 +265,9 @@ function aliasesCampoJet(campo) {
     labels.forEach((label) => aliases.push({ name: `${label} (${unit})`, unit }));
     aliases.push({ name: `${campo.key}${unit}`, unit });
   }
+  // Le colonne degli export Jet storici sono espresse in secondi
+  // ("Tempo di reazione medio": 0.55), ma non riportano "(s)" nel nome.
+  labels.forEach((label) => aliases.push({ name: label, unit: 's' }));
   return aliases;
 }
 
@@ -269,7 +275,9 @@ function normalizzaSessioneJet(sessione) {
   if (!sessione || !haDatiJet(sessione)) return sessione;
   const test = jetTest(sessione);
   if (!test) return sessione;
-  const originale = sessione.datiOriginali;
+  // I report storici importati conservano frequentemente le misure in
+  // esercizi.jetProgramOriginale.risultatiOriginali, non in datiOriginali.
+  const originale = risultatiOriginaliJet(sessione);
   if (!originale || typeof originale !== 'object' || Array.isArray(originale)) return sessione;
   const converted = {};
   // Solo proprietà dirette: non si mescolano prove individuali, impostazioni e risultati.
