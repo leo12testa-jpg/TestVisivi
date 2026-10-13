@@ -87,6 +87,14 @@
       </form>
     </dialog>
 
+    <dialog id="single-pdf-preview" class="bulk-preview-dialog">
+      <div class="bulk-preview-card">
+        <div class="bulk-preview-head"><div><h2>Anteprima PDF giocatore</h2><p class="meta">Controlla il report prima di scaricarlo.</p></div>
+          <button type="button" class="secondary" id="single-preview-close" aria-label="Chiudi">×</button></div>
+        <div class="bulk-preview-viewer"><iframe id="single-preview-frame" title="Anteprima PDF singolo"></iframe></div>
+        <div class="row bulk-preview-actions"><button type="button" class="secondary" id="single-preview-open">Apri in nuova scheda</button><button type="button" id="single-preview-download">Scarica PDF</button></div>
+      </div>
+    </dialog>
     <section class="recent-section"><h2>Ultimi test</h2><div id="sessioni-recenti" class="list"><p class="meta">Caricamento risultati…</p></div></section>
 
     <details class="profile-details"><summary>Anagrafica e dati clinici</summary>
