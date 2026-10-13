@@ -168,9 +168,17 @@ function normalizzaAnagraficaCalciatore(atleta) {
   return { ...atleta, nome: titoloNome(nomeRaw), cognome: titoloNome(cognomeRaw) };
 }
 
+// Traslitterazione per le sole etichette e i PDF: i nomi originali nel database restano intatti.
+function nomeItalianizzatoVisuale(valore) {
+  const particolari = { 'Ł':'L', 'ł':'l', 'Ø':'O', 'ø':'o', 'Đ':'D', 'đ':'d',
+    'Ð':'D', 'ð':'d', 'Þ':'Th', 'þ':'th', 'Æ':'Ae', 'æ':'ae', 'Œ':'Oe',
+    'œ':'oe', 'ß':'ss', 'İ':'I', 'ı':'i' };
+  return String(valore ?? '').replace(/[ŁłØøĐđÐðÞþÆæŒœßİı]/g, ch => particolari[ch] || ch)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
 function nomeCompleto(atleta) {
   const a = normalizzaAnagraficaCalciatore(atleta || {});
-  return [a.nome, a.cognome].filter(Boolean).join(' ');
+  return nomeItalianizzatoVisuale([a.nome, a.cognome].filter(Boolean).join(' '));
 }
 
 function registerServiceWorker() {
@@ -211,7 +219,7 @@ function montaIndicatoreConnessione() {
 }
 montaIndicatoreConnessione();
 
-const APP_BUILD_VERSION = '115';
+const APP_BUILD_VERSION = '116';
 
 async function leggiVersionePubblicata() {
   if (!navigator.onLine) return null;
