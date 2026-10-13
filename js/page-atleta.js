@@ -425,29 +425,57 @@ qs('#pdf-period-a').addEventListener('change', aggiornaRiepilogoPdf);
 qs('#pdf-period-close').addEventListener('click', () => qs('#pdf-period-dialog').close());
 qs('#pdf-period-annulla').addEventListener('click', () => qs('#pdf-period-dialog').close());
 
+let _singlePdfPreviewUrl = '';
+let _singlePdfPreviewName = '';
+function chiudiAnteprimaSingola() {
+  qs('#single-pdf-preview').close();
+  qs('#single-preview-frame').removeAttribute('src');
+  if (_singlePdfPreviewUrl) URL.revokeObjectURL(_singlePdfPreviewUrl);
+  _singlePdfPreviewUrl = '';
+}
+qs('#single-preview-close').addEventListener('click', chiudiAnteprimaSingola);
+qs('#single-pdf-preview').addEventListener('cancel', (e) => { e.preventDefault(); chiudiAnteprimaSingola(); });
+qs('#single-preview-open').addEventListener('click', () => {
+  if (_singlePdfPreviewUrl) window.open(_singlePdfPreviewUrl, '_blank');
+});
+qs('#single-preview-download').addEventListener('click', () => {
+  if (!_singlePdfPreviewUrl) return;
+  const a = document.createElement('a');
+  a.href = _singlePdfPreviewUrl;
+  a.download = _singlePdfPreviewName;
+  document.body.appendChild(a); a.click(); a.remove();
+});
+window.addEventListener('beforeunload', () => { if (_singlePdfPreviewUrl) URL.revokeObjectURL(_singlePdfPreviewUrl); });
+
 qs('#pdf-period-export').addEventListener('click', async (e) => {
   const da = qs('#pdf-period-da').value;
   const a = qs('#pdf-period-a').value;
-  if (!da || !a || da > a) {
-    aggiornaRiepilogoPdf();
-    return;
-  }
-
+  if (!da || !a || da > a) { aggiornaRiepilogoPdf(); return; }
   const selezionati = testNelPeriodo(da, a);
-  if (!selezionati.length) {
-    aggiornaRiepilogoPdf();
-    return;
-  }
-
+  if (!selezionati.length) { aggiornaRiepilogoPdf(); return; }
   const btn = e.currentTarget;
   btn.disabled = true;
-  btn.textContent = 'Generazione PDF...';
+  btn.textContent = 'Generazione anteprima…';
   try {
-    await esportaReportPdf(_atleta, selezionati, { periodoDa: da, periodoA: a });
+    // Stesso motore, stesse tabelle e stesso radar del PDF multiplo.
+    const [scheda, archivio] = await Promise.all([dbGetAtleta(atletaId), dbGetAllSessioni()]);
+    if (!scheda) throw new Error('Scheda giocatore non disponibile.');
+    const report = await esportaReportMultiploPdf([{atleta: scheda, sessioni: selezionati}], {
+      periodoDa: da, periodoA: a, automatico: true,
+      archivioRadar: archivio, senzaCopertina: true, scarica: false
+    });
+    if (!(report.blob instanceof Blob) || report.blob.size < 100) throw new Error('PDF non valido.');
+    if (_singlePdfPreviewUrl) URL.revokeObjectURL(_singlePdfPreviewUrl);
+    _singlePdfPreviewUrl = URL.createObjectURL(report.blob);
+    _singlePdfPreviewName = 'test_visivi_' + nomeCompleto(scheda).replace(/[^a-zA-Z0-9]+/g,'_') + '.pdf';
+    qs('#single-preview-frame').src = _singlePdfPreviewUrl;
     qs('#pdf-period-dialog').close();
+    qs('#single-pdf-preview').showModal();
+  } catch (err) {
+    mostraErrorePagina(err);
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Esporta PDF';
+    btn.textContent = 'Anteprima PDF';
   }
 });
 
