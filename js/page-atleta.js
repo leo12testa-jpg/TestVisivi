@@ -247,6 +247,45 @@ function renderOsservazioni() {
       ]),
       el('button', {
         type: 'button',
+        class: 'secondary observation-edit',
+        text: 'Modifica',
+        onclick: () => {
+          const content = card.querySelector('.observation-content');
+          const dateInput = el('input', { type: 'date', value: item.data || '' });
+          const textInput = el('textarea', { rows: 3 });
+          textInput.value = item.testo || '';
+          const save = el('button', { type: 'button', text: 'Salva modifica' });
+          const cancel = el('button', { type: 'button', class: 'secondary', text: 'Annulla' });
+          content.replaceChildren(
+            el('label', { text: 'Data della nota' }), dateInput,
+            el('label', { text: 'Testo della nota' }), textInput,
+            el('div', { class: 'row wrap' }, [save, cancel])
+          );
+          card.querySelectorAll('.observation-edit, .observation-delete').forEach(b => { b.hidden = true; });
+          cancel.onclick = () => renderOsservazioni();
+          save.onclick = async () => {
+            const data = dateInput.value;
+            const testo = textInput.value.trim();
+            if (!data) { dateInput.focus(); return; }
+            if (!testo) { textInput.focus(); return; }
+            save.disabled = true;
+            try {
+              const updated = osservazioniAtleta().map(x => x.id === item.id
+                ? { ...x, data, testo, updatedAt: new Date().toISOString() } : x);
+              await dbUpdateAtleta({ ..._atleta, osservazioni: updated });
+              _atleta.osservazioni = updated;
+              renderOsservazioni();
+              mostraToast('Nota modificata');
+            } catch (err) {
+              mostraErrorePagina(err);
+              save.disabled = false;
+            }
+          };
+          textInput.focus();
+        },
+      }),
+      el('button', {
+        type: 'button',
         class: 'secondary observation-delete',
         text: 'Elimina',
         onclick: async () => {
