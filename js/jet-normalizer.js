@@ -42,7 +42,14 @@ function jetTest(sessione) {
       if ([test.key, test.label].some((n) => jetNome(n) === normalized)) matches.add(test.key);
     });
   });
-  return matches.size === 1 ? getEsercizioConfig([...matches][0]) : null;
+  if (matches.size === 1) return getEsercizioConfig([...matches][0]);
+  // I vecchi report Jet usano nomi di protocollo (PAT, RT, DAS, MAM...),
+  // non le etichette dei test: applica la stessa classificazione del PDF.
+  if (matches.size === 0 && typeof chiaveStandardDaNomeProtocollo === 'function') {
+    const protocollo = chiaveStandardDaNomeProtocollo(sessione);
+    if (protocollo && TEST_STANDARD_KEYS.includes(protocollo)) return getEsercizioConfig(protocollo);
+  }
+  return null;
 }
 
 function haDatiJet(sessione) {
