@@ -52,27 +52,55 @@ const TEST_RADAR_CONFIG = {
   ],
 };
 
-function radarValoriCampo(sessioni, esercizioKey, campoKey) {
-  const esercizio = getEsercizioConfig(esercizioKey);
-  if (!esercizio) return [];
-  const campo = esercizio.campi.find((x) => x.key === campoKey);
+// Lettura unica e NON distruttiva delle metriche radar: valori canonici e
+// risultati originali JetProgram che il PDF già visualizza nelle sue tabelle.
+// I tempi originali Jet senza suffisso sono secondi; i campi canonici in ms.
+function radarMisureCampo(sessione, testKey, campoKey) {
+  const esercizio = getEsercizioConfig(testKey);
+  const campo = esercizio?.campi.find((x) => x.key === campoKey);
   if (!campo) return [];
+  const dati = sessione?.esercizi?.[testKey];
+  const canonici = [];
+  const aggiungi = (raw) => {
+    if (valoreCampoValido(campo, raw)) canonici.push(Number(raw));
+  };
+  if (dati) {
+    if (esercizio.sottoCondizioni) {
+      esercizio.sottoCondizioni.forEach((sc) => aggiungi(dati[sc.key]?.[campoKey]));
+    } else aggiungi(dati[campoKey]);
+  }
+  if (canonici.length) return canonici;
 
+  const risultati = typeof risultatiOriginaliJet === 'function'
+    ? risultatiOriginaliJet(sessione) : null;
+  if (!risultati || Array.isArray(risultati)) return [];
+  const aliases = typeof aliasesCampoJet === 'function' ? aliasesCampoJet(campo) : [];
+  const normalizza = (v) => typeof jetNome === 'function'
+    ? jetNome(v) : String(v).toLowerCase().replace(/[^a-z0-9]/g,'');
+  // Ogni metrica deve avere un alias esplicito: non si mescolano parametri
+  // omonimi di test diversi e non si interpretano liste grezze come medie.
+  const originali = [];
+  Object.entries(risultati).forEach(([label, raw]) => {
+    const alias = aliases.find((a) => normalizza(a.name) === normalizza(label));
+    if (!alias) return;
+    const n = typeof jetNumero === 'function' ? jetNumero(raw) : Number(raw);
+    if (n === null || !Number.isFinite(n)) return;
+    let valore = n;
+    if (alias.unit === 's' && campo.unit === 'ms') valore *= 1000;
+    if (alias.unit === 'ms' && campo.unit === 's') valore /= 1000;
+    if (valoreCampoValido(campo, valore)) originali.push(valore);
+  });
+  // Rifiuta conversioni ambigue (per esempio due valori incompatibili
+  // associati allo stesso parametro).
+  if (!originali.length || originali.some((v) => v !== originali[0])) return [];
+  return [originali[0]];
+}
+
+function radarValoriCampo(sessioni, esercizioKey, campoKey) {
   const valori = [];
   (sessioni || []).forEach((sessione) => {
-    const dati = sessione.esercizi?.[esercizioKey];
-    if (!dati) return;
-
-    if (esercizio.sottoCondizioni) {
-      esercizio.sottoCondizioni.forEach((sc) => {
-        const raw = dati[sc.key]?.[campoKey];
-        if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
-      });
-      return;
-    }
-
-    const raw = dati[campoKey];
-    if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
+    if (radarChiaveTestSessione(sessione) !== esercizioKey) return;
+    valori.push(...radarMisureCampo(sessione, esercizioKey, campoKey));
   });
   return valori;
 }
@@ -155,41 +183,19 @@ function radarUltimaSessioneTest(sessioni, testKey) {
 
 function radarPunteggioTest(testKey, sessione, tutteSessioni) {
   const config = TEST_RADAR_CONFIG[testKey] || [];
-  const esercizio = getEsercizioConfig(testKey);
-  const dati = sessione?.esercizi?.[testKey];
   const punteggi = [];
-
-  if (esercizio && dati) {
-    config.forEach(({ campo: campoKey, direzione }) => {
-      const campo = esercizio.campi.find((x) => x.key === campoKey);
-      if (!campo) return;
-
-      const valori = [];
-      if (esercizio.sottoCondizioni) {
-        esercizio.sottoCondizioni.forEach((sc) => {
-          const raw = dati[sc.key]?.[campoKey];
-          if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
-        });
-      } else {
-        const raw = dati[campoKey];
-        if (valoreCampoValido(campo, raw)) valori.push(Number(raw));
-      }
-      if (!valori.length) return;
-
-      const distribuzione = radarDistribuzioneCampo(tutteSessioni, testKey, campoKey);
-      valori.forEach((valore) => {
-        const score = radarPercentileValore(valore, distribuzione, direzione);
-        if (score !== null) punteggi.push(score);
-      });
+  config.forEach(({ campo: campoKey, direzione }) => {
+    const valori = radarMisureCampo(sessione, testKey, campoKey);
+    if (!valori.length) return;
+    const distribuzione = radarDistribuzioneCampo(tutteSessioni, testKey, campoKey);
+    valori.forEach((valore) => {
+      const score = radarPercentileValore(valore, distribuzione, direzione);
+      if (score !== null) punteggi.push(score);
     });
-  }
-
-  if (punteggi.length) {
-    return punteggi.reduce((tot, valore) => tot + valore, 0) / punteggi.length;
-  }
-
-  // Se i parametri scelti per il radar non sono presenti, il Test non entra nel radar.
-  return null;
+  });
+  return punteggi.length
+    ? punteggi.reduce((tot, valore) => tot + valore, 0) / punteggi.length
+    : null;
 }
 
 function radarMetricheSelezionate(testKey, sessione) {
