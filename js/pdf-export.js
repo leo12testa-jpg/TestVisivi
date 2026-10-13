@@ -867,9 +867,40 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
 
   async function disegnaSoloRadarAtleta(sessioni) {
     const normalizzaRadar = (s) => typeof normalizzaSessioneJet === 'function' ? normalizzaSessioneJet(s) : s;
-    const radar = radarDatiSintesi(sessioni.map(normalizzaRadar), archivioRadar.map(normalizzaRadar));
+    const sessioniNormalizzate = sessioni.map(normalizzaRadar);
+    const archivioNormalizzato = archivioRadar.map(normalizzaRadar);
+    let radar = radarDatiSintesi(sessioniNormalizzate, archivioNormalizzato);
+    // Secondo percorso di recupero: il PDF sa già a quale tabella appartiene
+    // ciascuna sessione. Se per una sessione storica esiste UNA sola tipologia
+    // certa, applica tale classificazione a una COPIA temporanea per il radar.
+    // Nessuna scrittura o assegnazione artificiale di metriche nel database.
+    const recuperate = sessioni.map((originale, indice) => {
+      const tipi = testKeys.filter((key) => sessioneDelTest(originale, key));
+      const base = sessioniNormalizzate[indice];
+      if (tipi.length !== 1) return base;
+      return { ...base, testStandard: tipi[0], jetProgramStandardKey: tipi[0] };
+    });
+    const sostituzioni = new Map(recuperate.filter(s => s?.id != null)
+      .map(s => [String(s.id), s]));
+    const idsInArchivio = new Set();
+    const archivioRecuperato = archivioNormalizzato.map((s) => {
+      if (s?.id == null) return s;
+      const id = String(s.id);
+      idsInArchivio.add(id);
+      return sostituzioni.get(id) || s;
+    });
+    recuperate.forEach(s => {
+      if (s?.id == null || !idsInArchivio.has(String(s.id))) archivioRecuperato.push(s);
+    });
+    const radarRecuperato = radarDatiSintesi(recuperate, archivioRecuperato);
+    if (radarRecuperato.righe.length > radar.righe.length) radar = radarRecuperato;
     if (!radar.righe.length) {
-      titoloSezione('Radar prestazionale', 'Nessun test con parametri sufficienti per il radar.');
+      const riconosciuti = sessioni.reduce((tot, s) =>
+        tot + testKeys.filter(key => sessioneDelTest(s, key)).length, 0);
+      titoloSezione('Radar prestazionale',
+        riconosciuti
+          ? 'Risultati disponibili, ma nessuna metrica numerica confrontabile riconosciuta per il radar. Verificare gli alias JetProgram.'
+          : 'Nessun protocollo di test riconosciuto per il radar: verificare la classificazione degli storici.');
       return;
     }
     // Riserva spazio per titolo e radar: niente titolo isolato a piè pagina.
