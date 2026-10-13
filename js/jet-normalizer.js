@@ -302,7 +302,8 @@ function nomeTestSessione(sessione) {
   const test = jetTest(sessione);
   if (test) return test.label;
   const compilati = ESERCIZI_CONFIG.filter((e) => esercizioCompilato(e, sessione.esercizi?.[e.key]));
-  if (compilati.length) return compilati.map((e) => e.label).join(' · ');
+  if (compilati.length === 1) return compilati[0].label;
+  if (compilati.length > 1) return 'Test storico da classificare';
 
   const standardDaProtocollo = nomeStandardDaProtocollo(sessione);
   if (standardDaProtocollo) return standardDaProtocollo;
@@ -327,7 +328,8 @@ function nomeStoricoSessione(sessione) {
   const compilati = ESERCIZI_CONFIG.filter((e) =>
     esercizioCompilato(e, sessione?.esercizi?.[e.key])
   );
-  if (compilati.length) return compilati.map((e) => e.label).join(' · ');
+  if (compilati.length === 1) return compilati[0].label;
+  if (compilati.length > 1) return 'Test storico da classificare';
 
   const standardDaProtocollo = nomeStandardDaProtocollo(sessione);
   if (standardDaProtocollo) return standardDaProtocollo;
