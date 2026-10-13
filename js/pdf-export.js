@@ -903,6 +903,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     ]), [77, 23, 47, 33]);
   }
 
+  if (opzioni.senzaCopertina !== true) {
   // Copertina Bologna FC nello stile della preview approvata.
   doc.setFillColor(251,252,254);doc.rect(0,0,pageWidth,pageHeight,'F');
   doc.setFillColor(19,49,78);
@@ -950,11 +951,19 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
   doc.setFont('helvetica','bold');doc.text('Data di generazione',45,255);
   doc.setFont('helvetica','normal');doc.text(formatDataIt(oggiIso()),45,262);
 
+  } else {
+    // Il singolo utilizza le stesse schede/tabelle del multiplo, senza copertina collettiva.
+    // La prima pagina viene sostituita dalla prima scheda atleta più avanti.
+  }
+
   for (let atletaIndex = 0; atletaIndex < selezioniConDati.length; atletaIndex++) {
     const { atleta, sessioni } = selezioniConDati[atletaIndex];
 
     nomeAtletaPagina = nomeCompleto(atleta);
-    paginaNuova(false);
+    if (opzioni.senzaCopertina === true && atletaIndex === 0) {
+      y = 18;
+      atletiPerPagina[doc.getNumberOfPages()] = nomeAtletaPagina;
+    } else paginaNuova(false);
 
     doc.setFillColor(17,47,77);
     doc.rect(0, 0, pageWidth, 32, 'F');
@@ -1130,7 +1139,7 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...C.muted);
-    if (page === 1) {
+    if (page === 1 && opzioni.senzaCopertina !== true) {
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...C.navyDark);
       doc.text('Dott. Tiziano Testa  |  Test Visivi', marginX, footerY);
