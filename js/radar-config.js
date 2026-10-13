@@ -212,10 +212,23 @@ function radarDatiSintesi(sessioniAtleta, tutteSessioni) {
     .filter((s) => isSessioneTest(s) && sessioneHaRisultatiVisibili(s));
 
   const righe = Object.keys(TEST_RADAR_CONFIG).map((testKey) => {
-    const sessione = radarUltimaSessioneTest(testsAtleta, testKey);
+    // Cerca l'ultima sessione effettivamente valutabile: l'ultima in ordine
+    // cronologico potrebbe avere soltanto risultati originali o campi assenti.
+    const candidate = testsAtleta
+      .filter((sessione) => radarChiaveTestSessione(sessione) === testKey)
+      .sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')) ||
+        String(b.updatedAt || b.createdAt || '').localeCompare(String(a.updatedAt || a.createdAt || '')));
+    let sessione = null;
+    let valore = null;
+    for (const candidata of candidate) {
+      const score = radarPunteggioTest(testKey, candidata, testsGlobali);
+      if (score !== null && Number.isFinite(score)) {
+        sessione = candidata;
+        valore = score;
+        break;
+      }
+    }
     if (!sessione) return null;
-    const valore = radarPunteggioTest(testKey, sessione, testsGlobali);
-    if (valore === null) return null;
 
     const score = Math.round(valore);
     return {
