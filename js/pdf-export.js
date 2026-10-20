@@ -903,16 +903,75 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
           : 'Nessun protocollo di test riconosciuto per il radar: verificare la classificazione degli storici.');
       return;
     }
-    // Riserva spazio per titolo e radar: niente titolo isolato a piè pagina.
+    // Confronto per ciascun test: prima e ultima valutazione valida in date diverse.
+    // Il punteggio usa sempre le misure reali e la stessa distribuzione di riferimento.
+    const valoriPerTest = new Map(radar.righe.map((r) => [r.key, []]));
+    if (typeof radarPunteggioTest === 'function') {
+      recuperate.forEach((sessione, indice) => {
+        const tipi = testKeys.filter((key) => sessioneDelTest(sessioni[indice], key));
+        const key = tipi.length === 1
+          ? tipi[0]
+          : (typeof radarChiaveTestSessione === 'function' ? radarChiaveTestSessione(sessione) : null);
+        if (!valoriPerTest.has(key)) return;
+        const data = String(sessione.data || '').slice(0, 10);
+        if (!data) return;
+        const score = radarPunteggioTest(key, sessione, archivioRecuperato);
+        if (score === null || !Number.isFinite(score)) return;
+        valoriPerTest.get(key).push({
+          data,
+          score: Math.round(score),
+          updatedAt: String(sessione.updatedAt || sessione.createdAt || ''),
+          order: indice,
+        });
+      });
+    }
+    const confrontoPerTest = new Map();
+    valoriPerTest.forEach((valori, key) => {
+      valori.sort((a, b) =>
+        a.data.localeCompare(b.data) ||
+        a.updatedAt.localeCompare(b.updatedAt) ||
+        a.order - b.order
+      );
+      // Se ci sono più registrazioni dello stesso test nello stesso giorno,
+      // conserva l'ultima valida di quel giorno; non crea punti duplicati.
+      const perData = new Map();
+      valori.forEach((valore) => perData.set(valore.data, valore));
+      confrontoPerTest.set(key, [...perData.values()].sort((a, b) => a.data.localeCompare(b.data)));
+    });
+    const hasComparisons = [...confrontoPerTest.values()].some((valori) => valori.length >= 2);
+    const datasetRadar = hasComparisons
+      ? [
+          {
+            label: 'Prima valutazione',
+            data: radar.righe.map((r) => {
+              const valori = confrontoPerTest.get(r.key) || [];
+              return valori.length >= 2 ? valori[0].score : null;
+            }),
+          },
+          {
+            label: 'Ultima valutazione',
+            data: radar.righe.map((r) => {
+              const valori = confrontoPerTest.get(r.key) || [];
+              return valori.length ? valori[valori.length - 1].score : null;
+            }),
+          },
+        ]
+      : [{ label: 'Valutazione disponibile', data: radar.righe.map((r) => r.valore) }];
+
+    // Riserva spazio per titolo e grafico: niente titolo isolato a piè pagina.
     const radarW = Math.min(usableWidth, 128);
     const radarH = radarW * 850 / 1100;
-    if (radar.righe.length >= 3 && y + radarH + 35 > footerY - 5) paginaNuova();
-    titoloSezione('Radar prestazionale',
-      'Ultima valutazione valida di ogni Test nel periodo. Indice relativo all’archivio (0-100), non una soglia clinica.');
+    if (radar.righe.length >= 3 && y + radarH + 42 > footerY - 5) paginaNuova();
+    titoloSezione(
+      hasComparisons ? 'Radar comparativo delle prestazioni' : 'Radar prestazionale',
+      hasComparisons
+        ? 'I due colori confrontano la prima e l’ultima valutazione valida di ciascun test nel periodo. I test svolti una sola volta compaiono solo nell’ultima serie.'
+        : 'Ultima valutazione valida di ogni Test nel periodo. Indice relativo all’archivio (0-100), non una soglia clinica.'
+    );
     if (radar.righe.length >= 3) {
       const config = radarChartConfig(
         radar.righe.map((r) => r.nome),
-        [{ label: 'Profilo test', data: radar.righe.map((r) => r.valore) }],
+        datasetRadar,
         null
       );
       const png = await renderChartOffscreen(config, 1100, 850);
@@ -929,9 +988,32 @@ async function esportaReportMultiploPdf(selezioniRaw, opzioni = {}) {
       doc.text('Meno di tre test valutabili: impossibile formare un poligono radar.', marginX, y);
       y += 7;
     }
-    disegnaTabella(['Test eseguito', 'Indice', 'Valutazione', 'Data'], radar.righe.map((r) => [
-      r.nome, r.valore + '/100', r.livello || radarLivello(r.valore) || '-', r.data ? formatDataIt(r.data) : '-'
-    ]), [77, 23, 47, 33]);
+
+    if (hasComparisons) {
+      const righeConfronto = radar.righe.map((r) => {
+        const valori = confrontoPerTest.get(r.key) || [];
+        const prima = valori.length >= 2 ? valori[0] : null;
+        const ultima = valori.length ? valori[valori.length - 1] : null;
+        const delta = prima && ultima ? ultima.score - prima.score : null;
+        return [
+          r.nome,
+          prima ? formatDataIt(prima.data) : '-',
+          prima ? prima.score + '/100' : '-',
+          ultima ? formatDataIt(ultima.data) : '-',
+          ultima ? ultima.score + '/100' : '-',
+          delta === null ? '-' : (delta > 0 ? '+' : '') + delta,
+        ];
+      });
+      disegnaTabella(
+        ['Test', 'Prima data', 'Indice iniziale', 'Ultima data', 'Indice finale', 'Variazione'],
+        righeConfronto,
+        [38, 27, 23, 27, 23, usableWidth - 138]
+      );
+    } else {
+      disegnaTabella(['Test eseguito', 'Indice', 'Valutazione', 'Data'], radar.righe.map((r) => [
+        r.nome, r.valore + '/100', r.livello || radarLivello(r.valore) || '-', r.data ? formatDataIt(r.data) : '-'
+      ]), [77, 23, 47, 33]);
+    }
   }
 
   if (opzioni.senzaCopertina !== true) {
