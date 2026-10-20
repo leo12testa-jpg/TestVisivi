@@ -256,8 +256,9 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
           angleLines: { color: chrome.grid },
           grid: { color: chrome.grid },
           pointLabels: {
-            color: chrome.text,
-            font: { size: 12, weight: '600' },
+            // Contrasto alto per anteprima/stampa PDF: nomi dei test sempre neri.
+            color: '#000000',
+            font: { size: 12, weight: '700' },
             callback: (label) => {
               const parole = String(label || '').split(/\s+/);
               const righe = [];
@@ -275,7 +276,14 @@ function radarChartConfig(labels, datasetsRaw, tooltipTestNames) {
               return righe;
             },
           },
-          ticks: { color: chrome.muted, backdropColor: 'transparent', stepSize: 25, showLabelBackdrop: false },
+          // Valori radiali 25/50/75/100 neri e ben leggibili anche in stampa.
+          ticks: {
+            color: '#000000',
+            backdropColor: 'transparent',
+            stepSize: 25,
+            showLabelBackdrop: false,
+            font: { size: 11, weight: '700' },
+          },
         },
       },
     },
