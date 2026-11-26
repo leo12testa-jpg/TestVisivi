@@ -20,3 +20,6 @@ Use synthetic file only for browser test. Try unauthenticated, missing athlete, 
 3. Secure authenticated cross-project bridge only after agreed ownership and source data flow. No service account key in public frontend, no anonymous writes, no plan change. Use manual import for initial pilot only after rules review, explicit operator verification and consent/privacy assessment, especially for minors.
 4. Verify current app shell/PWA update strategy and actual desktop/iPad/browser behavior. No patient data in offline caches without reviewed device policy.
 5. Keep existing TestVisivi live and the NeuroVision SEQ-01 deploy separate. Only merge/publish after local review.
+
+## Local history preview extension
+Added js/neurovision-history.mjs and tests/neurovision-history.test.mjs. Multiple operator-confirmed imports may be compared in memory (up to 100). Exact duplicates are ignored; conflicts are rejected. Test/training and different recorded configurations are separated. Descriptive first/last differences are shown only for test sessions with identical recorded protocol and trial count; physical timing/display equivalence is not proven. Nothing persists, and page exit or logout clears the preview. 10 synthetic logic checks passed; browser and Node test suite still pending. Run node --test tests/neurovision-archive.test.mjs tests/neurovision-history.test.mjs.
