@@ -1,3 +1,5 @@
+import {normalizeDevice} from './neurovision-device.mjs';
+
 function nvObject(v,label){if(!v||typeof v!=='object'||Array.isArray(v))throw Error(label+' non valido');return v}
 
 function nvNum(v,min,max,label,integer=false){if(!Number.isFinite(v)||v<min||v>max||(integer&&!Number.isSafeInteger(v)))throw Error(label+' non valido');return v}
@@ -24,8 +26,22 @@ function nvNormalizeSequential(raw){
  const scored=rows.filter(r=>!r.practice),practice=rows.length-scored.length;
  if(test){if(practice!==55||scored.length!==110)throw Error('Test incompleto');for(let d=-15;d<=15;d+=3)if(scored.filter(r=>r.delta===d).length!==10)throw Error('Distribuzione Test incoerente')}
  else if(practice!==0||scored.length!==c.count||scored.length<10||scored.some(r=>r.delta===0))throw Error('Training incompleto');
+ const sourceSessionId=raw.sessionId==null?null:nvKey(raw.sessionId);
+ let device=null,deviceQuality=null;
+ if(raw.device!=null){
+ const candidate=normalizeDevice(raw.device);
+ if(candidate.distanceCm!==config.distance)throw Error('Distanza postazione incoerente');
+ // A manually imported JSON is not authenticated physical timing evidence.
+ device=normalizeDevice({...candidate,timingCheck:'unverified',timingEvidenceId:null});
+ const q=nvObject(raw.deviceQuality,'Qualità sessione');
+ if(typeof q.geometryChanged!=='boolean'||typeof q.visibilityInterrupted!=='boolean')throw Error('Flag qualità non validi');
+ const acceptedResponses=nvNum(q.acceptedResponses,0,200,'risposte rilevate',true),unrecognizedResponses=nvNum(q.unrecognizedResponses,0,acceptedResponses,'input non rilevati',true);
+ if(acceptedResponses!==rows.length||(unrecognizedResponses>0&&device.input!=='unknown'))throw Error('Conteggi input incoerenti');
+ deviceQuality={geometryChanged:q.geometryChanged,visibilityInterrupted:q.visibilityInterrupted,acceptedResponses,unrecognizedResponses};
+ if(q.geometryChanged||q.visibilityInterrupted)device=normalizeDevice({...device,calibration:q.geometryChanged?'unconfirmed':device.calibration,frameCadenceHz:null});
+ }
  const valid=scored.filter(r=>r.correct!==null),hits=valid.filter(r=>r.correct),jnd=test&&raw.model?nvNum(raw.model.jnd,.000001,180,'JND'):null,pse=test&&raw.model?nvNum(raw.model.mu,-180,180,'PSE'):null;
- return {schema:'nv.manual-review.v1',source:'neurovision',exerciseId:'gabor-sequential',mode,startedAt,completedAt,validation:'experimental',provenance:'operator_import_unverified',protocol:config,trials:{completed:scored.length,scored:valid.length,correct:hits.length,timeouts:0},metrics:{accuracyPercent:valid.length?Math.round(hits.length/valid.length*10000)/100:null,medianCorrectMs:nvMedian(hits.map(r=>r.rtMs)),jndDegrees:jnd,pseDegrees:pse},fingerprintInput:{startedAt,completedAt,mode,config,rows}};
+ return {schema:'nv.manual-review.v1',source:'neurovision',exerciseId:'gabor-sequential',mode,startedAt,completedAt,validation:'experimental',provenance:'operator_import_unverified',sourceSessionId,device,deviceQuality,protocol:config,trials:{completed:scored.length,scored:valid.length,correct:hits.length,timeouts:0},metrics:{accuracyPercent:valid.length?Math.round(hits.length/valid.length*10000)/100:null,medianCorrectMs:nvMedian(hits.map(r=>r.rtMs)),jndDegrees:jnd,pseDegrees:pse},fingerprintInput:{startedAt,completedAt,mode,config,rows}};
 }
 
 async function nvPrepareManualImport(raw,athleteId,digest){
