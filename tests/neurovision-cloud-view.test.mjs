@@ -1,0 +1,9 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {renderCloudArchive} from '../js/neurovision-cloud-view.mjs';
+function dom(){const doc={createElement(tag){return {tag,style:{},textContent:'',children:[],append(...children){this.children.push(...children)},replaceChildren(...children){this.children=children}}}};return {doc,root:doc.createElement('main')}}
+const textOf=n=>[n.textContent,...n.children.flatMap(c=>textOf(c))];
+test('view separates test/training and shows device, reviewed profile and stale plan',()=>{
+ const {doc,root}=dom(),row={completedAt:'2026-11-27T06:00:00.000Z',protocolVersion:'v1',revision:2,device:{profileId:'synthetic-55',revision:1},metrics:{accuracyPercent:80,medianCorrectMs:320,jndDegrees:4},trials:{completed:110}};
+ const archive={groups:[{mode:'test',exerciseId:'seq',deviceLabel:'Monitor touch 55″ · Touch',comparisonAllowed:true,rows:[row]},{mode:'training',exerciseId:'gabor',deviceLabel:'Computer · Mouse',comparisonAllowed:false,rows:[row]}],profiles:[{id:'profile',sourceOwnerId:'owner',revision:1,reviewState:'reviewed',areas:[{skillId:'orientation',sessionRevision:1,priority:'train'}]}],plans:[{id:'plan',sourceOwnerId:'owner',revision:1,status:'assigned',items:[{skillId:'orientation',exerciseId:'gabor',durationSeconds:600,protocolVersion:'v1'}]}],staleProfiles:[{sourceOwnerId:'owner',id:'profile'}],stalePlans:[{sourceOwnerId:'owner',id:'plan'}],voided:[]};
+ renderCloudArchive(root,archive,doc);const t=textOf(root).join(' ');for(const s of ['Test standardizzati','Training','Monitor touch 55″ · Touch','Computer · Mouse','80.0 %','Da riesaminare','Allenamento prioritario','600 s'])assert.ok(t.includes(s));
+});
+test('empty archive has no misleading comparison',()=>{let {doc,root}=dom();renderCloudArchive(root,{groups:[],profiles:[],plans:[],voided:[],staleProfiles:[],stalePlans:[]},doc);assert.ok(textOf(root).join(' ').includes('0 sessioni valide'))});
