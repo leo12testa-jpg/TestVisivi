@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {projectArchive} from '../js/neurovision-projected-archive.mjs';
+const device={schema:'nv.device.v1',profileId:'station-55',revision:1,category:'large_touch',input:'touch',screenWidthMm:1218,screenHeightMm:685,viewportWidthPx:1920,viewportHeightPx:1080,pixelRatio:1,distanceCm:60,frameCadenceHz:60,browserBuild:'chromium-1',osBuild:'windows-1',calibration:'confirmed',timingCheck:'physical_verified',timingEvidenceId:'measurement-1'};
+const time='2026-11-27T06:00:00.000Z';
+const raw={schema:'nv.result.v1',sessionId:'s1',exerciseId:'seq',mode:'test',completedAt:time,protocolVersion:'v1',protocolHash:'a'.repeat(64),validation:'experimental',trials:{completed:110,scored:100,correct:80,timeouts:0},metrics:{medianCorrectMs:400,jndDegrees:4,pseDegrees:0}};
+
+const base={schema:'nv.sync-event.v1',sourceOwnerId:'nv-owner',sourceAthleteId:'nv-person',atletaId:'tv-person',revision:1};
+const session=(id,d=device,state='completed')=>({...base,kind:'session',aggregateId:id,payload:{result:{...raw,source:'neurovision',sessionId:id},device:d,state,reasonCode:state==='voided'?'invalid_measurement':null}});
+const profile={...base,kind:'profile',aggregateId:'assessment',payload:{reviewState:'reviewed',areas:[{skillId:'orientation',sessionId:'s1',sessionRevision:1,priority:'train'}]}};
+const plan={...base,kind:'training_plan',aggregateId:'plan',payload:{profileId:'assessment',profileRevision:1,status:'assigned',items:[]}};
+test('same workstation grouped; different input, unverified and voided separate',()=>{let r=projectArchive([session('s1'),session('s2'),session('s3',{...device,input:'mouse'}),session('s4',{...device,timingCheck:'unverified',timingEvidenceId:null}),session('s5',device,'voided')],'tv-person');assert.equal(r.groups.length,3);assert.equal(r.groups[0].rows.length,2);assert.equal(r.groups[2].comparisonAllowed,false);assert.equal(r.voided.length,1)});
+test('corrected session makes its reviewed profile and dependent plan stale',()=>{let a=projectArchive([session('s1'),profile,plan],'tv-person');assert.equal(a.staleProfiles.length,0);assert.equal(a.stalePlans.length,0);let b=projectArchive([{...session('s1'),revision:2},profile,plan],'tv-person');assert.equal(b.staleProfiles.length,1);assert.equal(b.stalePlans.length,1)});
+test('cross-athlete and duplicate projections refused',()=>{assert.throws(()=>projectArchive([session('s1')],'other'));assert.throws(()=>projectArchive([session('s1'),session('s1')],'tv-person'))});

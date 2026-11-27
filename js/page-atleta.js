@@ -358,6 +358,8 @@ async function init() {
     qs('#nome-atleta').textContent = nomeCompleto(_atleta);
     document.title = `${nomeCompleto(_atleta)} - Test Visivi`;
     qs('#link-grafici').href = `./grafici.html?id=${atletaId}`;
+    const nvArchiveLink=qs('#link-neurovision-archive');
+    if(nvArchiveLink){nvArchiveLink.href='./neurovision-archive.html?id='+encodeURIComponent(atletaId);nvArchiveLink.hidden=false;}
     qs('#link-radar').href = `./radar.html?id=${atletaId}`;
     qs('#link-tutte-sessioni').href = `./sessioni.html?atletaId=${atletaId}&tipo=test`;
     qs('#link-training-storico').href = `./sessioni.html?atletaId=${atletaId}&tipo=training`;

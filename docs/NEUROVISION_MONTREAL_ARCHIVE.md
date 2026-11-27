@@ -1,0 +1,59 @@
+# TestVisivi – NeuroVision, Montreal pilot
+Draft only. No Firebase changes or data imported. Public source repository: no real athlete data or private credentials may be committed.
+
+## Delivered
+- Athlete page contains a separate NeuroVision section linking to neurovision-archive.html?id=existingAthleteId.
+- Authenticated preview reads the existing athlete through dbGetAtleta under the signed-in user. File stays in memory; no uploads, no new Firestore reads beyond the existing athlete record, no writes. Preview clears on sign-out or leaving the page.
+- Current parser supports the SEQ-01 JSON contract from the NeuroVision PR #88/#89. Check the actual local build export after deployment; do not assume the release modified by Codex has exactly the same fields.
+- Import validates mode, counts, order/orientations, correctness and calibration fields; calculates accuracy and median from attempts. JND/PSE are copied from source, not independently fitted. The original source, participant identity, and clinical validity cannot be verified from an uploaded JSON. Explicit operator association is not automatic verification.
+- SHA-256 fingerprint of canonical selected source configuration, timestamps and trials; exact retries deduplicate across selected athletes within one owner. Different/re-exported content may not deduplicate. A trusted source-generated stable session ID is required for automatic sync.
+- Separate manual-import schema nv.manual-review.v1. It is not the authenticated nv.result.v1 transfer schema in NeuroVision PR #90. Both should eventually be adapted to a common read model with provenance retained.
+- Disabled Firestore adapter with transaction create-or-compare. Nothing in UI calls it. NOT security enforcement by itself.
+
+## Test locally
+node --test tests/neurovision-archive.test.mjs
+Use synthetic file only for browser test. Try unauthenticated, missing athlete, account switch while reading file, invalid JSON, file over 2 MB, duplicate and standard test/training. 9 preliminary JS checks executed on synthetic data; Node, browser and Firebase emulator tests are pending.
+
+## Release blockers
+1. Retrieve actual deployed rules for TestVisivi project and audit owner-specific access. No rules file found at repository root; do not replace deployed rules with a guessed ruleset. Add reviewed, emulator-tested rules for users/{uid}/neurovisionResults/{id}: owner-only reads/writes, schema and athlete existence checks, immutable create-only policy, safe owner-authorized deletion/retention. Deny cross-user, anonymous and unexpected fields. Do not deploy other rule changes.
+2. Integrate results listing by athlete, Test/Training filter, comparison by compatible protocol, export and backup. Existing JET readers/normalizers must not ingest this collection. Existing athlete delete and duplicate merge functions must account for NeuroVision results first; define safe deletion/migration and test recovery before enabling writes.
+3. Secure authenticated cross-project bridge only after agreed ownership and source data flow. No service account key in public frontend, no anonymous writes, no plan change. Use manual import for initial pilot only after rules review, explicit operator verification and consent/privacy assessment, especially for minors.
+4. Verify current app shell/PWA update strategy and actual desktop/iPad/browser behavior. No patient data in offline caches without reviewed device policy.
+5. Keep existing TestVisivi live and the NeuroVision SEQ-01 deploy separate. Only merge/publish after local review.
+
+## Local history preview extension
+Added js/neurovision-history.mjs and tests/neurovision-history.test.mjs. Multiple operator-confirmed imports may be compared in memory (up to 100). Exact duplicates are ignored; conflicts are rejected. Test/training and different recorded configurations are separated. Descriptive first/last differences are shown only for test sessions with identical recorded protocol and trial count; physical timing/display equivalence is not proven. Nothing persists, and page exit or logout clears the preview. 10 synthetic logic checks passed; browser and Node test suite still pending. Run node --test tests/neurovision-archive.test.mjs tests/neurovision-history.test.mjs.
+
+## 27 November update — device-aware central archive
+Supersedes earlier local retest comparison: all old imports without original device metadata are view-only; automatic deltas disabled. New shared js/neurovision-device.mjs and js/neurovision-projected-archive.mjs support strict verified-device grouping, separate modes, reviewed-profile and plan references, corrections and voids, stale-review detection. 10 projected-archive logic checks passed in JS. Actual authorized Firestore reads, event writes and UI integration pending. The central archive is for all participants, not only Montreal. See the private NeuroVision PR #90 architecture document for owner-scoped synchronization and release gates. Do not insert real data or secrets in this public source repository.
+
+## 27 November — cloud archive reader and view
+The new js/neurovision-cloud-reader.mjs is owner-scoped, checks the athlete exists, requests server reads only, rejects cache/pending writes, refuses changed auth and oversized results rather than displaying incomplete data. js/neurovision-cloud-view.mjs renders Test vs Training, device/position, protocol and revision, metrics, profiles, programs and stale-review flags. The existing athlete archive page is wired to both, but CLOUD_ARCHIVE_ENABLED is false until rule review and end-to-end testing. No user/URL can activate it. Clears on logout/page exit. No data loaded from the new collections in production. 4 mocked reader and 2 mocked renderer tests passed; run node --test tests/neurovision-cloud-reader.test.mjs tests/neurovision-cloud-view.test.mjs and verify on real browser/emulator. The reader is not a security boundary: actual deployed rules must enforce owner-only access and deny browser writes to trusted projections and event history, with approved grant management and deletion/export lifecycle. Actual cloud sync is not yet operating.
+
+## SEQ-01 workstation export compatibility
+Manual preview now recognizes device metadata, session identifier and input quality from the draft SEQ-01 JSON export, groups results by recorded workstation/input, and labels older files as undocumented. Manual imports cannot certify physical timing even when a file claims verification. No manual automatic retest comparison or cloud write is enabled. Mock end-to-end import checks passed; verify against the actual locally released SEQ-01 export and run Node/browser tests before publishing.
+
+## Actual deployed rules received — 27 November 2026
+User confirmed TestVisivi Spark and supplied the published rule text: authenticated owner can read/write any document under users/{uid}/{document=**}. This validates existing owner isolation but allows direct modification of every prospective NeuroVision archive collection. Adding a deny-only match alongside the old recursive allow is insufficient (overlapping grants are ORed).
+security/firestore.owner-baseline.rules records the supplied baseline (no identities or secrets). security/firestore.neurovision-candidate.rules is a least-change replacement candidate: preserve owner document and all non-reserved collections; explicitly exclude neurovisionCurrent, neurovisionEvents, neurovisionLinks, neurovisionResults and descendants from the generic grant; allow owner current projection reads only while the referenced athlete exists. Existing db.js collections atleti/sessioni/squadre are unchanged. Historical events, links and legacy import writer paths remain blocked for browsers. The previous manual writer must stay disabled.
+Exact candidate mirrored in private NeuroVision PR #90 for emulator tests. Production rules have NOT changed. Existing athlete delete/merge/export/restore behavior still needs lifecycle integration before real synchronized data is written: denying reads after athlete deletion is not erasure of stored history; old clients may continue deleting people. No production service privileges or billing changes authorized. Verify deployed rules have not changed before future release, maintain rollback copy, and test existing app flows.
+
+## Candidate compatibility test result
+User reported 1/1 isolated Firestore emulator regression passed on NeuroVision 411dd688722985b0e3fb8e1f7bd7aca82c16eefb. Owner CRUD and queries on legacy paths preserved; reserved write and cross-owner/anonymous access denied; deleted person no longer readable via projection. No production deploy. Candidate remains pending full app/lifecycle audit, source authorization and actual worker runtime. No real history introduced.
+
+## Collaudo del flusso SEQ-01 e integrazione operativa
+
+Il collaudo approvato ha aperto la pagina archivio di questo branch in Chromium,
+con dati sintetici e Firestore Emulator. Il worker ha consegnato la sessione
+SEQ-01 e la pagina ha mostrato una riga di training. La revoca ha rimosso la
+proiezione corrente e bloccato una consegna in attesa. Lo storico protetto
+è rimasto disponibile al backend dopo la cancellazione dell’atleta sintetico.
+
+Il flag cloud è stato abilitato nella sola risposta del server di collaudo.
+Il codice della pagina e le regole candidate restano invariati. La cancellazione
+ordinaria in dbDeleteAtleta elimina le sessioni TestVisivi e il documento atleta.
+Prima di abilitare l’archivio cloud, integrare quella operazione con la revoca
+server-side e con la gestione autorizzata delle copie NeuroVision. Definire
+esplicitamente quali copie cancellare, quali conservare e per quanto tempo,
+inclusi backup ed esportazioni. Un token di un titolare autentica l’account,
+mentre il consenso richiede una ricevuta distinta collegata alle due anagrafiche.
