@@ -1,0 +1,35 @@
+// REVIEW CANDIDATE ONLY — not deployed. Based on owner-supplied deployed rules, 2026-11-27.
+// Preserve legacy owner access except the explicitly reserved NeuroVision collections.
+// Do not add a recursive owner allow over /users/{uid}/{document=**}: grants are ORed.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function own(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+    function reserved(collectionId) {
+      return collectionId in [
+        'neurovisionCurrent',
+        'neurovisionEvents',
+        'neurovisionLinks',
+        'neurovisionResults'
+      ];
+    }
+    match /users/{uid} {
+      // Preserve original zero-segment recursive match on the owner document.
+      allow read, write: if own(uid);
+    }
+    match /users/{uid}/{collectionId}/{document=**} {
+      // Retain original behavior for all existing non-reserved collections.
+      allow read, write: if own(uid) && !reserved(collectionId);
+    }
+    match /users/{uid}/neurovisionCurrent/{aggregateId} {
+      allow read: if own(uid) && resource.data.atletaId is string
+        && exists(/databases/$(database)/documents/users/$(uid)/atleti/$(resource.data.atletaId));
+      allow write: if false;
+    }
+    // Historical events, linking records, legacy import destination, and
+    // all descendants of the reserved collections are default-denied.
+    // Trusted backend must enforce its own authorization (Admin SDK bypasses rules).
+  }
+}
