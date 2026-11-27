@@ -40,3 +40,20 @@ Exact candidate mirrored in private NeuroVision PR #90 for emulator tests. Produ
 
 ## Candidate compatibility test result
 User reported 1/1 isolated Firestore emulator regression passed on NeuroVision 411dd688722985b0e3fb8e1f7bd7aca82c16eefb. Owner CRUD and queries on legacy paths preserved; reserved write and cross-owner/anonymous access denied; deleted person no longer readable via projection. No production deploy. Candidate remains pending full app/lifecycle audit, source authorization and actual worker runtime. No real history introduced.
+
+## Collaudo del flusso SEQ-01 e integrazione operativa
+
+Il collaudo approvato ha aperto la pagina archivio di questo branch in Chromium,
+con dati sintetici e Firestore Emulator. Il worker ha consegnato la sessione
+SEQ-01 e la pagina ha mostrato una riga di training. La revoca ha rimosso la
+proiezione corrente e bloccato una consegna in attesa. Lo storico protetto
+è rimasto disponibile al backend dopo la cancellazione dell’atleta sintetico.
+
+Il flag cloud è stato abilitato nella sola risposta del server di collaudo.
+Il codice della pagina e le regole candidate restano invariati. La cancellazione
+ordinaria in dbDeleteAtleta elimina le sessioni TestVisivi e il documento atleta.
+Prima di abilitare l’archivio cloud, integrare quella operazione con la revoca
+server-side e con la gestione autorizzata delle copie NeuroVision. Definire
+esplicitamente quali copie cancellare, quali conservare e per quanto tempo,
+inclusi backup ed esportazioni. Un token di un titolare autentica l’account,
+mentre il consenso richiede una ricevuta distinta collegata alle due anagrafiche.
