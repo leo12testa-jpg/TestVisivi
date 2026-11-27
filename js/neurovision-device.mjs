@@ -13,7 +13,7 @@ function nvCanonical(v){if(v===null||typeof v!=='object')return JSON.stringify(v
 function normalizeDevice(raw){
  nvExact(raw,['schema','profileId','revision','category','input','screenWidthMm','screenHeightMm','viewportWidthPx','viewportHeightPx','pixelRatio','distanceCm','frameCadenceHz','browserBuild','osBuild','calibration','timingCheck','timingEvidenceId']);
  if(raw.schema!=='nv.device.v1')throw Error('Schema dispositivo non riconosciuto');
- const category=nvChoice(raw.category,['ipad','large_touch','computer','other']),input=nvChoice(raw.input,['touch','mouse','keyboard','pen','mixed']);
+ const category=nvChoice(raw.category,['ipad','large_touch','computer','other']),input=nvChoice(raw.input,['touch','mouse','keyboard','pen','mixed','unknown']);
  const calibration=nvChoice(raw.calibration,['confirmed','unconfirmed']),timingCheck=nvChoice(raw.timingCheck,['physical_verified','unverified']);
  const nullable=(v,min,max)=>v===null?null:nvNumber(v,min,max);
  const screenWidthMm=nullable(raw.screenWidthMm,40,3000),screenHeightMm=nullable(raw.screenHeightMm,40,3000),distanceCm=nullable(raw.distanceCm,15,300);
@@ -25,7 +25,7 @@ function normalizeDevice(raw){
 
 function deviceLabel(raw){
  if(raw==null)return 'Dispositivo non documentato';
- const d=normalizeDevice(raw),names={ipad:'iPad',large_touch:'Monitor touch',computer:'Computer',other:'Altra postazione'},inputs={touch:'Touch',mouse:'Mouse',keyboard:'Tastiera',pen:'Penna',mixed:'Input misto'};
+ const d=normalizeDevice(raw),names={ipad:'iPad',large_touch:'Monitor touch',computer:'Computer',other:'Altra postazione'},inputs={touch:'Touch',mouse:'Mouse',keyboard:'Tastiera',pen:'Penna',mixed:'Input misto',unknown:'Input non rilevato'};
  const inch=d.screenWidthMm&&d.screenHeightMm?Math.round(Math.hypot(d.screenWidthMm,d.screenHeightMm)/25.4):null;
  return names[d.category]+(inch?' '+inch+'″':'')+' · '+inputs[d.input];
 }
@@ -33,7 +33,7 @@ function deviceLabel(raw){
 function comparisonKey(result){
  if(!result||!result.device||result.mode!=='test')return null;
  const d=normalizeDevice(result.device);
- if(d.calibration!=='confirmed'||d.timingCheck!=='physical_verified'||d.frameCadenceHz===null||d.input==='mixed')return null;
+ if(d.calibration!=='confirmed'||d.timingCheck!=='physical_verified'||d.frameCadenceHz===null||['mixed','unknown'].includes(d.input))return null;
  if(typeof result.protocolHash!=='string'||!/^[a-f0-9]{64}$/.test(result.protocolHash))return null;
  return nvCanonical({exerciseId:nvId(result.exerciseId),protocolVersion:nvId(result.protocolVersion),protocolHash:result.protocolHash,device:d,mode:'test'});
 }
