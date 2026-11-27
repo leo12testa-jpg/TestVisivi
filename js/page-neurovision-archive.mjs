@@ -18,7 +18,7 @@ async function review(){
  $('nv-date').textContent=new Date(d.completedAt).toLocaleString('it-IT');
  $('nv-metrics').append(metric('Accuratezza',fmt(m.accuracyPercent,'%')),metric('Mediana RT corrette',fmt(m.medianCorrectMs,'ms',0)),metric('JND',fmt(m.jndDegrees,'°',2)),metric('PSE',fmt(m.pseDegrees,'°',2)));
  $('nv-counts').textContent=t.completed+' prove completate · '+t.scored+' valutabili · '+t.correct+' corrette.';
- $('nv-protocol').textContent='Protocollo v'+d.protocol.version+' · '+d.protocol.exposure+' ms · '+d.protocol.spatialFrequency+' cicli/grado · distanza '+d.protocol.distance+' cm.';
+ $('nv-protocol').textContent='Dispositivo non documentato · Protocollo v'+d.protocol.version+' · '+d.protocol.exposure+' ms · '+d.protocol.spatialFrequency+' cicli/grado · distanza '+d.protocol.distance+' cm.';
  $('nv-status').textContent='Formato e conteggi verificati. Associazione proposta all’atleta selezionato, non ancora salvata.';
  selected=prepared;$('nv-review').hidden=false;
  }catch(e){if(ticket===generation)$('nv-status').textContent='Importazione non valida: '+(e instanceof SyntaxError?'JSON non leggibile.':e.message)}
@@ -29,13 +29,13 @@ function renderHistory(groups){
  const root=$('nv-history');root.replaceChildren();
  for(const group of groups){
  const section=document.createElement('section'),title=node('h3',group.exerciseId+' · '+(group.mode==='test'?'Test':'Training')+' · '+group.rows.length+' sessioni');
- section.append(title,node('p','Protocollo v'+group.protocol.version+' · '+group.completedTrials+' prove · '+group.protocol.distance+' cm · '+group.protocol.exposure+' ms'));
+ section.append(title,node('p','Dispositivo non documentato · Protocollo v'+group.protocol.version+' · '+group.completedTrials+' prove · '+group.protocol.distance+' cm · '+group.protocol.exposure+' ms'));
  const scroll=document.createElement('div');scroll.style.overflowX='auto';const table=document.createElement('table'),head=document.createElement('thead'),header=document.createElement('tr');
  for(const label of ['Data','Accuratezza','Mediana RT','JND','PSE']){const th=node('th',label);th.scope='col';header.append(th)}head.append(header);table.append(head);
  const body=document.createElement('tbody');
  for(const r of group.rows){const tr=document.createElement('tr');for(const v of [new Date(r.completedAt).toLocaleString('it-IT'),fmt(r.metrics.accuracyPercent,'%'),fmt(r.metrics.medianCorrectMs,'ms',0),fmt(r.metrics.jndDegrees,'°',2),fmt(r.metrics.pseDegrees,'°',2)])tr.append(node('td',v));body.append(tr)}table.append(body);scroll.append(table);section.append(scroll);
  const change=historyCompare(group);if(change){const signed=(v,unit)=>v===null?'n.d.':(v>0?'+':'')+v+' '+unit;section.append(node('p','Variazione descrittiva prima–ultima: accuratezza '+signed(change.accuracyPercentagePoints,'p.p.')+' · RT '+signed(change.medianCorrectMs,'ms')+' · JND '+signed(change.jndDegrees,'°')+'.'))}
- else section.append(node('p',group.mode==='training'?'Training: risultati riportati senza confronto psicometrico.':'Servono due test con date diverse per il confronto.'));
+ else section.append(node('p',group.mode==='training'?'Training: risultati riportati senza confronto psicometrico.':'Confronto disabilitato: dispositivo e input originali non documentati.'));
  root.append(section)
  }
 }
