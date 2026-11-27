@@ -1,10 +1,15 @@
 import {nvPrepareManualImport} from './neurovision-archive.mjs';
 import {historyGroups,historyCompare} from './neurovision-history.mjs';
+import {createCloudArchiveReader} from './neurovision-cloud-reader.mjs';
+import {renderCloudArchive} from './neurovision-cloud-view.mjs';
+// Release gate. Never derive from URL, local storage or uploaded JSON.
+const CLOUD_ARCHIVE_ENABLED=false;
+let cloudGeneration=0;
 const $=id=>document.getElementById(id);
 let generation=0,uid=null,athleteId=null,stopAuth=null,selected=null,history=[];
 const digest=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))),b=>b.toString(16).padStart(2,'0')).join('');
 function reset(){generation++;selected=null;$('nv-confirm-athlete').checked=false;$('nv-add-history').disabled=true;$('nv-file').value='';$('nv-review').hidden=true;$('nv-metrics').replaceChildren();$('nv-title').textContent='';$('nv-date').textContent='';$('nv-counts').textContent='';$('nv-protocol').textContent='';$('nv-status').textContent=''}
-function clearPrivate(){reset();clearHistory();$('nv-athlete').textContent='';$('nv-root').hidden=true;uid=null;athleteId=null}
+function clearPrivate(){reset();clearHistory();clearCloud();$('nv-athlete').textContent='';$('nv-root').hidden=true;uid=null;athleteId=null}
 function metric(label,v){const cell=document.createElement('div'),title=document.createElement('span'),value=document.createElement('strong');title.textContent=label;value.textContent=v;cell.append(title,value);return cell}
 const fmt=(v,unit,digits=1)=>v===null?'Non disponibile':v.toFixed(digits)+' '+unit;
 async function review(){
@@ -45,6 +50,20 @@ $('nv-add-history').addEventListener('click',()=>{
  try{const candidate=[...history,selected],groups=historyGroups(candidate,athleteId);const duplicate=history.some(p=>p.documentId===selected.documentId);if(!duplicate)history=candidate;renderHistory(groups);$('nv-history-status').textContent=duplicate?'Sessione già presente nel confronto.':history.length+' sessioni nel confronto locale.';}catch(e){$('nv-history-status').textContent=e.message}
 });
 $('nv-clear-history').addEventListener('click',clearHistory);
+function clearCloud(){cloudGeneration++;$('nv-cloud-results').replaceChildren();$('nv-cloud-status').textContent='';$('nv-load-cloud').disabled=true}
+async function loadCloud(){
+ if(!CLOUD_ARCHIVE_ENABLED||!uid||!athleteId||firebase.auth().currentUser?.uid!==uid)return;
+ const generation=++cloudGeneration,owner=uid,person=athleteId;const button=$('nv-load-cloud');button.disabled=true;$('nv-cloud-results').replaceChildren();$('nv-cloud-status').textContent='Caricamento…';
+ try{
+ const reader=createCloudArchiveReader({db:firebase.firestore(),auth:firebase.auth(),enabled:CLOUD_ARCHIVE_ENABLED});
+ const archive=await reader.load(person);
+ if(generation!==cloudGeneration||uid!==owner||athleteId!==person||firebase.auth().currentUser?.uid!==owner)return;
+ renderCloudArchive($('nv-cloud-results'),archive);
+ $('nv-cloud-status').textContent='Archivio aggiornato.';
+ }catch(e){if(generation===cloudGeneration)$('nv-cloud-status').textContent='Archivio non disponibile. Riprova dopo aver verificato accesso e connessione.'}
+ finally{if(generation===cloudGeneration&&uid===owner)button.disabled=false}
+}
+$('nv-load-cloud').addEventListener('click',loadCloud);
 $('nv-file').addEventListener('change',review);$('nv-clear').addEventListener('click',reset);
 async function init(){
  try{
@@ -52,7 +71,7 @@ async function init(){
  stopAuth=firebase.auth().onAuthStateChanged(u=>{if(!u||u.uid!==uid){clearPrivate();location.replace('./login.html')}});
  const id=new URLSearchParams(location.search).get('id');if(!id||!/^[-_A-Za-z0-9]{1,128}$/.test(id))throw Error('Atleta non valido.');
  const athlete=await dbGetAtleta(id);if(firebase.auth().currentUser?.uid!==uid||!uid)return;if(!athlete)throw Error('Atleta non disponibile per questo account.');athleteId=id;
- $('nv-back').href='./atleta.html?id='+encodeURIComponent(id);$('nv-athlete').textContent=[athlete.nome,athlete.cognome].filter(Boolean).join(' ');$('nv-root').hidden=false;
+ $('nv-back').href='./atleta.html?id='+encodeURIComponent(id);$('nv-athlete').textContent=[athlete.nome,athlete.cognome].filter(Boolean).join(' ');$('nv-root').hidden=false;$('nv-load-cloud').disabled=!CLOUD_ARCHIVE_ENABLED;if(!CLOUD_ARCHIVE_ENABLED)$('nv-cloud-status').textContent='Sincronizzazione in fase di collaudo. Nessun dato cloud letto.';
  }catch(e){clearPrivate();$('nv-fatal').textContent='Archivio non disponibile: '+e.message}
 }
 window.addEventListener('pagehide',()=>{clearPrivate();stopAuth?.()});
