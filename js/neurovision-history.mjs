@@ -9,16 +9,16 @@ function historyGroups(items,athleteId){
  if(seen.has(p.documentId)){if(historyCanonical(seen.get(p.documentId))!==historyCanonical(d))throw Error('Conflitto tra file della stessa sessione');continue}
  seen.set(p.documentId,d);
  const key=historyCanonical({exercise:d.exerciseId,mode:d.mode,protocol:d.protocol,trials:d.trials.completed,provenance:d.provenance});
- if(!groups.has(key))groups.set(key,{exerciseId:d.exerciseId,mode:d.mode,protocol:d.protocol,completedTrials:d.trials.completed,rows:[]});
+ if(!groups.has(key))groups.set(key,{exerciseId:d.exerciseId,mode:d.mode,protocol:d.protocol,completedTrials:d.trials.completed,deviceLabel:'Dispositivo non documentato',rows:[]});
  groups.get(key).rows.push({id:p.documentId,completedAt:d.completedAt,metrics:d.metrics,trials:d.trials});
  }
  return [...groups.values()].map(g=>({...g,rows:g.rows.sort((a,b)=>a.completedAt.localeCompare(b.completedAt)||a.id.localeCompare(b.id))}));
 }
 
 function historyCompare(g){
- if(g.mode!=='test'||g.rows.length<2)return null;
- const first=g.rows[0],last=g.rows[g.rows.length-1];if(first.completedAt===last.completedAt)return null;
- const diff=key=>Number.isFinite(first.metrics[key])&&Number.isFinite(last.metrics[key])?Math.round((last.metrics[key]-first.metrics[key])*100)/100:null;
- return {firstAt:first.completedAt,lastAt:last.completedAt,accuracyPercentagePoints:diff('accuracyPercent'),medianCorrectMs:diff('medianCorrectMs'),jndDegrees:diff('jndDegrees'),pseDegrees:diff('pseDegrees')};
+ // Historical manual JSON does not contain a verified workstation snapshot. Never compare it automatically.
+ return null;
+ /* Future comparisons use the new device-aware projection read model. */
+
 }
 export {historyGroups,historyCompare};
